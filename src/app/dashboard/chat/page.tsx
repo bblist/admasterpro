@@ -847,10 +847,15 @@ export default function ChatPage() {
     const [copiedId, setCopiedId] = useState<number | null>(null);
     const [isListening, setIsListening] = useState(false);
     const [voiceText, setVoiceText] = useState("");
+    const [voicePaused, setVoicePaused] = useState(false);
+    const [silenceCountdown, setSilenceCountdown] = useState(0);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const recognitionRef = useRef<any>(null);
     const sendMessageRef = useRef<(text: string) => void>(() => {});
+    const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const voiceTranscriptRef = useRef("");
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -860,7 +865,67 @@ export default function ChatPage() {
         inputRef.current?.focus();
     }, []);
 
+    // Cleanup voice timers on unmount
+    useEffect(() => {
+        return () => {
+            if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+            if (countdownRef.current) clearInterval(countdownRef.current);
+        };
+    }, []);
+
     // ─── Voice Recognition ──────────────────────────────────────────────────
+
+    // How long to wait after last speech before auto-sending (ms)
+    const SILENCE_TIMEOUT = 3000;
+
+    const clearSilenceTimer = useCallback(() => {
+        if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
+        if (countdownRef.current) { clearInterval(countdownRef.current); countdownRef.current = null; }
+        setSilenceCountdown(0);
+    }, []);
+
+    const startSilenceTimer = useCallback(() => {
+        clearSilenceTimer();
+        setVoicePaused(true);
+        const steps = Math.ceil(SILENCE_TIMEOUT / 100);
+        let remaining = steps;
+        countdownRef.current = setInterval(() => {
+            remaining--;
+            setSilenceCountdown(remaining / steps); // 1 → 0
+            if (remaining <= 0 && countdownRef.current) { clearInterval(countdownRef.current); countdownRef.current = null; }
+        }, 100);
+        silenceTimerRef.current = setTimeout(() => {
+            // Auto-send after sustained silence
+            const text = voiceTranscriptRef.current.trim();
+            if (text) {
+                sendMessageRef.current(text);
+            }
+            voiceTranscriptRef.current = "";
+            setVoiceText("");
+            setVoicePaused(false);
+            setSilenceCountdown(0);
+            // Stop recognition cleanly
+            if (recognitionRef.current) {
+                try { recognitionRef.current.stop(); } catch { /* ok */ }
+            }
+            setIsListening(false);
+        }, SILENCE_TIMEOUT);
+    }, [clearSilenceTimer]);
+
+    const voiceSendNow = useCallback(() => {
+        clearSilenceTimer();
+        const text = voiceTranscriptRef.current.trim();
+        if (text) {
+            sendMessageRef.current(text);
+        }
+        voiceTranscriptRef.current = "";
+        setVoiceText("");
+        setVoicePaused(false);
+        if (recognitionRef.current) {
+            try { recognitionRef.current.stop(); } catch { /* ok */ }
+        }
+        setIsListening(false);
+    }, [clearSilenceTimer]);
 
     const startListening = useCallback(() => {
         const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -887,51 +952,83 @@ export default function ChatPage() {
             return;
         }
 
+        voiceTranscriptRef.current = "";
+        setVoiceText("");
+        setVoicePaused(false);
+        clearSilenceTimer();
+
         const recognition = new SpeechRecognition();
-        recognition.continuous = false;
+        recognition.continuous = true;
         recognition.interimResults = true;
         recognition.lang = "en-US";
 
         recognition.onstart = () => {
             setIsListening(true);
-            setVoiceText("Listening...");
+            setVoiceText("Speak now...");
         };
 
         recognition.onresult = (event: any) => {
-            let transcript = "";
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-                transcript += event.results[i][0].transcript;
+            let finalText = "";
+            let interimText = "";
+            for (let i = 0; i < event.results.length; i++) {
+                const result = event.results[i];
+                if (result.isFinal) {
+                    finalText += result[0].transcript;
+                } else {
+                    interimText += result[0].transcript;
+                }
             }
-            setVoiceText(transcript);
-            if (event.results[event.results.length - 1].isFinal) {
-                setTimeout(() => {
-                    setIsListening(false);
-                    setVoiceText("");
-                    if (transcript.trim()) sendMessageRef.current(transcript.trim());
-                }, 300);
+
+            voiceTranscriptRef.current = finalText;
+            const display = (finalText + (interimText ? interimText : "")).trim();
+            setVoiceText(display || "Speak now...");
+
+            // Reset silence timer — user is still talking
+            clearSilenceTimer();
+            setVoicePaused(false);
+
+            // If we have finalized text and no interim (pause in speech), start countdown
+            if (finalText.trim() && !interimText) {
+                startSilenceTimer();
             }
         };
 
-        recognition.onerror = () => {
+        recognition.onerror = (e: any) => {
+            // "no-speech" is normal — user paused, just wait
+            if (e.error === "no-speech") return;
+            clearSilenceTimer();
             setIsListening(false);
             setVoiceText("");
+            setVoicePaused(false);
+            voiceTranscriptRef.current = "";
         };
 
         recognition.onend = () => {
-            setIsListening(false);
+            // If we still have unsent text when recognition ends unexpectedly, restart
+            if (voiceTranscriptRef.current.trim() && silenceTimerRef.current) {
+                // Silence timer is running — let it handle sending
+                return;
+            }
+            if (!silenceTimerRef.current) {
+                setIsListening(false);
+                setVoicePaused(false);
+            }
         };
 
         recognitionRef.current = recognition;
         recognition.start();
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [clearSilenceTimer, startSilenceTimer]);
 
-    const stopListening = () => {
+    const stopListening = useCallback(() => {
+        clearSilenceTimer();
+        voiceTranscriptRef.current = "";
         if (recognitionRef.current) {
-            recognitionRef.current.stop();
+            try { recognitionRef.current.stop(); } catch { /* ok */ }
         }
         setIsListening(false);
         setVoiceText("");
-    };
+        setVoicePaused(false);
+    }, [clearSilenceTimer]);
 
     // ─── Send Message ───────────────────────────────────────────────────────
 
@@ -1280,22 +1377,46 @@ export default function ChatPage() {
 
             {/* Voice listening overlay */}
             {isListening && (
-                <div className="border border-primary/30 bg-primary/5 rounded-xl px-4 py-3 mb-3 flex items-center gap-3">
-                    <div className="relative">
-                        <Mic className="w-5 h-5 text-primary" />
-                        <div className="absolute -inset-1 border-2 border-primary/30 rounded-full animate-ping"></div>
+                <div className="border border-primary/30 bg-primary/5 rounded-xl px-4 py-3 mb-3 space-y-2">
+                    <div className="flex items-center gap-3">
+                        <div className="relative">
+                            <Mic className={`w-5 h-5 ${voicePaused ? "text-amber-500" : "text-primary"}`} />
+                            {!voicePaused && <div className="absolute -inset-1 border-2 border-primary/30 rounded-full animate-ping"></div>}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <div className={`text-xs font-medium ${voicePaused ? "text-amber-600" : "text-primary"}`}>
+                                {voicePaused ? "Paused \u2014 will send automatically..." : "Listening..."}
+                            </div>
+                            <div className="text-sm mt-0.5 truncate">{voiceText || "Speak now..."}</div>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                            {voicePaused && voiceTranscriptRef.current.trim() && (
+                                <button
+                                    onClick={voiceSendNow}
+                                    className="text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-lg hover:bg-primary/20 transition flex items-center gap-1 font-medium"
+                                >
+                                    <Send className="w-3 h-3" />
+                                    Send
+                                </button>
+                            )}
+                            <button
+                                onClick={stopListening}
+                                className="text-xs bg-danger/10 text-danger px-3 py-1.5 rounded-lg hover:bg-danger/20 transition flex items-center gap-1"
+                            >
+                                <MicOff className="w-3 h-3" />
+                                Cancel
+                            </button>
+                        </div>
                     </div>
-                    <div className="flex-1">
-                        <div className="text-xs font-medium text-primary">Listening...</div>
-                        <div className="text-sm mt-0.5">{voiceText || "Speak now..."}</div>
-                    </div>
-                    <button
-                        onClick={stopListening}
-                        className="text-xs bg-danger/10 text-danger px-3 py-1.5 rounded-lg hover:bg-danger/20 transition flex items-center gap-1"
-                    >
-                        <MicOff className="w-3 h-3" />
-                        Stop
-                    </button>
+                    {/* Silence countdown bar */}
+                    {voicePaused && silenceCountdown > 0 && (
+                        <div className="h-1 bg-border rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-amber-500 rounded-full transition-all duration-100 ease-linear"
+                                style={{ width: `${silenceCountdown * 100}%` }}
+                            />
+                        </div>
+                    )}
                 </div>
             )}
 
