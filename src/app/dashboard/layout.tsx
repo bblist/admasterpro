@@ -13,6 +13,8 @@ import {
     LogOut,
     Menu,
     X,
+    ShoppingBag,
+    BookOpen,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -22,6 +24,8 @@ const navItems = [
     { href: "/dashboard/campaigns", label: "Campaigns", icon: FileText },
     { href: "/dashboard/keywords", label: "Keywords", icon: Search },
     { href: "/dashboard/drafts", label: "Ad Drafts", icon: FileText },
+    { href: "/dashboard/shopping", label: "Shopping Ads", icon: ShoppingBag },
+    { href: "/dashboard/knowledge-base", label: "Knowledge Base", icon: BookOpen },
     { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
@@ -67,8 +71,8 @@ export default function DashboardLayout({
 
                     {/* Business info */}
                     <div className="px-4 py-3 border-b border-border">
-                        <div className="text-sm font-medium">Mike&apos;s Plumbing</div>
-                        <div className="text-xs text-muted">Miami, FL • Auto-Pilot: ON</div>
+                        <div className="text-sm font-medium">StyleVision Agency</div>
+                        <div className="text-xs text-muted">Multi-client • Auto-Pilot: ON</div>
                     </div>
 
                     {/* Nav */}
@@ -129,7 +133,7 @@ export default function DashboardLayout({
                             <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-danger rounded-full"></div>
                         </button>
                         <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white text-sm font-medium">
-                            M
+                            S
                         </div>
                     </div>
                 </header>
