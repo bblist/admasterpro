@@ -2,16 +2,9 @@
 
 import {
     ShoppingBag,
-    Link2,
     RefreshCw,
     CheckCircle,
     AlertTriangle,
-    TrendingUp,
-    TrendingDown,
-    DollarSign,
-    Eye,
-    MousePointer,
-    Package,
     ExternalLink,
     Settings,
     Zap,

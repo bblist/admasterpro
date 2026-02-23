@@ -5,7 +5,6 @@ import {
     Search,
     Filter,
     Download,
-    MoreVertical,
     Mail,
     Eye,
     Ban,

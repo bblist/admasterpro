@@ -10,14 +10,61 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 
+/** Minimal Stripe event shape for webhook handling */
+interface StripeEvent {
+    type: string;
+    data: {
+        object: {
+            id?: string;
+            customer_email?: string;
+            status?: string;
+        };
+    };
+}
+
+/**
+ * Verify Stripe webhook signature (HMAC-SHA256).
+ * Mirrors stripe.webhooks.constructEvent() without requiring the stripe package.
+ */
+async function verifyStripeWebhook(
+    payload: string,
+    sigHeader: string,
+    secret: string,
+    tolerance = 300 // 5 minutes
+): Promise<StripeEvent | null> {
+    const parts = Object.fromEntries(
+        sigHeader.split(",").map((p) => {
+            const [k, v] = p.split("=");
+            return [k, v];
+        })
+    );
+
+    const timestamp = parseInt(parts.t, 10);
+    if (isNaN(timestamp) || Math.abs(Date.now() / 1000 - timestamp) > tolerance) {
+        return null; // Timestamp out of tolerance
+    }
+
+    const signedPayload = `${timestamp}.${payload}`;
+    const expected = crypto.createHmac("sha256", secret).update(signedPayload).digest("hex");
+
+    if (!crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(parts.v1 || ""))) {
+        return null; // Signature mismatch
+    }
+
+    try {
+        return JSON.parse(payload);
+    } catch {
+        return null;
+    }
+}
+
 // POST — Create checkout session or handle webhook
 export async function POST(req: NextRequest) {
-    const contentType = req.headers.get("content-type") || "";
-
-    // Stripe webhook (application/json with stripe-signature header)
+    // Stripe webhook (identified by stripe-signature header)
     if (req.headers.get("stripe-signature")) {
         return handleWebhook(req);
     }
@@ -81,11 +128,13 @@ async function handleWebhook(req: NextRequest) {
 
     try {
         const body = await req.text();
-        // NOTE: In production, verify the webhook signature using stripe library
-        // const sig = req.headers.get("stripe-signature");
-        // const event = stripe.webhooks.constructEvent(body, sig, WEBHOOK_SECRET);
+        const sig = req.headers.get("stripe-signature") || "";
 
-        const event = JSON.parse(body);
+        // Verify webhook signature (HMAC-SHA256)
+        const event = await verifyStripeWebhook(body, sig, WEBHOOK_SECRET);
+        if (!event) {
+            return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
+        }
 
         switch (event.type) {
             case "checkout.session.completed":

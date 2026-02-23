@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, Search, MessageCircle, CreditCard, Shield, Zap, BarChart3, Settings, HelpCircle } from "lucide-react";
+import Link from "next/link";
+import { ChevronDown, Search, MessageCircle, CreditCard, Shield, Zap, BarChart3, Settings, HelpCircle, type LucideIcon } from "lucide-react";
 
 interface FAQItem {
     q: string;
@@ -10,7 +11,7 @@ interface FAQItem {
 
 interface FAQCategory {
     label: string;
-    icon: any;
+    icon: LucideIcon;
     color: string;
     items: FAQItem[];
 }
@@ -296,13 +297,13 @@ export default function FAQPage() {
                 <HelpCircle className="w-8 h-8 text-primary mx-auto mb-2" />
                 <h3 className="font-semibold mb-1">Still have questions?</h3>
                 <p className="text-sm text-muted mb-4">Our AI assistant can answer anything about your account in real-time.</p>
-                <a
+                <Link
                     href="/dashboard/chat"
                     className="inline-flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-primary-dark transition"
                 >
                     <MessageCircle className="w-4 h-4" />
                     Ask the AI Assistant
-                </a>
+                </Link>
             </div>
         </div>
     );

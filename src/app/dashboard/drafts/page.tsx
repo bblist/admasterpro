@@ -21,22 +21,12 @@ import {
     Upload,
     Move,
     Type,
-    Layers,
-    AlignLeft,
-    AlignCenter,
-    AlignRight,
-    AlignStartVertical,
-    AlignCenterVertical,
-    AlignEndVertical,
-    Maximize2,
     ImagePlus,
     Palette,
-    LayoutGrid,
     Filter,
     Search,
-    SlidersHorizontal,
 } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import Tooltip from "@/components/Tooltip";
 
 // Types

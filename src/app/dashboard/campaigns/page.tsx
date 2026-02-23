@@ -17,7 +17,24 @@ import Tooltip from "@/components/Tooltip";
 
 type CampaignType = "search" | "shopping" | "display";
 
-const campaigns = [
+interface Campaign {
+    id: number;
+    name: string;
+    client: string;
+    type: CampaignType;
+    status: "active" | "paused";
+    dailyBudget: number;
+    spent: number;
+    clicks: number;
+    calls: number;
+    costPerCall: number;
+    trend: "up" | "down" | "flat";
+    purchases?: number;
+    roas?: number;
+    impressions?: number;
+}
+
+const campaigns: Campaign[] = [
     {
         id: 1,
         name: "LASIK & Eye Exams",
@@ -253,7 +270,7 @@ export default function CampaignsPage() {
                                             {c.type === "shopping" ? (
                                                 <>
                                                     <ShoppingBag className="w-3 h-3 text-muted" />
-                                                    {(c as any).purchases || 0} sales
+                                                    {c.purchases || 0} sales
                                                 </>
                                             ) : (
                                                 <>
@@ -265,7 +282,7 @@ export default function CampaignsPage() {
                                     </td>
                                     <td className="px-5 py-4 text-right font-medium">
                                         {c.type === "shopping" 
-                                            ? ((c as any).roas ? `${(c as any).roas}x ROAS` : "—")
+                                            ? (c.roas ? `${c.roas}x ROAS` : "—")
                                             : (c.costPerCall > 0 ? `$${c.costPerCall.toFixed(2)}` : "—")}
                                     </td>
                                     <td className="px-5 py-4 text-right">

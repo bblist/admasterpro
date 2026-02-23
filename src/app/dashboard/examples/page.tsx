@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
     Lightbulb,
     MessageCircle,
@@ -19,6 +20,7 @@ import {
     Zap,
     Search,
     Eye,
+    type LucideIcon,
 } from "lucide-react";
 
 interface Example {
@@ -30,7 +32,7 @@ interface Example {
 
 interface ExampleCategory {
     label: string;
-    icon: any;
+    icon: LucideIcon;
     color: string;
     gradient: string;
     emoji: string;
@@ -353,13 +355,13 @@ export default function ExamplesPage() {
                             Click the <strong>microphone button</strong> in the AI chat to use voice commands, or just type.
                         </p>
                         <div className="flex gap-2 mt-3">
-                            <a
+                            <Link
                                 href="/dashboard/chat"
                                 className="inline-flex items-center gap-1.5 bg-primary text-white px-4 py-2 rounded-lg text-xs font-medium hover:bg-primary-dark transition"
                             >
                                 <MessageCircle className="w-3.5 h-3.5" />
                                 Try it now
-                            </a>
+                            </Link>
                             <div className="flex items-center gap-1.5 text-xs text-muted px-3 py-2 border border-border rounded-lg">
                                 <Zap className="w-3 h-3 text-emerald-500" /> GPT-4o
                                 <span className="text-border">+</span>
@@ -505,13 +507,13 @@ export default function ExamplesPage() {
 
             {/* CTA */}
             <div className="mt-8 text-center pb-4">
-                <a
+                <Link
                     href="/dashboard/chat"
                     className="inline-flex items-center gap-2 bg-gradient-to-r from-primary to-blue-600 text-white px-6 py-3 rounded-xl text-sm font-medium hover:shadow-lg hover:shadow-primary/30 transition"
                 >
                     <MessageCircle className="w-4 h-4" />
                     Open AI Assistant &amp; Try These Commands
-                </a>
+                </Link>
             </div>
         </div>
     );

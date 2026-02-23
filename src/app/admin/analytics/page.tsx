@@ -1,7 +1,6 @@
 "use client";
 
 import {
-    BarChart3,
     Clock,
     MessageCircle,
     Zap,

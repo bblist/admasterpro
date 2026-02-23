@@ -5,18 +5,15 @@ import {
     DollarSign,
     TrendingUp,
     ArrowUpRight,
-    ArrowDownRight,
     Zap,
     Sparkles,
     Users,
     BarChart3,
     AlertTriangle,
     Clock,
-    ChevronDown,
     Filter,
     Download,
     Search,
-    Eye,
 } from "lucide-react";
 import { useState } from "react";
 
