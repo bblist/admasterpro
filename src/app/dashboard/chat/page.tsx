@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
     Send,
     Zap,
@@ -11,39 +11,69 @@ import {
     Sparkles,
     Cpu,
     Mic,
+    MicOff,
     Paperclip,
     RotateCcw,
     Copy,
     Check,
     Bot,
-    MessageSquare,
-    TrendingUp,
-    Search,
-    PenTool,
-    Users,
-    DollarSign,
-    Target,
     BarChart3,
     AlertTriangle,
-    CheckCircle2,
+    PenTool,
+    Users,
     ArrowRight,
+    FileText,
+    Image,
+    ExternalLink,
+    Eye,
+    Rocket,
+    CheckCircle2,
+    Clock,
+    Move,
+    ChevronRight,
+    Wand2,
+    Activity,
 } from "lucide-react";
 
-// Types
+// ─── Types ──────────────────────────────────────────────────────────────────
 
 type LLMModel = "gpt-4o" | "claude-5.6";
 
+interface AdPreview {
+    type: "text" | "display";
+    headline1?: string;
+    headline2?: string;
+    description?: string;
+    displayUrl?: string;
+    title?: string;
+    dimensions?: string;
+    format?: string;
+    imageUrl?: string;
+    overlayText?: string;
+    ctaText?: string;
+    previewBg?: string;
+}
+
+interface StatsCard {
+    label: string;
+    value: string;
+    change?: string;
+    trend?: "up" | "down" | "neutral";
+}
+
 interface Message {
     id: number;
-    role: "ai" | "user" | "system";
+    role: "ai" | "user" | "system" | "divider";
     content: string;
     model?: LLMModel;
     actions?: { label: string; type: "primary" | "secondary" | "danger" }[];
     timestamp: string;
-    copied?: boolean;
+    ads?: AdPreview[];
+    stats?: StatsCard[];
+    taskSummary?: { done: string[]; pending?: string[] };
 }
 
-// Model badge helper
+// ─── Helpers ────────────────────────────────────────────────────────────────
 
 const modelBadge = (model: LLMModel) => {
     if (model === "gpt-4o") {
@@ -60,413 +90,727 @@ const modelBadge = (model: LLMModel) => {
     );
 };
 
-// Simulated AI response bank - each key maps to a response
+const timeNow = () => new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+const dateNow = () => new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
-const aiResponseBank: Record<string, { content: string; model: LLMModel; actions?: { label: string; type: "primary" | "secondary" | "danger" }[] }> = {
-    "Yes, pause them all": {
-        content:
-            "Done! Here\u2019s what I did:\n\n" +
-            "\u2705 Paused **\"free plumbing tips\"** \u2014 saving ~$22/week\n" +
-            "\u2705 Added **\"salary\"** as a blocked search \u2014 saving ~$8.50/week\n" +
-            "\u2705 Paused **\"how to fix a leaky faucet\"** \u2014 saving ~$15/week\n\n" +
-            "**Total savings: ~$45.50/week** ($182/month)\n\n" +
-            "Your daily budget is still set at $50/day, so you\u2019re well within limits. The money you were wasting will now go toward keywords that actually bring customers.\n\n" +
-            "Anything else you\u2019d like me to check?",
-        model: "gpt-4o",
-        actions: [
-            { label: "Show me my best keywords", type: "primary" },
-            { label: "Write new ad ideas", type: "secondary" },
-            { label: "I'm good for now", type: "secondary" },
-        ],
-    },
-    "Let me review first": {
-        content:
-            "No problem! Here\u2019s a deeper look at each one so you can decide:\n\n" +
-            "**1. \"free plumbing tips\"** \ud83d\udea9\n" +
-            "\u2022 Spent: $22 this week (127 clicks)\n" +
-            "\u2022 Calls: 0 | Forms: 0\n" +
-            "\u2022 These are DIY searchers looking for free advice.\n" +
-            "\u2022 **Recommendation: Pause** \u2014 zero chance of conversion.\n\n" +
-            "**2. \"plumber salary miami\"** \ud83d\udea9\n" +
-            "\u2022 Spent: $8.50 this week (34 clicks)\n" +
-            "\u2022 Calls: 0 | Forms: 0\n" +
-            "\u2022 Job seekers, not customers.\n" +
-            "\u2022 **Recommendation: Pause** \u2014 completely irrelevant.\n\n" +
-            "**3. \"how to fix a leaky faucet\"** \u26a0\ufe0f\n" +
-            "\u2022 Spent: $15 this week (89 clicks)\n" +
-            "\u2022 Calls: 0 | Forms: 0\n" +
-            "\u2022 DIY intent, but ~5% of these searchers give up and call a plumber.\n" +
-            "\u2022 **Recommendation: Pause for now**, re-test in 2 weeks.\n\n" +
-            "Want me to pause any of these?",
-        model: "gpt-4o",
-        actions: [
-            { label: "Pause them all", type: "primary" },
-            { label: "Pause just #1 and #2", type: "secondary" },
-            { label: "Leave them for now", type: "secondary" },
-        ],
-    },
-    "Tell me more": {
-        content:
-            "Sure! Let me break it down simply:\n\n" +
-            "**\"free plumbing tips\"** \u2014 People searching this want free DIY advice. They\u2019re not looking to hire anyone. I\u2019d bet money on pausing this one.\n\n" +
-            "**\"plumber salary miami\"** \u2014 This is someone researching plumber pay, maybe looking for a job. Definitely not a customer.\n\n" +
-            "**\"how to fix a leaky faucet\"** \u2014 Another DIY searcher. Worth testing a pause \u2014 if we see no drop in calls after a week, we know it was wasted money.\n\n" +
-            "All three together cost you **$45.50 this week** with **zero phone calls**. That\u2019s pretty clear-cut waste.",
+// ─── NLP Intent Matching ────────────────────────────────────────────────────
+
+type Intent =
+    | "create_text_ads"
+    | "create_display_ads"
+    | "show_stats"
+    | "find_leaks"
+    | "check_competitors"
+    | "move_image"
+    | "add_image"
+    | "change_text"
+    | "pause_keywords"
+    | "go_live"
+    | "show_drafts"
+    | "help"
+    | "unknown";
+
+interface IntentMatch {
+    intent: Intent;
+    params: Record<string, string>;
+}
+
+const matchIntent = (text: string): IntentMatch => {
+    const t = text.toLowerCase().trim();
+
+    // Create text ads
+    if (/\b(create|write|make|generate|draft)\b.*\b(text|search)\s*(ads?|copy)/i.test(t) ||
+        /\b(write|create|make)\b.*\b(ads?|copy)\b.*\b(for|about)\b/i.test(t) && !/display|banner|image/i.test(t)) {
+        const forMatch = t.match(/(?:for|about)\s+(.+?)(?:\s*$|\s*with|\s*using)/);
+        return { intent: "create_text_ads", params: { topic: forMatch ? forMatch[1] : "" } };
+    }
+
+    // Create display ads
+    if (/\b(create|write|make|generate|design|build)\b.*\b(display|banner|image)\s*(ads?|banner)/i.test(t) ||
+        /\b(display|banner)\b.*\b(ad|ads)\b/i.test(t)) {
+        const forMatch = t.match(/(?:for|about)\s+(.+?)(?:\s*$|\s*with|\s*using)/);
+        return { intent: "create_display_ads", params: { topic: forMatch ? forMatch[1] : "" } };
+    }
+
+    // Move / position image
+    if (/\b(move|position|place|shift|align|reposition)\b.*\b(image|photo|picture|img)\b/i.test(t)) {
+        const posMatch = t.match(/\b(top|bottom|left|right|center|middle)\b/gi);
+        return { intent: "move_image", params: { position: posMatch ? posMatch.join(" ") : "center" } };
+    }
+
+    // Add image
+    if (/\b(add|insert|put|use|set|upload)\b.*\b(image|photo|picture|img)\b/i.test(t) ||
+        /\b(image|photo|picture)\b.*\b(to|in|into|on)\b/i.test(t)) {
+        const toMatch = t.match(/(?:to|in|into|on|for)\s+(?:the\s+)?(.+?)(?:\s+ad|\s*$)/);
+        return { intent: "add_image", params: { target: toMatch ? toMatch[1] : "" } };
+    }
+
+    // Change text / overlay
+    if (/\b(change|update|edit|modify|set)\b.*\b(text|headline|title|copy|overlay|cta|button)\b/i.test(t)) {
+        const toMatch = t.match(/(?:to|as|with)\s+["']?(.+?)["']?\s*$/);
+        return { intent: "change_text", params: { newText: toMatch ? toMatch[1] : "" } };
+    }
+
+    // Show stats
+    if (/\b(show|display|get|what|how)\b.*\b(stats|statistics|performance|numbers|metrics|report)\b/i.test(t) ||
+        /\b(how.+doing|how.+perform|give.+overview)\b/i.test(t)) {
+        return { intent: "show_stats", params: {} };
+    }
+
+    // Find leaks / waste
+    if (/\b(find|show|check|scan|look)\b.*\b(leak|waste|wast|spent|overspend|money|save)\b/i.test(t) ||
+        /\bwhere.+(money|budget).+(go|leak|waste)/i.test(t)) {
+        return { intent: "find_leaks", params: {} };
+    }
+
+    // Check competitors
+    if (/\b(check|show|analyze|look|what).+\b(competitor|competition|competing|rival)/i.test(t)) {
+        return { intent: "check_competitors", params: {} };
+    }
+
+    // Pause keywords
+    if (/\b(pause|stop|disable|block|remove)\b.*\b(keyword|search|term|ad)\b/i.test(t)) {
+        return { intent: "pause_keywords", params: {} };
+    }
+
+    // Go live
+    if (/\b(go live|publish|launch|activate|start running)\b/i.test(t)) {
+        return { intent: "go_live", params: {} };
+    }
+
+    // Show drafts
+    if (/\b(show|list|display|view)\b.*\b(draft|ads?|my ads)\b/i.test(t)) {
+        return { intent: "show_drafts", params: {} };
+    }
+
+    // Help
+    if (/\b(help|what can you|how do i|capabilities|what do you do)\b/i.test(t)) {
+        return { intent: "help", params: {} };
+    }
+
+    return { intent: "unknown", params: {} };
+};
+
+// ─── Response Generator ────────────────────────────────────────────────────
+
+const generateResponse = (intent: IntentMatch, rawText: string): Omit<Message, "id"> => {
+    const time = timeNow();
+
+    switch (intent.intent) {
+        case "create_text_ads": {
+            const topic = intent.params.topic || "your top service";
+            return {
+                role: "ai",
+                model: "gpt-4o",
+                content: `Done! I just created **3 text ads** for **${topic}**. They're saved to your Drafts page and here's a preview:`,
+                timestamp: time,
+                ads: [
+                    {
+                        type: "text",
+                        headline1: `${topic.charAt(0).toUpperCase() + topic.slice(1)} \u2014 Miami`,
+                        headline2: "Fast Service \u2022 Free Estimates",
+                        description: `Looking for ${topic}? We're Miami's top-rated provider. Same-day service, no hidden fees. 500+ 5-star reviews. Call now for a free estimate!`,
+                        displayUrl: "www.mikesplumbing.com",
+                    },
+                    {
+                        type: "text",
+                        headline1: `Need ${topic.charAt(0).toUpperCase() + topic.slice(1)}? Call Now`,
+                        headline2: "$49 Special \u2022 Licensed & Insured",
+                        description: `Professional ${topic} starting at $49. We respond in 30 minutes or less. Miami-Dade's most trusted since 2011. Book online in 60 seconds.`,
+                        displayUrl: "www.mikesplumbing.com",
+                    },
+                    {
+                        type: "text",
+                        headline1: `Don't Overpay for ${topic.charAt(0).toUpperCase() + topic.slice(1)}`,
+                        headline2: "500+ Reviews \u2022 30-Min Response",
+                        description: `Why pay more? Honest pricing, expert service. ${topic.charAt(0).toUpperCase() + topic.slice(1)} done right the first time. Family-owned, Miami-based. Free estimates on jobs over $200.`,
+                        displayUrl: "www.mikesplumbing.com",
+                    },
+                ],
+                taskSummary: {
+                    done: [
+                        `Created 3 text ad variations for "${topic}"`,
+                        "Saved all drafts to your Drafts page",
+                        "Used your Knowledge Base for pricing & USPs",
+                    ],
+                },
+                actions: [
+                    { label: "Go Live with all 3", type: "primary" },
+                    { label: "Regenerate Ad #2", type: "secondary" },
+                    { label: "Create display ads too", type: "secondary" },
+                ],
+            };
+        }
+
+        case "create_display_ads": {
+            const topic = intent.params.topic || "your business";
+            return {
+                role: "ai",
+                model: "gpt-4o",
+                content: `Done! I designed **2 display ads** for **${topic}**. Here they are \u2014 you can customize images, text, and positioning right here:`,
+                timestamp: time,
+                ads: [
+                    {
+                        type: "display",
+                        title: `${topic.charAt(0).toUpperCase() + topic.slice(1)} \u2014 Banner`,
+                        dimensions: "728\u00d790",
+                        format: "Leaderboard",
+                        imageUrl: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&h=300&fit=crop",
+                        overlayText: `${topic.charAt(0).toUpperCase() + topic.slice(1)} \u2014 Miami's #1 Choice`,
+                        ctaText: "Get Started",
+                        previewBg: "from-blue-500 to-purple-600",
+                    },
+                    {
+                        type: "display",
+                        title: `${topic.charAt(0).toUpperCase() + topic.slice(1)} \u2014 Sidebar`,
+                        dimensions: "300\u00d7250",
+                        format: "Medium Rectangle",
+                        imageUrl: "https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=400&h=300&fit=crop",
+                        overlayText: "Special Offer \u2014 Limited Time",
+                        ctaText: "Learn More",
+                        previewBg: "from-amber-400 to-red-500",
+                    },
+                ],
+                taskSummary: {
+                    done: [
+                        `Designed 2 display ads for "${topic}"`,
+                        "Applied images from your library",
+                        "Saved to Drafts page for editing",
+                    ],
+                },
+                actions: [
+                    { label: "Edit images & layout", type: "primary" },
+                    { label: "Change the text", type: "secondary" },
+                    { label: "Add more sizes", type: "secondary" },
+                ],
+            };
+        }
+
+        case "move_image": {
+            const pos = intent.params.position || "center";
+            return {
+                role: "ai",
+                model: "gpt-4o",
+                content: `Done! I moved the image to **${pos}** position.`,
+                timestamp: time,
+                ads: [
+                    {
+                        type: "display",
+                        title: "Updated Display Ad",
+                        dimensions: "728\u00d790",
+                        format: "Leaderboard",
+                        imageUrl: "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=400&h=300&fit=crop",
+                        overlayText: "SUMMER SALE 40% OFF",
+                        ctaText: "Shop Now",
+                        previewBg: "from-pink-400 to-purple-500",
+                    },
+                ],
+                taskSummary: {
+                    done: [
+                        `Repositioned image to "${pos}"`,
+                        "Updated the draft on your Drafts page",
+                    ],
+                },
+                actions: [
+                    { label: "Try another position", type: "secondary" },
+                    { label: "Change the image", type: "secondary" },
+                    { label: "Go Live", type: "primary" },
+                ],
+            };
+        }
+
+        case "add_image": {
+            const target = intent.params.target || "display ad";
+            return {
+                role: "ai",
+                model: "gpt-4o",
+                content: `Done! I added an image to your **${target}** ad. Here\u2019s how it looks now:`,
+                timestamp: time,
+                ads: [
+                    {
+                        type: "display",
+                        title: `${target.charAt(0).toUpperCase() + target.slice(1)} Ad`,
+                        dimensions: "300\u00d7250",
+                        format: "Medium Rectangle",
+                        imageUrl: "https://images.unsplash.com/photo-1607082349566-187342175e2f?w=400&h=300&fit=crop",
+                        overlayText: "Your New Ad \u2014 Looking Great!",
+                        ctaText: "Shop Now",
+                        previewBg: "from-emerald-400 to-cyan-500",
+                    },
+                ],
+                taskSummary: {
+                    done: [
+                        `Added image to "${target}" ad`,
+                        "Auto-positioned for best visual impact",
+                        "Saved changes to Drafts",
+                    ],
+                },
+                actions: [
+                    { label: "Move the image", type: "secondary" },
+                    { label: "Use a different image", type: "secondary" },
+                    { label: "Looks great!", type: "primary" },
+                ],
+            };
+        }
+
+        case "change_text": {
+            const newText = intent.params.newText || "New headline text";
+            return {
+                role: "ai",
+                model: "gpt-4o",
+                content: `Done! Updated the text to **"${newText}"**. Here\u2019s the updated ad:`,
+                timestamp: time,
+                ads: [
+                    {
+                        type: "display",
+                        title: "Updated Display Ad",
+                        dimensions: "728\u00d790",
+                        format: "Leaderboard",
+                        imageUrl: "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=400&h=300&fit=crop",
+                        overlayText: newText,
+                        ctaText: "Shop Now",
+                        previewBg: "from-pink-400 to-purple-500",
+                    },
+                ],
+                taskSummary: {
+                    done: [
+                        `Changed overlay text to "${newText}"`,
+                        "Draft updated on your Drafts page",
+                    ],
+                },
+                actions: [
+                    { label: "Change the CTA button too", type: "secondary" },
+                    { label: "Looks perfect!", type: "primary" },
+                ],
+            };
+        }
+
+        case "show_stats": {
+            return {
+                role: "ai",
+                model: "gpt-4o",
+                content: "Here\u2019s your account at a glance for the **last 7 days**:",
+                timestamp: time,
+                stats: [
+                    { label: "Phone Calls", value: "18", change: "+38%", trend: "up" },
+                    { label: "Clicks", value: "342", change: "+12%", trend: "up" },
+                    { label: "CTR", value: "7.99%", change: "+11%", trend: "up" },
+                    { label: "Cost", value: "$295", change: "-5%", trend: "down" },
+                    { label: "Cost/Call", value: "$16.41", change: "-10%", trend: "down" },
+                    { label: "Budget Left", value: "$318", change: "6.3 days", trend: "neutral" },
+                ],
+                actions: [
+                    { label: "Show call details", type: "primary" },
+                    { label: "Find money leaks", type: "secondary" },
+                    { label: "Compare to last month", type: "secondary" },
+                ],
+            };
+        }
+
+        case "find_leaks": {
+            return {
+                role: "ai",
+                model: "gpt-4o",
+                content: "I scanned your account for the last 30 days. Here\u2019s where money is leaking:\n\n" +
+                    "\ud83d\udea8 **Critical Leaks** (fix these first)\n\n" +
+                    "**1.** 3 junk keywords \u2014 **$45.50/week** wasted\n" +
+                    "\u2003\u2022 \"free plumbing tips\", \"plumber salary\", \"fix a leaky faucet\"\n\n" +
+                    "**2.** Ads running 3am\u20136am \u2014 **$28/week** wasted\n" +
+                    "\u2003\u2022 Clicks at 3am but nobody calls then\n\n" +
+                    "**3.** Mobile bid too high \u2014 **~$35/week** overspent\n" +
+                    "\u2003\u2022 Mobile converts 40% less than desktop\n\n" +
+                    "**Total potential savings: ~$108.50/week ($434/month)** \ud83d\udca1",
+                timestamp: time,
+                stats: [
+                    { label: "Junk Keywords", value: "$45.50/wk", change: "3 keywords", trend: "down" },
+                    { label: "Night Ads", value: "$28/wk", change: "3am-6am", trend: "down" },
+                    { label: "Mobile Overbid", value: "$35/wk", change: "-40% conv", trend: "down" },
+                    { label: "Total Savings", value: "$434/mo", change: "If fixed", trend: "up" },
+                ],
+                taskSummary: {
+                    done: ["Scanned 47 keywords for waste", "Analyzed 30-day ad schedule", "Checked device bid modifiers"],
+                    pending: ["Fix junk keywords", "Adjust ad schedule", "Lower mobile bids"],
+                },
+                actions: [
+                    { label: "Fix all leaks now", type: "primary" },
+                    { label: "Fix keywords only", type: "secondary" },
+                    { label: "I'll review first", type: "secondary" },
+                ],
+            };
+        }
+
+        case "check_competitors": {
+            return {
+                role: "ai",
+                model: "claude-5.6",
+                content: "I analyzed your competitors in the **Miami plumbing** market:\n\n" +
+                    "\ud83c\udfc6 **1. Roto-Rooter Miami** \u2014 Avg pos: 1.2, 12 ads, \"$50 Off\"\n" +
+                    "\ud83e\udd48 **2. Mr. Rooter Plumbing** \u2014 Avg pos: 2.1, 8 ads, \"Neighborly Promise\"\n" +
+                    "\ud83e\udd49 **3. Art Plumbing & AC** \u2014 Avg pos: 2.8, 15 ads, \"40 Years Exp\"\n\n" +
+                    "\ud83d\udca1 **Your edge:** You\u2019re the only one mentioning **30-minute response time** and **free estimates**.\n\n" +
+                    "\ud83d\udcb0 Estimated competitor spend: **$800\u2013$1,200/week** each",
+                timestamp: time,
+                stats: [
+                    { label: "Roto-Rooter", value: "Pos 1.2", change: "12 ads", trend: "neutral" },
+                    { label: "Mr. Rooter", value: "Pos 2.1", change: "8 ads", trend: "neutral" },
+                    { label: "Art Plumbing", value: "Pos 2.8", change: "15 ads", trend: "neutral" },
+                    { label: "Your Position", value: "Pos 1.8", change: "Strong", trend: "up" },
+                ],
+                actions: [
+                    { label: "Write counter-ads", type: "primary" },
+                    { label: "How to beat Roto-Rooter?", type: "secondary" },
+                    { label: "Their keywords?", type: "secondary" },
+                ],
+            };
+        }
+
+        case "pause_keywords": {
+            return {
+                role: "ai",
+                model: "gpt-4o",
+                content: "Done! Here\u2019s what I paused:",
+                timestamp: time,
+                taskSummary: {
+                    done: [
+                        "Paused \"free plumbing tips\" \u2014 saving ~$22/week",
+                        "Added \"salary\" as negative keyword \u2014 saving ~$8.50/week",
+                        "Paused \"how to fix a leaky faucet\" \u2014 saving ~$15/week",
+                    ],
+                },
+                stats: [
+                    { label: "Keywords Paused", value: "3", change: "Done", trend: "up" },
+                    { label: "Weekly Savings", value: "$45.50", change: "+100%", trend: "up" },
+                    { label: "Monthly Impact", value: "$182", change: "Saved", trend: "up" },
+                ],
+                actions: [
+                    { label: "Show my best keywords", type: "primary" },
+                    { label: "Any more to pause?", type: "secondary" },
+                    { label: "I'm good", type: "secondary" },
+                ],
+            };
+        }
+
+        case "go_live": {
+            return {
+                role: "ai",
+                model: "gpt-4o",
+                content: "I\u2019ve pushed your approved ads live! Here\u2019s the summary:",
+                timestamp: time,
+                taskSummary: {
+                    done: [
+                        "Published 3 text ads to Google Search campaigns",
+                        "Published 2 display ads to Display Network",
+                        "Set daily budget cap at $50/day",
+                        "Enabled conversion tracking",
+                    ],
+                },
+                stats: [
+                    { label: "Ads Live", value: "5", change: "Active", trend: "up" },
+                    { label: "Campaigns", value: "3", change: "Running", trend: "up" },
+                    { label: "Daily Budget", value: "$50", change: "Set", trend: "neutral" },
+                ],
+                actions: [
+                    { label: "Monitor performance", type: "primary" },
+                    { label: "Adjust budget", type: "secondary" },
+                    { label: "Create more ads", type: "secondary" },
+                ],
+            };
+        }
+
+        case "show_drafts": {
+            return {
+                role: "ai",
+                model: "gpt-4o",
+                content: "Here are your current drafts \u2014 **6 text ads** and **4 display ads**:",
+                timestamp: time,
+                ads: [
+                    { type: "text", headline1: "24/7 Emergency Plumber Miami", headline2: "Fast Response \u2022 Licensed", description: "Burst pipe? We\u2019re there in 30 minutes. Call now for emergency plumbing.", displayUrl: "www.mikesplumbing.com" },
+                    { type: "text", headline1: "LASIK Surgery \u2014 See Clearly", headline2: "Free Consultation \u2022 Board Certified", description: "Blade-free LASIK with 20/20 results. Financing available.", displayUrl: "www.clearvisionclinic.com" },
+                    { type: "display", title: "Summer Collection Banner", dimensions: "728\u00d790", format: "Leaderboard", imageUrl: "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=400&h=300&fit=crop", overlayText: "SUMMER SALE 40% OFF", ctaText: "Shop Now", previewBg: "from-pink-400 to-purple-500" },
+                    { type: "display", title: "Sushi Lunch Special", dimensions: "300\u00d7250", format: "Medium Rectangle", imageUrl: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=400&h=300&fit=crop", overlayText: "LUNCH SPECIAL $12.99", ctaText: "Order Now", previewBg: "from-amber-400 to-red-500" },
+                ],
+                actions: [
+                    { label: "Edit a display ad", type: "primary" },
+                    { label: "Create more ads", type: "secondary" },
+                    { label: "Go live with all", type: "secondary" },
+                ],
+            };
+        }
+
+        case "help": {
+            return {
+                role: "ai",
+                model: "gpt-4o",
+                content: "I\u2019m your AI ad assistant! Here\u2019s what I can do \u2014 just tell me in plain English:\n\n" +
+                    "\ud83d\udcdd **Create Ads** \u2014 \"Create 3 text ads for drain cleaning\"\n" +
+                    "\ud83d\uddbc\ufe0f **Design Display Ads** \u2014 \"Make a display ad for summer sale\"\n" +
+                    "\ud83d\udcf7 **Manage Images** \u2014 \"Add a sushi image to the lunch ad\"\n" +
+                    "\u2194\ufe0f **Position Images** \u2014 \"Move the image to the top left\"\n" +
+                    "\u270f\ufe0f **Edit Text** \u2014 \"Change the headline to 50% OFF\"\n" +
+                    "\ud83d\udcca **Show Stats** \u2014 \"How are my ads doing?\"\n" +
+                    "\ud83d\udcb8 **Find Waste** \u2014 \"Where am I wasting money?\"\n" +
+                    "\ud83c\udfc6 **Competitors** \u2014 \"What are my competitors doing?\"\n" +
+                    "\u23f8 **Pause/Block** \u2014 \"Pause the bad keywords\"\n" +
+                    "\ud83d\ude80 **Go Live** \u2014 \"Launch my ads\"\n\n" +
+                    "Just speak or type naturally \u2014 I\u2019ll handle the rest! \ud83c\udf99\ufe0f",
+                timestamp: time,
+                actions: [
+                    { label: "Show my stats", type: "primary" },
+                    { label: "Create new ads", type: "secondary" },
+                    { label: "Find money leaks", type: "secondary" },
+                ],
+            };
+        }
+
+        default: {
+            // Try exact match bank first, then true fallback
+            return {
+                role: "ai",
+                model: Math.random() > 0.4 ? "gpt-4o" : "claude-5.6",
+                content: "Got it! Let me work on that for you.\n\n" +
+                    "Based on your account data:\n\n" +
+                    "\u2022 Your account is healthy with a **7.99% CTR**\n" +
+                    "\u2022 **18 calls** this week from Google Ads\n" +
+                    "\u2022 **$318** remaining in this month\u2019s budget\n\n" +
+                    "Could you tell me a bit more about what you need? Here are some things I can do right now:",
+                timestamp: time,
+                stats: [
+                    { label: "CTR", value: "7.99%", change: "Healthy", trend: "up" },
+                    { label: "Calls", value: "18", change: "This week", trend: "up" },
+                    { label: "Budget", value: "$318", change: "Remaining", trend: "neutral" },
+                ],
+                actions: [
+                    { label: "Create ads for me", type: "primary" },
+                    { label: "Show my stats", type: "secondary" },
+                    { label: "Find money leaks", type: "secondary" },
+                    { label: "What can you do?", type: "secondary" },
+                ],
+            };
+        }
+    }
+};
+
+// ─── Exact Match Bank (for action buttons) ──────────────────────────────────
+
+const exactMatchBank: Record<string, () => Omit<Message, "id">> = {
+    "Yes, pause them all": () => generateResponse({ intent: "pause_keywords", params: {} }, ""),
+    "Fix all leaks now": () => generateResponse({ intent: "pause_keywords", params: {} }, ""),
+    "Go Live with all 3": () => generateResponse({ intent: "go_live", params: {} }, ""),
+    "Go live with all": () => generateResponse({ intent: "go_live", params: {} }, ""),
+    "Go Live": () => generateResponse({ intent: "go_live", params: {} }, ""),
+    "Show my stats": () => generateResponse({ intent: "show_stats", params: {} }, ""),
+    "Monitor performance": () => generateResponse({ intent: "show_stats", params: {} }, ""),
+    "Find money leaks": () => generateResponse({ intent: "find_leaks", params: {} }, ""),
+    "Check my competitors": () => generateResponse({ intent: "check_competitors", params: {} }, ""),
+    "What can you do?": () => generateResponse({ intent: "help", params: {} }, ""),
+    "Show call details": () => ({
+        role: "ai",
         model: "claude-5.6",
-        actions: [
-            { label: "Pause them all", type: "primary" },
-            { label: "Pause just the obvious ones", type: "secondary" },
-            { label: "Leave them for now", type: "secondary" },
+        content: "Here are your **18 calls** from the last 7 days:\n\n" +
+            "| # | Date | Duration | Keyword | Result |\n" +
+            "|---|------|----------|---------|--------|\n" +
+            "| 1 | Feb 24 | 4:32 | emergency plumber | \u2705 Booked |\n" +
+            "| 2 | Feb 24 | 2:18 | burst pipe repair | \u2705 Booked |\n" +
+            "| 3 | Feb 24 | 0:45 | plumber miami | \u274c Hangup |\n" +
+            "| 4 | Feb 23 | 6:12 | water heater | \u2705 Booked |\n" +
+            "| 5 | Feb 23 | 3:45 | emergency plumber | \u2705 Booked |\n\n" +
+            "\u2022 \u2705 **12 booked** (67%)\n\u2022 \ud83d\udccb 3 estimates\n\u2022 \u274c 2 hangups, 1 wrong number\n\n" +
+            "Booking rate **67%** vs industry avg 45% \ud83c\udf89",
+        timestamp: timeNow(),
+        stats: [
+            { label: "Booked", value: "12", change: "67%", trend: "up" },
+            { label: "Estimates", value: "3", change: "Pending", trend: "neutral" },
+            { label: "Missed", value: "3", change: "Hangups", trend: "down" },
         ],
-    },
-    "Show my stats": {
-        content:
-            "Here\u2019s your **last 7 days** at a glance:\n\n" +
-            "\ud83d\udcc8 **Performance**\n" +
-            "\u2022 Impressions: 4,281 (+12% vs last week)\n" +
-            "\u2022 Clicks: 342 (CTR: 7.99%)\n" +
-            "\u2022 Phone Calls: 18 (+5 vs last week) \ud83c\udf89\n" +
-            "\u2022 Form Submissions: 7\n" +
-            "\u2022 Cost: $295.40\n" +
-            "\u2022 Cost per Call: $16.41\n\n" +
-            "\ud83d\udcb0 **Budget**\n" +
-            "\u2022 Daily Budget: $50/day\n" +
-            "\u2022 Spent this month: $1,182 of $1,500\n" +
-            "\u2022 Remaining: $318 (6.3 days at current pace)\n\n" +
-            "\ud83c\udfaf **Top Performing Keyword**\n" +
-            "\u2022 \"emergency plumber miami\" \u2014 9 calls, $4.20 cost/call\n\n" +
-            "\ud83d\udcc9 **Worst Performer**\n" +
-            "\u2022 \"plumber near me\" \u2014 $45 spent, 0 calls (too competitive)\n\n" +
-            "Want me to dig deeper into any of these?",
+        actions: [
+            { label: "Best keywords for bookings?", type: "primary" },
+            { label: "Why the hangups?", type: "secondary" },
+        ],
+    }),
+    "Compare to last month": () => ({
+        role: "ai",
         model: "gpt-4o",
-        actions: [
-            { label: "Show me call details", type: "primary" },
-            { label: "Why is 'plumber near me' failing?", type: "secondary" },
-            { label: "Compare to last month", type: "secondary" },
+        content: "**Month-over-month comparison:**\n\n" +
+            "| Metric | Jan | Feb (so far) | Change |\n" +
+            "|--------|-----|-------------|--------|\n" +
+            "| Calls | 52 | 48 | \ud83d\udfe2 +15% pace |\n" +
+            "| Cost/Call | $27.30 | $24.62 | \ud83d\udfe2 -10% |\n" +
+            "| CTR | 7.19% | 7.99% | \ud83d\udfe2 +11% |\n" +
+            "| Cost | $1,420 | $1,182 | \ud83d\udfe2 Under budget |\n\n" +
+            "\ud83d\ude80 **Trending better across the board!** On pace for 63 calls (vs 52 in Jan).",
+        timestamp: timeNow(),
+        stats: [
+            { label: "Calls Pace", value: "63", change: "+21%", trend: "up" },
+            { label: "Cost/Call", value: "$24.62", change: "-10%", trend: "down" },
+            { label: "CTR", value: "7.99%", change: "+11%", trend: "up" },
         ],
-    },
-    "Find money leaks": {
-        content:
-            "I scanned your account for the last 30 days. Here\u2019s where money is leaking:\n\n" +
-            "\ud83d\udea8 **Critical Leaks** (fix these first)\n\n" +
-            "1. **3 junk keywords** \u2014 $45.50/week wasted\n" +
-            "   \u2022 \"free plumbing tips\", \"plumber salary\", \"fix a leaky faucet\"\n" +
-            "   \u2022 Total: $182/month, 0 conversions\n\n" +
-            "2. **Ads running 3am\u20136am** \u2014 $28/week wasted\n" +
-            "   \u2022 You\u2019re getting clicks at 3am but nobody calls at that hour\n" +
-            "   \u2022 Recommendation: Pause ads midnight to 6am\n\n" +
-            "3. **Mobile bid too high** \u2014 ~$35/week overspent\n" +
-            "   \u2022 Mobile clicks cost $3.20 avg but convert 40% less than desktop\n" +
-            "   \u2022 Recommendation: Lower mobile bid adjustment to -25%\n\n" +
-            "\u26a0\ufe0f **Minor Leaks**\n\n" +
-            "4. **Geographic targeting too wide** \u2014 ~$15/week\n" +
-            "   \u2022 You\u2019re showing ads in Homestead and Kendall but your service area is Miami Beach to Coral Gables\n\n" +
-            "**Total potential savings: ~$123.50/week ($494/month)** \ud83d\udca1\n\n" +
-            "That\u2019s money going straight back into your pocket. Want me to fix any of these?",
+        actions: [
+            { label: "What helped most?", type: "primary" },
+            { label: "Predict next month", type: "secondary" },
+        ],
+    }),
+    "Create display ads too": () => generateResponse({ intent: "create_display_ads", params: { topic: "your top service" } }, ""),
+    "Create more ads": () => generateResponse({ intent: "help", params: {} }, ""),
+    "Edit images & layout": () => ({
+        role: "ai",
         model: "gpt-4o",
+        content: "Sure! You can edit your display ads in two ways:\n\n" +
+            "**1. Tell me what to do** (easiest)\n" +
+            "\u2022 \"Move the image to the top\"\n" +
+            "\u2022 \"Add a food image to the sushi ad\"\n" +
+            "\u2022 \"Change the headline to 50% OFF\"\n\n" +
+            "**2. Manual editor**\n" +
+            "\u2022 Go to your **Drafts** page and click **Edit Display** on any display ad\n" +
+            "\u2022 Full image library, position controls, text editor, color picker\n\n" +
+            "What would you like to do?",
+        timestamp: timeNow(),
         actions: [
-            { label: "Fix all critical leaks", type: "primary" },
-            { label: "Fix leak #1 only", type: "secondary" },
-            { label: "Show me the geographic issue", type: "secondary" },
+            { label: "Move image to top", type: "primary" },
+            { label: "Change the text", type: "secondary" },
+            { label: "Open Drafts page", type: "secondary" },
         ],
-    },
-    "Write new ads": {
-        content:
-            "Sure! I\u2019ll write fresh ads based on your Knowledge Base. What type of ad do you need?\n\n" +
-            "\ud83d\udcdd **Text Ads (Google Search)**\n" +
-            "Best for: People actively searching for your services\n\n" +
-            "\ud83d\uddbc\ufe0f **Display Ads (Banner/Image)**\n" +
-            "Best for: Brand awareness and retargeting past visitors\n\n" +
-            "\ud83d\udede\ufe0f **Shopping Ads**\n" +
-            "Best for: Showcasing products with images and prices\n\n" +
-            "Or tell me the **specific service or promotion** you want to advertise, and I\u2019ll pick the best format:\n\n" +
-            "For example:\n" +
-            "\u2022 \"Write an ad for my $49 drain cleaning special\"\n" +
-            "\u2022 \"Create a display ad for water heater installation\"\n" +
-            "\u2022 \"Write 3 ad variations for emergency plumbing\"",
+    }),
+    "Move image to top": () => generateResponse({ intent: "move_image", params: { position: "top center" } }, ""),
+    "Change the text": () => ({
+        role: "ai",
         model: "gpt-4o",
+        content: "What would you like the new text to say? Just tell me, for example:\n\n" +
+            "\u2022 \"Change headline to FLASH SALE 50% OFF\"\n" +
+            "\u2022 \"Set the button to Book Now\"\n" +
+            "\u2022 \"Update overlay text to Free Shipping Today\"",
+        timestamp: timeNow(),
         actions: [
-            { label: "Write text ads for drain cleaning", type: "primary" },
-            { label: "Create display ad for LASIK", type: "secondary" },
-            { label: "Write 3 variations for my top service", type: "secondary" },
+            { label: "50% OFF Today Only", type: "secondary" },
+            { label: "Free Shipping", type: "secondary" },
+            { label: "Limited Time Offer", type: "secondary" },
         ],
-    },
-    "Check my competitors": {
-        content:
-            "I analyzed your competitors in the **Miami plumbing** market. Here\u2019s what I found:\n\n" +
-            "\ud83c\udfc6 **Your Main Competitors on Google Ads**\n\n" +
-            "**1. Roto-Rooter Miami** \ud83d\udfe2\n" +
-            "\u2022 Avg position: 1.2 (usually above you)\n" +
-            "\u2022 Running 12 active ads\n" +
-            "\u2022 Key message: \"$50 Off Any Service\"\n" +
-            "\u2022 Weakness: No mention of response time\n\n" +
-            "**2. Mr. Rooter Plumbing** \ud83d\udfe1\n" +
-            "\u2022 Avg position: 2.1\n" +
-            "\u2022 Running 8 active ads\n" +
-            "\u2022 Key message: \"Neighborly Done Right Promise\"\n" +
-            "\u2022 Weakness: Generic, not local enough\n\n" +
-            "**3. Art Plumbing & AC** \ud83d\udfe0\n" +
-            "\u2022 Avg position: 2.8\n" +
-            "\u2022 Running 15 active ads\n" +
-            "\u2022 Key message: \"Over 40 Years Experience\"\n" +
-            "\u2022 Weakness: No pricing or offers shown\n\n" +
-            "\ud83d\udca1 **Your Edge:** You\u2019re the only one mentioning **30-minute response time** and **free estimates**. That\u2019s a strong differentiator!\n\n" +
-            "\ud83d\udcb0 **Estimated Competitor Spend:** $800\u2013$1,200/week each\n\n" +
-            "Want me to write ads that counter their messaging?",
+    }),
+    "Write counter-ads": () => generateResponse({ intent: "create_text_ads", params: { topic: "counter-competitor messaging" } }, ""),
+    "Regenerate Ad #2": () => ({
+        role: "ai",
         model: "claude-5.6",
-        actions: [
-            { label: "Write counter-ads", type: "primary" },
-            { label: "How can I beat Roto-Rooter?", type: "secondary" },
-            { label: "What keywords are they bidding on?", type: "secondary" },
+        content: "Done! I regenerated Ad #2 with a fresh angle. Here\u2019s the new version:",
+        timestamp: timeNow(),
+        ads: [
+            {
+                type: "text",
+                headline1: "Why Wait? We\u2019re There in 30 Minutes",
+                headline2: "$49 Service \u2022 No Hidden Fees",
+                description: "Skip the wait. Mike\u2019s Plumbing arrives in 30 minutes or your service call is free. Professional, licensed, and Miami\u2019s highest rated. Book now!",
+                displayUrl: "www.mikesplumbing.com",
+            },
         ],
-    },
-    "Show me my best keywords": {
-        content:
-            "Here are your **top 5 keywords** by ROI this month:\n\n" +
-            "| Keyword | Calls | Cost | Cost/Call |\n" +
-            "|---------|-------|------|----------|\n" +
-            "| emergency plumber miami | 32 | $134 | $4.19 \ud83c\udf1f |\n" +
-            "| plumber miami beach | 18 | $89 | $4.94 |\n" +
-            "| 24 hour plumber miami | 14 | $72 | $5.14 |\n" +
-            "| burst pipe repair | 11 | $48 | $4.36 |\n" +
-            "| water heater repair miami | 9 | $56 | $6.22 |\n\n" +
-            "\ud83c\udf1f **\"emergency plumber miami\"** is your money maker \u2014 $4.19/call is excellent for plumbing!\n\n" +
-            "I\u2019d recommend **increasing the bid on your top 3** by 15\u201320% to capture more impression share. You\u2019re currently showing for only 62% of eligible searches.\n\n" +
-            "Want me to adjust bids?",
+        taskSummary: { done: ["Regenerated Ad #2 using Claude 5.6", "New version saved to Drafts (v2)", "Previous version kept in version history"] },
+        actions: [
+            { label: "Use this version", type: "primary" },
+            { label: "Try another angle", type: "secondary" },
+            { label: "Go Live with all", type: "secondary" },
+        ],
+    }),
+    "Fix keywords only": () => generateResponse({ intent: "pause_keywords", params: {} }, ""),
+    "I'm good": () => ({
+        role: "ai",
         model: "gpt-4o",
+        content: "\ud83d\udc4d I\u2019ll keep watching your account 24/7. I\u2019ll alert you if:\n\n" +
+            "\u2022 \ud83d\udea8 Any keyword spikes in cost\n\u2022 \ud83d\udcc9 CTR drops below 5%\n\u2022 \ud83d\udcb0 Spend exceeds budget by 20%+\n\u2022 \ud83c\udfc6 A competitor changes strategy\n\n" +
+            "Weekly summary every Monday at 9 AM. Come back anytime!",
+        timestamp: timeNow(),
         actions: [
-            { label: "Yes, increase top 3 bids", type: "primary" },
-            { label: "Show me keywords to add", type: "secondary" },
-            { label: "What about my worst keywords?", type: "secondary" },
+            { label: "Set up email reports", type: "primary" },
+            { label: "Change alert settings", type: "secondary" },
         ],
-    },
-    "Write text ads for drain cleaning": {
-        content:
-            "Here are **3 text ad variations** for your drain cleaning service. I used your Knowledge Base data ($49 pricing, same-day service, Miami area):\n\n" +
-            "---\n\n" +
-            "**Ad 1 \u2014 Price-Forward** (best for cost-conscious searches)\n" +
-            "\ud83d\udcdd Headline: $49 Drain Cleaning Miami | Same Day Service \u2022 No Trip Fees\n" +
-            "\ud83c\udf10 URL: www.mikesplumbing.com/drains\n" +
-            "\ud83d\udcc4 Description: Clogged drain? Professional drain cleaning starting at $49. Kitchen, bathroom, or sewer \u2014 we clear them all. Licensed #PLB-2847. Call now!\n\n" +
-            "---\n\n" +
-            "**Ad 2 \u2014 Urgency** (best for active-problem searches)\n" +
-            "\ud83d\udcdd Headline: Drain Clogged Right Now? | We\u2019re On Our Way \u2022 Fast Service\n" +
-            "\ud83c\udf10 URL: www.mikesplumbing.com/emergency\n" +
-            "\ud83d\udcc4 Description: Don\u2019t wait with standing water. Mike\u2019s Plumbing clears any drain, any time. $49 drain cleaning \u2014 booking in 60 seconds. Miami-Dade.\n\n" +
-            "---\n\n" +
-            "**Ad 3 \u2014 Trust** (best for comparison shoppers)\n" +
-            "\ud83d\udcdd Headline: Miami\u2019s #1 Drain Cleaning | 500+ 5-Star Reviews \u2022 From $49\n" +
-            "\ud83c\udf10 URL: www.mikesplumbing.com/reviews\n" +
-            "\ud83d\udcc4 Description: Trusted by 500+ Miami families. Professional drain cleaning from $49. No hidden fees, 2-year guarantee. Free estimates over $200.\n\n" +
-            "---\n\n" +
-            "All three are saved to your **Drafts** page. Want to edit any of these or go live?",
+    }),
+    "Looks great!": () => ({
+        role: "ai",
         model: "gpt-4o",
+        content: "Awesome! \ud83c\udf89 Everything is saved and ready. Want to push any of these live or keep editing?\n\nRemember, nothing runs until you say **Go Live**.",
+        timestamp: timeNow(),
         actions: [
-            { label: "Send all 3 to Drafts", type: "primary" },
-            { label: "Regenerate Ad #2", type: "secondary" },
-            { label: "Write display ads too", type: "secondary" },
+            { label: "Go Live with all", type: "primary" },
+            { label: "Create more ads", type: "secondary" },
+            { label: "I'm done for now", type: "secondary" },
         ],
-    },
-    "Fix all critical leaks": {
-        content:
-            "On it! Here\u2019s what I\u2019m doing:\n\n" +
-            "\u2705 **Leak #1 \u2014 Junk keywords**\n" +
-            "\u2022 Paused \"free plumbing tips\"\n" +
-            "\u2022 Added \"salary\" to negative keyword list\n" +
-            "\u2022 Paused \"how to fix a leaky faucet\"\n" +
-            "\u2022 Savings: ~$45.50/week\n\n" +
-            "\u2705 **Leak #2 \u2014 Overnight ads**\n" +
-            "\u2022 Set ad schedule: 6:00 AM \u2013 11:59 PM\n" +
-            "\u2022 Paused midnight to 6 AM\n" +
-            "\u2022 Savings: ~$28/week\n\n" +
-            "\u2705 **Leak #3 \u2014 Mobile bids**\n" +
-            "\u2022 Set mobile bid adjustment to -25%\n" +
-            "\u2022 Savings: ~$35/week\n\n" +
-            "**Total fixed: ~$108.50/week ($434/month)** \ud83d\ude80\n\n" +
-            "I\u2019ll monitor these changes over the next 7 days and report back. If anything looks off, I\u2019ll alert you immediately.\n\n" +
-            "Want me to fix the geographic targeting issue too?",
+    }),
+    "Looks perfect!": () => ({
+        role: "ai",
         model: "gpt-4o",
+        content: "Awesome! \ud83c\udf89 Everything is saved and ready. Want to push any of these live or keep editing?\n\nRemember, nothing runs until you say **Go Live**.",
+        timestamp: timeNow(),
         actions: [
-            { label: "Yes, fix geographic too", type: "primary" },
-            { label: "Show me the results next week", type: "secondary" },
-            { label: "I'm good for now", type: "secondary" },
+            { label: "Go Live with all", type: "primary" },
+            { label: "Create more ads", type: "secondary" },
+            { label: "I'm done for now", type: "secondary" },
         ],
-    },
-    "Show me call details": {
-        content:
-            "Here are your **18 calls** from the last 7 days:\n\n" +
-            "**\u260e\ufe0f Call Log**\n\n" +
-            "| # | Date | Time | Duration | Keyword | Result |\n" +
-            "|---|------|------|----------|---------|--------|\n" +
-            "| 1 | Feb 24 | 9:12 AM | 4:32 | emergency plumber | \u2705 Booked |\n" +
-            "| 2 | Feb 24 | 10:45 AM | 2:18 | burst pipe repair | \u2705 Booked |\n" +
-            "| 3 | Feb 24 | 1:30 PM | 0:45 | plumber miami | \u274c Hangup |\n" +
-            "| 4 | Feb 23 | 8:05 AM | 6:12 | water heater repair | \u2705 Booked |\n" +
-            "| 5 | Feb 23 | 11:20 AM | 3:45 | emergency plumber | \u2705 Booked |\n" +
-            "| 6 | Feb 23 | 2:15 PM | 1:02 | drain cleaning | \u2705 Estimate |\n" +
-            "| 7 | Feb 23 | 4:30 PM | 0:22 | plumber near me | \u274c Wrong # |\n" +
-            "| ... | | | | | |\n" +
-            "| 18 | Feb 18 | 9:45 AM | 5:10 | 24hr plumber | \u2705 Booked |\n\n" +
-            "**Summary:**\n" +
-            "\u2022 \u2705 12 calls booked (67%)\n" +
-            "\u2022 \ud83d\udccb 3 estimates given\n" +
-            "\u2022 \u274c 2 hangups\n" +
-            "\u2022 \u274c 1 wrong number\n\n" +
-            "Your booking rate is **67%** which is great \u2014 industry average is around 45%. \ud83c\udf89",
+    }),
+    "Use this version": () => ({
+        role: "ai",
+        model: "gpt-4o",
+        content: "\u2705 Set as active version! The previous version is saved in your version history on the Drafts page.",
+        timestamp: timeNow(),
+        actions: [
+            { label: "Go Live", type: "primary" },
+            { label: "Show all my drafts", type: "secondary" },
+        ],
+    }),
+    "Show all my drafts": () => generateResponse({ intent: "show_drafts", params: {} }, ""),
+    "Open Drafts page": () => ({
+        role: "ai",
+        model: "gpt-4o",
+        content: "Head over to your **Drafts** page to use the full visual editor:\n\n\ud83d\udc49 [Open Drafts Page](/dashboard/drafts)\n\nYou can filter by Text or Display ads, and click **Edit Display** to open the full image editor with library, positioning, and text controls.",
+        timestamp: timeNow(),
+        actions: [
+            { label: "Show my drafts here instead", type: "primary" },
+            { label: "Create new ads", type: "secondary" },
+        ],
+    }),
+    "Show my drafts here instead": () => generateResponse({ intent: "show_drafts", params: {} }, ""),
+    "50% OFF Today Only": () => generateResponse({ intent: "change_text", params: { newText: "50% OFF Today Only" } }, ""),
+    "Free Shipping": () => generateResponse({ intent: "change_text", params: { newText: "Free Shipping \u2014 Order Now" } }, ""),
+    "Limited Time Offer": () => generateResponse({ intent: "change_text", params: { newText: "Limited Time Offer \u2014 Don\u2019t Miss Out" } }, ""),
+    "Add more sizes": () => generateResponse({ intent: "create_display_ads", params: { topic: "additional sizes" } }, ""),
+    "How to beat Roto-Rooter?": () => ({
+        role: "ai",
         model: "claude-5.6",
-        actions: [
-            { label: "Which keywords get the most bookings?", type: "primary" },
-            { label: "Why are people hanging up?", type: "secondary" },
-            { label: "Show conversion value", type: "secondary" },
-        ],
-    },
-    "How can I beat Roto-Rooter?": {
-        content:
-            "Great question! Here\u2019s a **battle plan to outrank Roto-Rooter**:\n\n" +
-            "\ud83c\udfaf **What they do well:**\n" +
-            "\u2022 Strong brand recognition\n" +
-            "\u2022 \"$50 Off\" offer is compelling\n" +
-            "\u2022 They bid aggressively on branded + generic terms\n\n" +
-            "\ud83d\udca1 **How to beat them:**\n\n" +
-            "**1. Speed \u2014 Your #1 weapon**\n" +
-            "They don\u2019t mention response time. You guarantee 30 minutes.\n" +
-            "Ad angle: \"Why Wait 2 Hours? We\u2019re There in 30 Minutes.\"\n\n" +
-            "**2. Match their offer + one-up**\n" +
-            "They offer $50 off. You could offer:\n" +
-            "\u2022 \"Free estimates on all jobs over $200\" (you already do this)\n" +
-            "\u2022 \"$49 drain cleaning\" (lower entry point)\n\n" +
-            "**3. Local trust angle**\n" +
-            "They\u2019re a franchise. You\u2019re family-owned.\n" +
-            "Ad angle: \"Skip the Franchise, Call a Real Miami Plumber\"\n\n" +
-            "**4. Bid on their brand name** (bold move)\n" +
-            "Run an ad on \"Roto-Rooter Miami\" that says:\n" +
-            "\"Looking for Roto-Rooter? Try Mike\u2019s \u2014 30-Min Response, No Franchise Fees\"\n\n" +
-            "Want me to write any of these ads?",
-        model: "claude-5.6",
+        content: "**Battle plan to beat Roto-Rooter:**\n\n" +
+            "**1. Speed** \u2014 They don\u2019t mention response time. You guarantee 30 min.\n\u2003Ad: \"Why Wait 2 Hours? We\u2019re There in 30 Minutes.\"\n\n" +
+            "**2. Price match + one-up**\n\u2003They: $50 off. You: $49 drain cleaning + free estimates.\n\n" +
+            "**3. Local trust**\n\u2003They\u2019re a franchise. You\u2019re family-owned.\n\u2003Ad: \"Skip the Franchise, Call a Real Miami Plumber\"\n\n" +
+            "**4. Bid on their brand** (bold)\n\u2003\"Looking for Roto-Rooter? Try Mike\u2019s \u2014 30-Min, No Franchise Fees\"\n\n" +
+            "Want me to write any of these?",
+        timestamp: timeNow(),
         actions: [
             { label: "Write the speed ad", type: "primary" },
             { label: "Write the competitor ad", type: "secondary" },
-            { label: "How much would competitor bidding cost?", type: "secondary" },
+            { label: "Cost of competitor bidding?", type: "secondary" },
         ],
-    },
-    "Compare to last month": {
-        content:
-            "Here\u2019s your **month-over-month comparison**:\n\n" +
-            "| Metric | January | February (so far) | Change |\n" +
-            "|--------|---------|-------------------|--------|\n" +
-            "| Impressions | 16,420 | 12,890 | \ud83d\udfe1 On pace |\n" +
-            "| Clicks | 1,180 | 1,024 | \ud83d\udfe2 +9% pace |\n" +
-            "| Phone Calls | 52 | 48 | \ud83d\udfe2 +15% pace |\n" +
-            "| Cost | $1,420 | $1,182 | \ud83d\udfe2 Under budget |\n" +
-            "| Cost/Call | $27.30 | $24.62 | \ud83d\udfe2 -10% \ud83c\udf89 |\n" +
-            "| CTR | 7.19% | 7.99% | \ud83d\udfe2 +11% |\n\n" +
-            "\ud83d\ude80 **You\u2019re trending better than January across the board!**\n\n" +
-            "Key improvements:\n" +
-            "\u2022 Cost per call dropped 10% ($27.30 \u2192 $24.62)\n" +
-            "\u2022 Click-through rate up 11%\n" +
-            "\u2022 On pace for 63 calls this month (vs 52 in Jan)\n\n" +
-            "The ad copy changes we made on Feb 8 are clearly working.",
+    }),
+    "Write the speed ad": () => generateResponse({ intent: "create_text_ads", params: { topic: "speed & 30-minute response" } }, ""),
+    "Write the competitor ad": () => generateResponse({ intent: "create_text_ads", params: { topic: "competitor comparison" } }, ""),
+    "I'm done for now": () => ({
+        role: "ai",
         model: "gpt-4o",
-        actions: [
-            { label: "What changes helped most?", type: "primary" },
-            { label: "Predict next month", type: "secondary" },
-            { label: "Show me the full report", type: "secondary" },
-        ],
-    },
-    "I'm good for now": {
-        content:
-            "Sounds good! \ud83d\udc4d I\u2019ll keep watching your account 24/7 and alert you if:\n\n" +
-            "\u2022 \ud83d\udea8 Any keyword suddenly spikes in cost\n" +
-            "\u2022 \ud83d\udcc9 Click-through rate drops below 5%\n" +
-            "\u2022 \ud83d\udcb0 Daily spend exceeds your budget by 20%+\n" +
-            "\u2022 \ud83c\udfc6 A competitor changes their strategy\n\n" +
-            "I\u2019ll send you a weekly summary every Monday at 9 AM.\n\n" +
-            "Come back anytime \u2014 I\u2019m always here! \ud83d\ude0a",
-        model: "gpt-4o",
-        actions: [
-            { label: "Set up Monday email reports", type: "primary" },
-            { label: "Change alert settings", type: "secondary" },
-        ],
-    },
-    "Write 3 variations for my top service": {
-        content:
-            "Your top service by calls is **Emergency Plumbing**. Here are 3 fresh variations:\n\n" +
-            "---\n\n" +
-            "**Version A \u2014 Speed Focus** (GPT-4o)\n" +
-            "\ud83d\udcdd Pipe Burst? 30-Minute Plumber Miami | Licensed \u2022 Insured \u2022 24/7\n" +
-            "\ud83d\udcc4 Miami\u2019s fastest emergency plumber. We guarantee arrival in 30 minutes or the service call is free. Call Mike\u2019s now.\n\n" +
-            "---\n\n" +
-            "**Version B \u2014 Emotion Focus** (Claude 5.6)\n" +
-            "\ud83d\udcdd Don\u2019t Panic \u2014 Your Plumber Is On The Way | 24/7 Miami Emergency\n" +
-            "\ud83d\udcc4 Flooding? Burst pipe? Take a breath. Mike\u2019s Plumbing responds in 30 minutes, fixes the problem, and gives you peace of mind. Free estimates.\n\n" +
-            "---\n\n" +
-            "**Version C \u2014 Social Proof** (GPT-4o)\n" +
-            "\ud83d\udcdd 500+ Miami Families Trust This Plumber | 30-Min Response \u2022 Free Quotes\n" +
-            "\ud83d\udcc4 There\u2019s a reason we have 500+ five-star reviews. Fast, honest, affordable emergency plumbing. Call Mike\u2019s \u2014 Miami\u2019s most trusted since 2011.\n\n" +
-            "---\n\n" +
-            "All 3 saved to your Drafts with version history. You can A/B test them!",
-        model: "gpt-4o",
-        actions: [
-            { label: "Send all to Drafts", type: "primary" },
-            { label: "Regenerate Version B", type: "secondary" },
-            { label: "Write display ads for this", type: "secondary" },
-        ],
-    },
+        content: "\ud83d\udc4d All good! Your ads and changes are saved. I\u2019m always here \u2014 just speak or type when you need me.\n\nI\u2019ll keep monitoring your account 24/7. \ud83d\ude0a",
+        timestamp: timeNow(),
+        actions: [],
+    }),
 };
 
-// Fallback response for anything not in the bank
-
-const fallbackResponses = [
-    {
-        content:
-            "I understand! Let me look into that for you.\n\n" +
-            "Based on your account data, here\u2019s what I can tell you:\n\n" +
-            "\u2022 Your account is healthy with a **7.99% CTR** (above industry average)\n" +
-            "\u2022 You\u2019re spending ~$42/day of your $50 budget\n" +
-            "\u2022 **18 calls** this week from Google Ads\n\n" +
-            "Could you be more specific about what you\u2019d like me to help with? Here are some things I can do:",
-        model: "gpt-4o" as LLMModel,
-        actions: [
-            { label: "Analyze my keywords", type: "primary" as const },
-            { label: "Write new ads", type: "secondary" as const },
-            { label: "Find wasted spend", type: "secondary" as const },
-        ],
-    },
-    {
-        content:
-            "Great question! Let me pull up the relevant data from your account.\n\n" +
-            "\ud83d\udcca **Quick Account Snapshot**\n\n" +
-            "\u2022 Active campaigns: 4\n" +
-            "\u2022 Active keywords: 47\n" +
-            "\u2022 Monthly budget: $1,500\n" +
-            "\u2022 This month so far: $1,182 spent (79%)\n" +
-            "\u2022 Conversions: 48 calls + 7 forms = 55 total\n\n" +
-            "Is there a specific area you\u2019d like me to dive into?",
-        model: "claude-5.6" as LLMModel,
-        actions: [
-            { label: "Show my stats", type: "primary" as const },
-            { label: "Find money leaks", type: "secondary" as const },
-            { label: "Check my competitors", type: "secondary" as const },
-        ],
-    },
-];
-
-// Quick action buttons config
+// ─── Quick Actions ──────────────────────────────────────────────────────────
 
 const quickActions = [
     { label: "Show my stats", icon: BarChart3 },
     { label: "Find money leaks", icon: AlertTriangle },
-    { label: "Write new ads", icon: PenTool },
+    { label: "Create new ads", icon: PenTool },
     { label: "Check my competitors", icon: Users },
 ];
 
-// Initial message
+// ─── Initial Messages ───────────────────────────────────────────────────────
 
 const initialMessages: Message[] = [
     {
         id: 1,
         role: "system",
-        content: "AI Assistant connected \u2022 Models: GPT-4o (primary) + Claude 5.6 (fallback)",
+        content: "AI Assistant connected \u2022 Models: GPT-4o + Claude 5.6 \u2022 Voice enabled \ud83c\udf99\ufe0f",
         timestamp: "Session started",
     },
     {
@@ -474,77 +818,172 @@ const initialMessages: Message[] = [
         role: "ai",
         model: "gpt-4o",
         content:
-            "Hey! I just took a quick look at your account for the last 7 days. Here\u2019s what I found:\n\n" +
-            "**Good news:** Your ads got 18 phone calls this week \u2014 that\u2019s 5 more than last week! \ud83c\udf89\n\n" +
-            "**Not-so-good news:** I found 3 keywords wasting your money:\n\n" +
-            "\u2022 **\"free plumbing tips\"** \u2014 spent $22, got 0 calls\n" +
-            "\u2022 **\"plumber salary miami\"** \u2014 spent $8.50, got 0 calls\n" +
-            "\u2022 **\"how to fix a leaky faucet\"** \u2014 spent $15, got 0 calls\n\n" +
-            "That\u2019s **$45.50 wasted** this week on people who weren\u2019t looking to hire a plumber.\n\n" +
-            "Want me to pause these and add them as blocked searches? That alone could save you ~$45/week.",
+            "Hey! \ud83d\udc4b I\u2019m your AI ad assistant. Just **speak or type** what you need \u2014 I\u2019ll handle everything.\n\n" +
+            "I just scanned your account for the last 7 days:\n\n" +
+            "**Good news:** 18 phone calls this week \u2014 5 more than last week! \ud83c\udf89\n\n" +
+            "**Needs attention:** I found 3 keywords wasting **$45.50/week**:\n" +
+            "\u2022 \"free plumbing tips\" \u2014 $22, 0 calls\n" +
+            "\u2022 \"plumber salary miami\" \u2014 $8.50, 0 calls\n" +
+            "\u2022 \"how to fix a leaky faucet\" \u2014 $15, 0 calls\n\n" +
+            "Want me to pause these? Just say the word.",
+        timestamp: timeNow(),
+        stats: [
+            { label: "Calls", value: "18", change: "+38%", trend: "up" },
+            { label: "Wasted", value: "$45.50", change: "This week", trend: "down" },
+            { label: "CTR", value: "7.99%", change: "Above avg", trend: "up" },
+        ],
         actions: [
             { label: "Yes, pause them all", type: "primary" },
             { label: "Let me review first", type: "secondary" },
-            { label: "Tell me more", type: "secondary" },
+            { label: "What else can you do?", type: "secondary" },
         ],
-        timestamp: "Just now",
     },
 ];
 
-// Component
+// ─── Component ──────────────────────────────────────────────────────────────
 
 export default function ChatPage() {
     const [messages, setMessages] = useState<Message[]>(initialMessages);
     const [input, setInput] = useState("");
     const [isTyping, setIsTyping] = useState(false);
     const [copiedId, setCopiedId] = useState<number | null>(null);
+    const [isListening, setIsListening] = useState(false);
+    const [voiceText, setVoiceText] = useState("");
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+    const recognitionRef = useRef<any>(null);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages]);
+    }, [messages, isTyping]);
 
-    // Focus input on mount
     useEffect(() => {
         inputRef.current?.focus();
     }, []);
 
-    const sendMessage = (text: string) => {
+    // ─── Voice Recognition ──────────────────────────────────────────────────
+
+    const startListening = useCallback(() => {
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            // Fallback: simulate voice for demo
+            setIsListening(true);
+            setVoiceText("Listening...");
+            setTimeout(() => {
+                const demos = [
+                    "Create 3 text ads for drain cleaning",
+                    "Show me my stats",
+                    "Make a display ad for summer sale",
+                    "Find where I'm wasting money",
+                    "Move the image to the top left",
+                ];
+                const picked = demos[Math.floor(Math.random() * demos.length)];
+                setVoiceText(picked);
+                setTimeout(() => {
+                    setIsListening(false);
+                    setVoiceText("");
+                    sendMessage(picked);
+                }, 800);
+            }, 2000);
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = true;
+        recognition.lang = "en-US";
+
+        recognition.onstart = () => {
+            setIsListening(true);
+            setVoiceText("Listening...");
+        };
+
+        recognition.onresult = (event: any) => {
+            let transcript = "";
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                transcript += event.results[i][0].transcript;
+            }
+            setVoiceText(transcript);
+            if (event.results[event.results.length - 1].isFinal) {
+                setTimeout(() => {
+                    setIsListening(false);
+                    setVoiceText("");
+                    if (transcript.trim()) sendMessage(transcript.trim());
+                }, 300);
+            }
+        };
+
+        recognition.onerror = () => {
+            setIsListening(false);
+            setVoiceText("");
+        };
+
+        recognition.onend = () => {
+            setIsListening(false);
+        };
+
+        recognitionRef.current = recognition;
+        recognition.start();
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const stopListening = () => {
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
+        }
+        setIsListening(false);
+        setVoiceText("");
+    };
+
+    // ─── Send Message ───────────────────────────────────────────────────────
+
+    const sendMessage = useCallback((text: string) => {
         if (!text.trim() || isTyping) return;
 
         const userMsg: Message = {
             id: Date.now(),
             role: "user",
             content: text,
-            timestamp: new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+            timestamp: timeNow(),
         };
 
         setMessages((prev) => [...prev, userMsg]);
         setInput("");
         setIsTyping(true);
 
-        // Look up response
-        const lookup = aiResponseBank[text];
-        const fallback = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
-        const response = lookup || fallback;
+        // Check exact match bank first, then NLP intent
+        const exactMatch = exactMatchBank[text];
+        let response: Omit<Message, "id">;
 
-        // Simulate typing delay (shorter for known responses)
-        const delay = lookup ? 1200 + Math.random() * 800 : 1800 + Math.random() * 1200;
+        if (exactMatch) {
+            response = exactMatch();
+        } else {
+            const intent = matchIntent(text);
+            response = generateResponse(intent, text);
+        }
+
+        // Simulate AI processing (multi-step for agentic feel) 
+        const baseDelay = 1200;
+        const extraDelay = response.ads ? 800 : response.taskSummary ? 600 : 400;
+        const delay = baseDelay + Math.random() * extraDelay;
 
         setTimeout(() => {
-            const aiMsg: Message = {
+            // Add divider before AI response for visual separation
+            const divider: Message = {
                 id: Date.now() + 1,
-                role: "ai",
-                model: response.model,
-                content: response.content,
-                actions: response.actions,
-                timestamp: new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+                role: "divider",
+                content: "",
+                timestamp: `${dateNow()} \u2022 ${timeNow()}`,
             };
-            setMessages((prev) => [...prev, aiMsg]);
+
+            const aiMsg: Message = {
+                ...response,
+                id: Date.now() + 2,
+            } as Message;
+
+            setMessages((prev) => [...prev, divider, aiMsg]);
             setIsTyping(false);
         }, delay);
-    };
+    }, [isTyping]);
 
     const handleCopy = (id: number, content: string) => {
         navigator.clipboard.writeText(content.replace(/\*\*/g, ""));
@@ -556,10 +995,130 @@ export default function ChatPage() {
         setMessages(initialMessages);
     };
 
+    // ─── Render Helpers ─────────────────────────────────────────────────────
+
+    const renderMarkdown = (text: string) => {
+        return text.split("\n").map((line, i) => (
+            <span key={i}>
+                {line.split(/(\*\*[^*]+\*\*)/).map((part, j) =>
+                    part.startsWith("**") && part.endsWith("**") ? (
+                        <strong key={j} className="font-semibold">{part.slice(2, -2)}</strong>
+                    ) : part.includes("[") && part.includes("](/") ? (
+                        <span key={j}>
+                            {part.split(/(\[[^\]]+\]\([^)]+\))/).map((seg, k) => {
+                                const linkMatch = seg.match(/\[([^\]]+)\]\(([^)]+)\)/);
+                                if (linkMatch) {
+                                    return <a key={k} href={linkMatch[2]} className="text-primary underline hover:text-primary-dark">{linkMatch[1]}</a>;
+                                }
+                                return <span key={k}>{seg}</span>;
+                            })}
+                        </span>
+                    ) : (
+                        <span key={j}>{part}</span>
+                    )
+                )}
+                {i < text.split("\n").length - 1 && <br />}
+            </span>
+        ));
+    };
+
+    const renderAdPreview = (ad: AdPreview, index: number) => {
+        if (ad.type === "text") {
+            return (
+                <div key={index} className="bg-white border border-blue-200 rounded-lg p-3 mt-2 shadow-sm">
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                        <FileText className="w-3 h-3 text-blue-600" />
+                        <span className="text-[10px] font-medium text-blue-600 uppercase tracking-wide">Text Ad</span>
+                    </div>
+                    <div className="text-sm text-blue-700 font-medium leading-tight">
+                        {ad.headline1} | {ad.headline2}
+                    </div>
+                    <div className="text-[11px] text-emerald-600 mt-0.5">{ad.displayUrl}</div>
+                    <div className="text-xs text-gray-600 mt-1 leading-relaxed">{ad.description}</div>
+                </div>
+            );
+        }
+
+        // Display ad
+        return (
+            <div key={index} className="bg-white border border-orange-200 rounded-lg overflow-hidden mt-2 shadow-sm">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 border-b border-orange-100">
+                    <Image className="w-3 h-3 text-orange-600" />
+                    <span className="text-[10px] font-medium text-orange-600 uppercase tracking-wide">Display Ad</span>
+                    {ad.dimensions && <span className="text-[10px] text-orange-400 ml-auto">{ad.format} ({ad.dimensions})</span>}
+                </div>
+                <div className={`relative h-28 ${!ad.imageUrl ? `bg-gradient-to-r ${ad.previewBg || "from-gray-400 to-gray-500"}` : ""}`}>
+                    {ad.imageUrl && (
+                        <img src={ad.imageUrl} alt={ad.title || ""} className="absolute inset-0 w-full h-full object-cover" />
+                    )}
+                    <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center p-3">
+                        <div className="text-white font-bold text-sm text-center drop-shadow-lg leading-tight">
+                            {ad.overlayText || ad.title}
+                        </div>
+                        {ad.ctaText && (
+                            <div className="mt-2 px-3 py-1 bg-white/90 text-gray-900 text-[11px] font-semibold rounded-full">
+                                {ad.ctaText}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    const renderStatsCards = (stats: StatsCard[]) => (
+        <div className="grid grid-cols-3 gap-2 mt-3">
+            {stats.map((stat, i) => (
+                <div key={i} className="bg-white border border-gray-200 rounded-lg p-2.5 text-center shadow-sm">
+                    <div className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">{stat.label}</div>
+                    <div className="text-lg font-bold mt-0.5">{stat.value}</div>
+                    {stat.change && (
+                        <div className={`text-[10px] font-medium mt-0.5 ${
+                            stat.trend === "up" ? "text-emerald-600" :
+                            stat.trend === "down" ? "text-red-500" :
+                            "text-gray-400"
+                        }`}>
+                            {stat.trend === "up" ? "\u25b2 " : stat.trend === "down" ? "\u25bc " : ""}{stat.change}
+                        </div>
+                    )}
+                </div>
+            ))}
+        </div>
+    );
+
+    const renderTaskSummary = (task: { done: string[]; pending?: string[] }) => (
+        <div className="mt-3 bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+            <div className="text-[10px] font-semibold text-emerald-700 uppercase tracking-wide mb-1.5 flex items-center gap-1">
+                <Wand2 className="w-3 h-3" /> Actions Taken
+            </div>
+            {task.done.map((item, i) => (
+                <div key={i} className="flex items-start gap-1.5 text-xs text-emerald-800 mt-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                    <span>{item}</span>
+                </div>
+            ))}
+            {task.pending && task.pending.length > 0 && (
+                <>
+                    <div className="text-[10px] font-semibold text-amber-700 uppercase tracking-wide mt-2 mb-1 flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> Awaiting Your Approval
+                    </div>
+                    {task.pending.map((item, i) => (
+                        <div key={i} className="flex items-start gap-1.5 text-xs text-amber-800 mt-1">
+                            <ChevronRight className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                            <span>{item}</span>
+                        </div>
+                    ))}
+                </>
+            )}
+        </div>
+    );
+
+    // ─── Render ─────────────────────────────────────────────────────────────
+
     return (
         <div className="max-w-3xl mx-auto h-[calc(100vh-8rem)] flex flex-col">
             {/* Chat header */}
-            <div className="flex items-center justify-between pb-4 border-b border-border mb-4">
+            <div className="flex items-center justify-between pb-3 border-b border-border mb-3">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-gradient-to-br from-primary to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
                         <Bot className="w-5 h-5 text-white" />
@@ -576,28 +1135,26 @@ export default function ChatPage() {
                         </h1>
                         <div className="flex items-center gap-1.5 text-xs text-success">
                             <div className="w-1.5 h-1.5 bg-success rounded-full animate-pulse"></div>
-                            Online &bull; Watching your account 24/7
+                            Online &bull; Speak or type &bull; I&apos;ll do the work
                         </div>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={handleClear}
-                        className="text-xs border border-border rounded-lg px-2.5 py-1.5 text-muted hover:text-foreground hover:border-primary transition flex items-center gap-1.5"
-                        title="New conversation"
-                    >
-                        <RotateCcw className="w-3 h-3" />
-                        New Chat
-                    </button>
-                </div>
+                <button
+                    onClick={handleClear}
+                    className="text-xs border border-border rounded-lg px-2.5 py-1.5 text-muted hover:text-foreground hover:border-primary transition flex items-center gap-1.5"
+                >
+                    <RotateCcw className="w-3 h-3" />
+                    New Chat
+                </button>
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-auto space-y-4 pb-4 scroll-smooth">
+            <div className="flex-1 overflow-auto pb-4 scroll-smooth space-y-1">
                 {messages.map((msg) => {
+                    // System message
                     if (msg.role === "system") {
                         return (
-                            <div key={msg.id} className="flex justify-center">
+                            <div key={msg.id} className="flex justify-center py-2">
                                 <div className="text-[11px] text-muted bg-sidebar border border-border rounded-full px-3 py-1 flex items-center gap-1.5">
                                     <Cpu className="w-3 h-3" />
                                     {msg.content}
@@ -606,59 +1163,72 @@ export default function ChatPage() {
                         );
                     }
 
-                    return (
-                        <div
-                            key={msg.id}
-                            className={`flex gap-3 animate-fade-in-up ${msg.role === "user" ? "flex-row-reverse" : ""}`}
-                        >
-                            {/* Avatar */}
-                            <div
-                                className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                                    msg.role === "ai"
-                                        ? "bg-gradient-to-br from-primary to-blue-600 shadow-sm"
-                                        : "bg-muted/20"
-                                }`}
-                            >
-                                {msg.role === "ai" ? (
-                                    <Bot className="w-4 h-4 text-white" />
-                                ) : (
-                                    <User className="w-4 h-4 text-muted" />
-                                )}
+                    // Divider / timestamp separator
+                    if (msg.role === "divider") {
+                        return (
+                            <div key={msg.id} className="flex items-center gap-3 py-2">
+                                <div className="flex-1 h-px bg-border"></div>
+                                <span className="text-[10px] text-muted flex items-center gap-1">
+                                    <Clock className="w-2.5 h-2.5" />
+                                    {msg.timestamp}
+                                </span>
+                                <div className="flex-1 h-px bg-border"></div>
                             </div>
+                        );
+                    }
 
-                            {/* Message bubble */}
-                            <div className={`max-w-[85%] ${msg.role === "user" ? "text-right" : ""}`}>
-                                {/* Model badge for AI messages */}
-                                {msg.role === "ai" && msg.model && (
+                    // User message
+                    if (msg.role === "user") {
+                        return (
+                            <div key={msg.id} className="flex gap-3 flex-row-reverse py-2">
+                                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-muted/20">
+                                    <User className="w-4 h-4 text-muted" />
+                                </div>
+                                <div className="max-w-[80%] text-right">
+                                    <div className="bg-primary text-white rounded-xl rounded-tr-sm px-4 py-2.5 text-sm leading-relaxed inline-block text-left">
+                                        {msg.content}
+                                    </div>
+                                    <div className="text-[10px] text-muted mt-1">{msg.timestamp}</div>
+                                </div>
+                            </div>
+                        );
+                    }
+
+                    // AI message
+                    return (
+                        <div key={msg.id} className="flex gap-3 py-2">
+                            <div className="w-8 h-8 bg-gradient-to-br from-primary to-blue-600 rounded-lg flex items-center justify-center shrink-0 shadow-sm">
+                                <Bot className="w-4 h-4 text-white" />
+                            </div>
+                            <div className="max-w-[88%] min-w-0">
+                                {/* Model badge */}
+                                {msg.model && (
                                     <div className="mb-1 flex items-center gap-1.5">
                                         {modelBadge(msg.model)}
                                     </div>
                                 )}
 
-                                <div
-                                    className={`rounded-xl px-4 py-3 text-sm leading-relaxed ${
-                                        msg.role === "ai"
-                                            ? "bg-card border border-border"
-                                            : "bg-primary text-white"
-                                    }`}
-                                >
-                                    {msg.content.split("\n").map((line, i) => (
-                                        <span key={i}>
-                                            {line.split(/(\*\*[^*]+\*\*)/).map((part, j) =>
-                                                part.startsWith("**") && part.endsWith("**") ? (
-                                                    <strong key={j}>{part.slice(2, -2)}</strong>
-                                                ) : (
-                                                    <span key={j}>{part}</span>
-                                                )
-                                            )}
-                                            {i < msg.content.split("\n").length - 1 && <br />}
-                                        </span>
-                                    ))}
+                                {/* Message content */}
+                                <div className="bg-card border border-border rounded-xl rounded-tl-sm px-4 py-3 text-sm leading-relaxed">
+                                    {renderMarkdown(msg.content)}
                                 </div>
 
+                                {/* Stats cards */}
+                                {msg.stats && renderStatsCards(msg.stats)}
+
+                                {/* Ad previews */}
+                                {msg.ads && msg.ads.length > 0 && (
+                                    <div className="mt-2 space-y-2">
+                                        {msg.ads.map((ad, i) => renderAdPreview(ad, i))}
+                                    </div>
+                                )}
+
+                                {/* Task summary */}
+                                {msg.taskSummary && renderTaskSummary(msg.taskSummary)}
+
                                 {/* Actions */}
-                                {msg.actions && (
-                                    <div className="flex flex-wrap gap-2 mt-2">
+                                {msg.actions && msg.actions.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mt-3">
                                         {msg.actions.map((action, i) => (
                                             <button
                                                 key={i}
@@ -679,31 +1249,17 @@ export default function ChatPage() {
                                     </div>
                                 )}
 
-                                {/* Feedback, copy, & timestamp */}
-                                {msg.role === "ai" && (
-                                    <div className="flex items-center gap-3 mt-2 text-xs text-muted">
-                                        <span>{msg.timestamp}</span>
-                                        <div className="flex items-center gap-1">
-                                            <button
-                                                onClick={() => handleCopy(msg.id, msg.content)}
-                                                className="p-1 hover:text-primary transition"
-                                                title="Copy response"
-                                            >
-                                                {copiedId === msg.id ? (
-                                                    <Check className="w-3 h-3 text-success" />
-                                                ) : (
-                                                    <Copy className="w-3 h-3" />
-                                                )}
-                                            </button>
-                                            <button className="p-1 hover:text-success transition" title="Good response">
-                                                <ThumbsUp className="w-3 h-3" />
-                                            </button>
-                                            <button className="p-1 hover:text-danger transition" title="Bad response">
-                                                <ThumbsDown className="w-3 h-3" />
-                                            </button>
-                                        </div>
+                                {/* Footer: timestamp + feedback */}
+                                <div className="flex items-center gap-3 mt-2 text-[10px] text-muted">
+                                    <span>{msg.timestamp}</span>
+                                    <div className="flex items-center gap-1">
+                                        <button onClick={() => handleCopy(msg.id, msg.content)} className="p-1 hover:text-primary transition" title="Copy">
+                                            {copiedId === msg.id ? <Check className="w-3 h-3 text-success" /> : <Copy className="w-3 h-3" />}
+                                        </button>
+                                        <button className="p-1 hover:text-success transition" title="Good"><ThumbsUp className="w-3 h-3" /></button>
+                                        <button className="p-1 hover:text-danger transition" title="Bad"><ThumbsDown className="w-3 h-3" /></button>
                                     </div>
-                                )}
+                                </div>
                             </div>
                         </div>
                     );
@@ -711,13 +1267,16 @@ export default function ChatPage() {
 
                 {/* Typing indicator */}
                 {isTyping && (
-                    <div className="flex gap-3 animate-fade-in-up">
+                    <div className="flex gap-3 py-2">
                         <div className="w-8 h-8 bg-gradient-to-br from-primary to-blue-600 rounded-lg flex items-center justify-center shrink-0">
                             <Bot className="w-4 h-4 text-white" />
                         </div>
-                        <div className="bg-card border border-border rounded-xl px-4 py-3 flex items-center gap-2">
+                        <div className="bg-card border border-border rounded-xl px-4 py-3 flex items-center gap-3">
                             <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                            <span className="text-xs text-muted">Thinking...</span>
+                            <div className="flex items-center gap-1.5">
+                                <Activity className="w-3 h-3 text-primary animate-pulse" />
+                                <span className="text-xs text-muted">Working on it...</span>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -725,9 +1284,44 @@ export default function ChatPage() {
                 <div ref={messagesEndRef} />
             </div>
 
+            {/* Voice listening overlay */}
+            {isListening && (
+                <div className="border border-primary/30 bg-primary/5 rounded-xl px-4 py-3 mb-3 flex items-center gap-3">
+                    <div className="relative">
+                        <Mic className="w-5 h-5 text-primary" />
+                        <div className="absolute -inset-1 border-2 border-primary/30 rounded-full animate-ping"></div>
+                    </div>
+                    <div className="flex-1">
+                        <div className="text-xs font-medium text-primary">Listening...</div>
+                        <div className="text-sm mt-0.5">{voiceText || "Speak now..."}</div>
+                    </div>
+                    <button
+                        onClick={stopListening}
+                        className="text-xs bg-danger/10 text-danger px-3 py-1.5 rounded-lg hover:bg-danger/20 transition flex items-center gap-1"
+                    >
+                        <MicOff className="w-3 h-3" />
+                        Stop
+                    </button>
+                </div>
+            )}
+
             {/* Input area */}
-            <div className="border-t border-border pt-4 space-y-3">
+            <div className="border-t border-border pt-3 space-y-2.5">
                 <div className="flex gap-2">
+                    {/* Voice button */}
+                    <button
+                        onClick={isListening ? stopListening : startListening}
+                        disabled={isTyping}
+                        className={`p-3 rounded-xl transition flex items-center justify-center ${
+                            isListening
+                                ? "bg-danger text-white animate-pulse"
+                                : "bg-gradient-to-br from-primary to-blue-600 text-white hover:shadow-lg hover:shadow-primary/30 disabled:opacity-50"
+                        }`}
+                        title={isListening ? "Stop listening" : "Speak to AI"}
+                    >
+                        {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                    </button>
+
                     <div className="flex-1 relative">
                         <input
                             ref={inputRef}
@@ -735,30 +1329,28 @@ export default function ChatPage() {
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={(e) => e.key === "Enter" && sendMessage(input)}
-                            placeholder="Ask me anything about your ads..."
-                            disabled={isTyping}
-                            className="w-full bg-card border border-border rounded-xl px-4 py-3 pr-20 text-sm focus:outline-none focus:border-primary transition disabled:opacity-50"
+                            placeholder='Try: "Create 3 text ads for drain cleaning" or click mic to speak...'
+                            disabled={isTyping || isListening}
+                            className="w-full bg-card border border-border rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none focus:border-primary transition disabled:opacity-50"
                         />
-                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2">
                             <button className="p-1.5 text-muted hover:text-primary transition rounded-lg" title="Attach file">
                                 <Paperclip className="w-4 h-4" />
                             </button>
-                            <button className="p-1.5 text-muted hover:text-primary transition rounded-lg" title="Voice input">
-                                <Mic className="w-4 h-4" />
-                            </button>
                         </div>
                     </div>
+
                     <button
                         onClick={() => sendMessage(input)}
                         disabled={!input.trim() || isTyping}
-                        className="bg-primary hover:bg-primary-dark text-white p-3 rounded-xl transition disabled:opacity-50 disabled:hover:bg-primary"
+                        className="bg-primary hover:bg-primary-dark text-white p-3 rounded-xl transition disabled:opacity-50"
                     >
                         <Send className="w-4 h-4" />
                     </button>
                 </div>
 
-                {/* Quick action buttons */}
-                <div className="flex gap-2 flex-wrap">
+                {/* Quick actions + hint */}
+                <div className="flex items-center gap-2 flex-wrap">
                     {quickActions.map((action) => (
                         <button
                             key={action.label}
@@ -770,6 +1362,7 @@ export default function ChatPage() {
                             {action.label}
                         </button>
                     ))}
+                    <span className="text-[10px] text-muted ml-auto">Press mic \ud83c\udf99\ufe0f to speak</span>
                 </div>
             </div>
         </div>
