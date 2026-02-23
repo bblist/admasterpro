@@ -361,11 +361,10 @@ export default function AdminAICostsPage() {
                                     </div>
                                 </div>
                                 <div className="col-span-1 text-right">
-                                    <span className={`text-[11px] font-medium px-1.5 py-0.5 rounded-full ${
-                                        client.plan === "Agency" ? "bg-purple-900/40 text-purple-400" :
-                                        client.plan === "Pro" ? "bg-blue-900/40 text-blue-400" :
-                                        "bg-gray-800 text-gray-400"
-                                    }`}>{client.plan}</span>
+                                    <span className={`text-[11px] font-medium px-1.5 py-0.5 rounded-full ${client.plan === "Agency" ? "bg-purple-900/40 text-purple-400" :
+                                            client.plan === "Pro" ? "bg-blue-900/40 text-blue-400" :
+                                                "bg-gray-800 text-gray-400"
+                                        }`}>{client.plan}</span>
                                 </div>
                                 <div className="col-span-2 text-right">
                                     <div className="text-sm text-emerald-400 font-medium">${client.gpt4oCost.toFixed(2)}</div>

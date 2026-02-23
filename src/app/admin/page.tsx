@@ -161,10 +161,10 @@ export default function AdminOverview() {
                         <div
                             key={i}
                             className={`flex items-center gap-3 text-sm px-3 py-2 rounded-lg ${a.type === "warning"
-                                    ? "bg-amber-900/20 border border-amber-700/30"
-                                    : a.type === "success"
-                                        ? "bg-green-900/20 border border-green-700/30"
-                                        : "bg-blue-900/20 border border-blue-700/30"
+                                ? "bg-amber-900/20 border border-amber-700/30"
+                                : a.type === "success"
+                                    ? "bg-green-900/20 border border-green-700/30"
+                                    : "bg-blue-900/20 border border-blue-700/30"
                                 }`}
                         >
                             {a.type === "warning" ? (
@@ -252,10 +252,10 @@ export default function AdminOverview() {
                                 <div className="text-right flex-shrink-0 ml-3">
                                     <span
                                         className={`text-xs font-medium px-2 py-0.5 rounded-full ${u.plan === "Agency"
-                                                ? "bg-purple-900/40 text-purple-400"
-                                                : u.plan === "Pro"
-                                                    ? "bg-blue-900/40 text-blue-400"
-                                                    : "bg-gray-800 text-gray-400"
+                                            ? "bg-purple-900/40 text-purple-400"
+                                            : u.plan === "Pro"
+                                                ? "bg-blue-900/40 text-blue-400"
+                                                : "bg-gray-800 text-gray-400"
                                             }`}
                                     >
                                         {u.plan}
