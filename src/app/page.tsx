@@ -69,10 +69,10 @@ export default function LandingPage() {
               <ArrowRight className="w-5 h-5" />
             </Link>
             <Link
-              href="/dashboard"
+              href="/login?next=/dashboard/chat"
               className="border border-border hover:border-primary text-foreground px-8 py-3 rounded-lg font-medium text-lg transition"
             >
-              See Demo Dashboard
+              Try the AI Demo
             </Link>
           </div>
           <div className="flex flex-wrap justify-center gap-6 text-sm text-muted">

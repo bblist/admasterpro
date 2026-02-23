@@ -1,9 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { Zap } from "lucide-react";
 
-export default function LoginPage() {
+function LoginForm() {
+    const searchParams = useSearchParams();
+    const next = searchParams.get("next") || "/dashboard/chat";
+    // Only allow internal paths
+    const redirectTo = next.startsWith("/") ? next : "/dashboard/chat";
+
     return (
         <div className="min-h-screen bg-background flex items-center justify-center px-4">
             <div className="w-full max-w-sm">
@@ -15,7 +22,7 @@ export default function LoginPage() {
                         </div>
                     </Link>
                     <h1 className="text-2xl font-bold">Welcome back</h1>
-                    <p className="text-muted text-sm mt-1">Sign in to your AdMaster Pro account</p>
+                    <p className="text-muted text-sm mt-1">Sign in to access AdMaster Pro</p>
                 </div>
 
                 {/* Google Sign In */}
@@ -63,19 +70,33 @@ export default function LoginPage() {
                         className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary transition"
                     />
                     <Link
-                        href="/dashboard"
+                        href={redirectTo}
                         className="w-full bg-primary hover:bg-primary-dark text-white py-2.5 rounded-lg text-sm font-medium transition block text-center"
                     >
                         Sign In
                     </Link>
                 </div>
 
-                <div className="text-center mt-6">
-                    <Link href="/onboarding" className="text-sm text-primary hover:underline">
-                        Don&apos;t have an account? Start free →
+                <div className="text-center mt-6 space-y-2">
+                    <Link href="/onboarding" className="text-sm text-primary hover:underline block">
+                        Don&apos;t have an account? Sign up free →
                     </Link>
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center animate-pulse">
+                    <Zap className="w-6 h-6 text-white" />
+                </div>
+            </div>
+        }>
+            <LoginForm />
+        </Suspense>
     );
 }

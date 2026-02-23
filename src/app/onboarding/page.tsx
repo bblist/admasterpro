@@ -411,14 +411,14 @@ export default function OnboardingPage() {
 
                                 <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">
                                     <Link
-                                        href="/dashboard"
+                                        href="/login?next=/dashboard"
                                         className="bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-lg font-medium transition flex items-center justify-center gap-2"
                                     >
                                         Go to Dashboard
                                         <ArrowRight className="w-4 h-4" />
                                     </Link>
                                     <Link
-                                        href="/dashboard/chat"
+                                        href="/login?next=/dashboard/chat"
                                         className="border border-border hover:border-primary px-6 py-3 rounded-lg font-medium transition text-center"
                                     >
                                         Fix These Now with AI
