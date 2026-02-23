@@ -4,7 +4,6 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import {
     Send,
     Zap,
-    User,
     Loader2,
     ThumbsUp,
     ThumbsDown,
@@ -16,7 +15,6 @@ import {
     RotateCcw,
     Copy,
     Check,
-    Bot,
     BarChart3,
     AlertTriangle,
     PenTool,
@@ -1120,9 +1118,7 @@ export default function ChatPage() {
             {/* Chat header */}
             <div className="flex items-center justify-between pb-3 border-b border-border mb-3">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-primary to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
-                        <Bot className="w-5 h-5 text-white" />
-                    </div>
+                    <img src="https://api.dicebear.com/9.x/bottts-neutral/svg?seed=AdMasterAI&backgroundColor=4f46e5" alt="AI" className="w-10 h-10 rounded-xl shadow-lg shadow-primary/20" />
                     <div>
                         <h1 className="font-semibold flex items-center gap-2">
                             AI Assistant
@@ -1181,9 +1177,7 @@ export default function ChatPage() {
                     if (msg.role === "user") {
                         return (
                             <div key={msg.id} className="flex gap-3 flex-row-reverse py-2">
-                                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-muted/20">
-                                    <User className="w-4 h-4 text-muted" />
-                                </div>
+                                <img src="https://api.dicebear.com/9.x/thumbs/svg?seed=MikeClient&backgroundColor=e2e8f0" alt="You" className="w-8 h-8 rounded-lg shrink-0" />
                                 <div className="max-w-[80%] text-right">
                                     <div className="bg-primary text-white rounded-xl rounded-tr-sm px-4 py-2.5 text-sm leading-relaxed inline-block text-left">
                                         {msg.content}
@@ -1197,9 +1191,7 @@ export default function ChatPage() {
                     // AI message
                     return (
                         <div key={msg.id} className="flex gap-3 py-2">
-                            <div className="w-8 h-8 bg-gradient-to-br from-primary to-blue-600 rounded-lg flex items-center justify-center shrink-0 shadow-sm">
-                                <Bot className="w-4 h-4 text-white" />
-                            </div>
+                            <img src="https://api.dicebear.com/9.x/bottts-neutral/svg?seed=AdMasterAI&backgroundColor=4f46e5" alt="AI" className="w-8 h-8 rounded-lg shrink-0 shadow-sm" />
                             <div className="max-w-[88%] min-w-0">
                                 {/* Model badge */}
                                 {msg.model && (
@@ -1268,9 +1260,7 @@ export default function ChatPage() {
                 {/* Typing indicator */}
                 {isTyping && (
                     <div className="flex gap-3 py-2">
-                        <div className="w-8 h-8 bg-gradient-to-br from-primary to-blue-600 rounded-lg flex items-center justify-center shrink-0">
-                            <Bot className="w-4 h-4 text-white" />
-                        </div>
+                        <img src="https://api.dicebear.com/9.x/bottts-neutral/svg?seed=AdMasterAI&backgroundColor=4f46e5" alt="AI" className="w-8 h-8 rounded-lg shrink-0" />
                         <div className="bg-card border border-border rounded-xl px-4 py-3 flex items-center gap-3">
                             <Loader2 className="w-4 h-4 animate-spin text-primary" />
                             <div className="flex items-center gap-1.5">
