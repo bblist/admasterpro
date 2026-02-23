@@ -35,6 +35,8 @@ import {
     Globe,
     Settings,
     X,
+    Smartphone,
+    Volume2,
 } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -844,37 +846,92 @@ const initialMessages: Message[] = [
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
-type MicPermission = "checking" | "prompt" | "granted" | "denied" | "unsupported";
+type MicPermission = "checking" | "prompt" | "granted" | "denied" | "not-found" | "unsupported";
+type Platform = "ios" | "android" | "desktop";
 
-const detectBrowser = (): string => {
-    if (typeof navigator === "undefined") return "unknown";
+const detectPlatform = (): { browser: string; platform: Platform } => {
+    if (typeof navigator === "undefined") return { browser: "unknown", platform: "desktop" };
     const ua = navigator.userAgent;
-    if (/Firefox/i.test(ua)) return "firefox";
-    if (/Edg/i.test(ua)) return "edge";
-    if (/OPR|Opera/i.test(ua)) return "opera";
-    if (/CriOS/i.test(ua)) return "chrome-ios";
-    if (/Chrome/i.test(ua)) return "chrome";
-    if (/Safari/i.test(ua)) return "safari";
-    return "unknown";
+
+    // Detect platform
+    const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const isAndroid = /Android/i.test(ua);
+    const platform: Platform = isIOS ? "ios" : isAndroid ? "android" : "desktop";
+
+    // Detect browser
+    let browser = "unknown";
+    if (/Firefox/i.test(ua)) browser = "firefox";
+    else if (/Edg/i.test(ua)) browser = "edge";
+    else if (/OPR|Opera/i.test(ua)) browser = "opera";
+    else if (/CriOS/i.test(ua)) browser = "chrome";
+    else if (/Chrome/i.test(ua)) browser = "chrome";
+    else if (/Safari/i.test(ua)) browser = "safari";
+
+    return { browser, platform };
 };
 
-const getBrowserInstructions = (browser: string): string => {
-    switch (browser) {
-        case "chrome":
-            return "Tap the lock icon in the address bar \u2192 Site settings \u2192 Microphone \u2192 Allow";
-        case "chrome-ios":
-            return "Open Settings \u2192 Chrome \u2192 Microphone \u2192 Enable";
-        case "safari":
-            return "Open Safari \u2192 Settings for this Site \u2192 Microphone \u2192 Allow";
-        case "edge":
-            return "Tap the lock icon in the address bar \u2192 Permissions \u2192 Microphone \u2192 Allow";
-        case "firefox":
-            return "Speech recognition is not available in Firefox. Please use Chrome, Edge, or Safari.";
-        case "opera":
-            return "Tap the lock icon in the address bar \u2192 Site settings \u2192 Microphone \u2192 Allow";
-        default:
-            return "Check your browser settings to allow microphone access for this site.";
+const getMicInstructions = (browser: string, platform: Platform): { steps: string[]; note?: string } => {
+    if (platform === "ios") {
+        if (browser === "safari") {
+            return {
+                steps: [
+                    "Open the Settings app on your iPhone",
+                    "Scroll down and tap Safari",
+                    "Tap Microphone and set to Allow",
+                    "Return here and tap the button below",
+                ],
+            };
+        }
+        // Chrome / Edge / other on iOS
+        return {
+            steps: [
+                `Open Settings on your iPhone`,
+                `Scroll down and tap ${browser === "chrome" ? "Chrome" : browser === "edge" ? "Edge" : "your browser"}`,
+                "Enable Microphone access",
+                "Return here and tap the button below",
+            ],
+        };
     }
+
+    if (platform === "android") {
+        return {
+            steps: [
+                "Tap the lock/tune icon in the address bar",
+                "Tap Permissions (or Site settings)",
+                "Set Microphone to Allow",
+                "Reload this page",
+            ],
+            note: "Or go to Android Settings \u2192 Apps \u2192 Browser \u2192 Permissions \u2192 Microphone",
+        };
+    }
+
+    // Desktop
+    if (browser === "firefox") {
+        return {
+            steps: [
+                "Speech recognition is not supported in Firefox",
+                "Please open this page in Chrome, Edge, or Safari",
+            ],
+        };
+    }
+    if (browser === "safari") {
+        return {
+            steps: [
+                "Click Safari in the menu bar \u2192 Settings for This Website",
+                "Set Microphone to Allow",
+                "Reload this page",
+            ],
+        };
+    }
+    // Chrome / Edge / Opera desktop
+    return {
+        steps: [
+            "Click the lock icon in the address bar",
+            `Go to Site settings \u2192 Microphone`,
+            "Change to Allow",
+            "Reload this page",
+        ],
+    };
 };
 
 export default function ChatPage() {
@@ -888,6 +945,7 @@ export default function ChatPage() {
     const [silenceCountdown, setSilenceCountdown] = useState(0);
     const [micPermission, setMicPermission] = useState<MicPermission>("checking");
     const [showMicModal, setShowMicModal] = useState(false);
+    const [audioLevel, setAudioLevel] = useState(0);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const recognitionRef = useRef<any>(null);
@@ -896,6 +954,15 @@ export default function ChatPage() {
     const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const voiceTranscriptRef = useRef("");
     const browserRef = useRef("unknown");
+    const platformRef = useRef<Platform>("desktop");
+    // AnalyserNode-based silence detection refs
+    const audioContextRef = useRef<AudioContext | null>(null);
+    const analyserRef = useRef<AnalyserNode | null>(null);
+    const mediaStreamRef = useRef<MediaStream | null>(null);
+    const analysisFrameRef = useRef<number | null>(null);
+    const recordingStartRef = useRef<number>(0);
+    const silenceStartRef = useRef<number>(0);
+    const hasAnalyserRef = useRef(false);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -905,17 +972,22 @@ export default function ChatPage() {
         inputRef.current?.focus();
     }, []);
 
-    // Cleanup voice timers on unmount
+    // Cleanup voice timers + audio context on unmount
     useEffect(() => {
         return () => {
             if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
             if (countdownRef.current) clearInterval(countdownRef.current);
+            if (analysisFrameRef.current) cancelAnimationFrame(analysisFrameRef.current);
+            if (audioContextRef.current) { try { audioContextRef.current.close(); } catch { /* ok */ } }
+            if (mediaStreamRef.current) { mediaStreamRef.current.getTracks().forEach(t => t.stop()); }
         };
     }, []);
 
     // Check microphone permission + SpeechRecognition availability on mount
     useEffect(() => {
-        browserRef.current = detectBrowser();
+        const { browser, platform } = detectPlatform();
+        browserRef.current = browser;
+        platformRef.current = platform;
 
         const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
         if (!SpeechRecognition) {
@@ -948,10 +1020,13 @@ export default function ChatPage() {
         }
     }, []);
 
-    // ─── Voice Recognition ──────────────────────────────────────────────────
+    // ─── Voice Recognition with AnalyserNode Silence Detection ────────────
 
-    // How long to wait after last speech before auto-sending (ms)
-    const SILENCE_TIMEOUT = 3000;
+    // Silence detection constants
+    const SILENCE_THRESHOLD = 0.015;   // RMS level below which = silence
+    const SILENCE_DURATION = 2500;     // ms of sustained silence → auto-send
+    const GRACE_PERIOD = 1200;         // ms from start before silence detection kicks in
+    const COUNTDOWN_INTERVAL = 100;    // ms between countdown ticks
 
     const clearSilenceTimer = useCallback(() => {
         if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
@@ -959,48 +1034,98 @@ export default function ChatPage() {
         setSilenceCountdown(0);
     }, []);
 
-    const startSilenceTimer = useCallback(() => {
+    /** Stop the AnalyserNode audio loop + close AudioContext */
+    const stopAudioAnalysis = useCallback(() => {
+        if (analysisFrameRef.current) { cancelAnimationFrame(analysisFrameRef.current); analysisFrameRef.current = null; }
+        if (audioContextRef.current) { try { audioContextRef.current.close(); } catch { /* ok */ } audioContextRef.current = null; }
+        if (mediaStreamRef.current) { mediaStreamRef.current.getTracks().forEach(t => t.stop()); mediaStreamRef.current = null; }
+        analyserRef.current = null;
+        hasAnalyserRef.current = false;
+        setAudioLevel(0);
+    }, []);
+
+    /** Finalize + auto-send whatever transcript we have */
+    const autoSendTranscript = useCallback(() => {
+        clearSilenceTimer();
+        const text = voiceTranscriptRef.current.trim();
+        if (text) sendMessageRef.current(text);
+        voiceTranscriptRef.current = "";
+        setVoiceText("");
+        setVoicePaused(false);
+        setSilenceCountdown(0);
+        stopAudioAnalysis();
+        if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch { /* ok */ } }
+        setIsListening(false);
+    }, [clearSilenceTimer, stopAudioAnalysis]);
+
+    /** Start the sustained-silence countdown bar (visual only — autoSend triggered by timer) */
+    const startSilenceCountdown = useCallback(() => {
         clearSilenceTimer();
         setVoicePaused(true);
-        const steps = Math.ceil(SILENCE_TIMEOUT / 100);
+        const steps = Math.ceil(SILENCE_DURATION / COUNTDOWN_INTERVAL);
         let remaining = steps;
         countdownRef.current = setInterval(() => {
             remaining--;
             setSilenceCountdown(remaining / steps); // 1 → 0
             if (remaining <= 0 && countdownRef.current) { clearInterval(countdownRef.current); countdownRef.current = null; }
-        }, 100);
+        }, COUNTDOWN_INTERVAL);
         silenceTimerRef.current = setTimeout(() => {
-            // Auto-send after sustained silence
-            const text = voiceTranscriptRef.current.trim();
-            if (text) {
-                sendMessageRef.current(text);
+            autoSendTranscript();
+        }, SILENCE_DURATION);
+    }, [clearSilenceTimer, autoSendTranscript]);
+
+    /** Run the AnalyserNode audio-level monitoring loop */
+    const startAudioLevelMonitoring = useCallback(() => {
+        const analyser = analyserRef.current;
+        if (!analyser) return;
+
+        const dataArray = new Uint8Array(analyser.fftSize);
+        const tick = () => {
+            if (!analyserRef.current) return;
+            analyser.getByteTimeDomainData(dataArray);
+
+            // Calculate RMS
+            let sum = 0;
+            for (let i = 0; i < dataArray.length; i++) {
+                const v = (dataArray[i] - 128) / 128;
+                sum += v * v;
             }
-            voiceTranscriptRef.current = "";
-            setVoiceText("");
-            setVoicePaused(false);
-            setSilenceCountdown(0);
-            // Stop recognition cleanly
-            if (recognitionRef.current) {
-                try { recognitionRef.current.stop(); } catch { /* ok */ }
+            const rms = Math.sqrt(sum / dataArray.length);
+            setAudioLevel(Math.min(rms * 5, 1)); // 0–1 for visual bar
+
+            const now = Date.now();
+            const elapsed = now - recordingStartRef.current;
+
+            // Only do silence detection after grace period and if we have transcript
+            if (elapsed > GRACE_PERIOD && voiceTranscriptRef.current.trim()) {
+                if (rms < SILENCE_THRESHOLD) {
+                    // Silence detected
+                    if (silenceStartRef.current === 0) {
+                        silenceStartRef.current = now;
+                    }
+                    const silenceDuration = now - silenceStartRef.current;
+                    // If silence hasn't started the countdown yet and it's been ~500ms of quiet, start it
+                    if (silenceDuration > 400 && !silenceTimerRef.current) {
+                        startSilenceCountdown();
+                    }
+                } else {
+                    // Sound detected — reset silence tracking + countdown
+                    silenceStartRef.current = 0;
+                    if (silenceTimerRef.current || countdownRef.current) {
+                        clearSilenceTimer();
+                        setVoicePaused(false);
+                    }
+                }
             }
-            setIsListening(false);
-        }, SILENCE_TIMEOUT);
-    }, [clearSilenceTimer]);
+
+            analysisFrameRef.current = requestAnimationFrame(tick);
+        };
+        analysisFrameRef.current = requestAnimationFrame(tick);
+    }, [clearSilenceTimer, startSilenceCountdown]);
 
     const voiceSendNow = useCallback(() => {
-        clearSilenceTimer();
-        const text = voiceTranscriptRef.current.trim();
-        if (text) {
-            sendMessageRef.current(text);
-        }
-        voiceTranscriptRef.current = "";
-        setVoiceText("");
-        setVoicePaused(false);
-        if (recognitionRef.current) {
-            try { recognitionRef.current.stop(); } catch { /* ok */ }
-        }
-        setIsListening(false);
-    }, [clearSilenceTimer]);
+        autoSendTranscript();
+    }, [autoSendTranscript]);
 
     const startListening = useCallback(() => {
         // Check if SpeechRecognition is available
@@ -1011,18 +1136,42 @@ export default function ChatPage() {
             return;
         }
 
-        // If permission is denied, show instructions modal
-        if (micPermission === "denied") {
+        // If permission is denied or hardware missing, show modal
+        if (micPermission === "denied" || micPermission === "not-found") {
             setShowMicModal(true);
             return;
         }
 
-        // Request mic permission via getUserMedia first (triggers browser prompt)
-        const attemptStart = () => {
+        // Core start function — sets up recognition + optional AnalyserNode
+        const attemptStart = (stream?: MediaStream) => {
             voiceTranscriptRef.current = "";
             setVoiceText("");
             setVoicePaused(false);
             clearSilenceTimer();
+            silenceStartRef.current = 0;
+            recordingStartRef.current = Date.now();
+
+            // Set up AnalyserNode from the mic stream (if available)
+            if (stream) {
+                mediaStreamRef.current = stream;
+                try {
+                    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+                    if (AudioCtx) {
+                        const ctx = new AudioCtx();
+                        const source = ctx.createMediaStreamSource(stream);
+                        const analyser = ctx.createAnalyser();
+                        analyser.fftSize = 512;
+                        analyser.smoothingTimeConstant = 0.3;
+                        source.connect(analyser);
+                        audioContextRef.current = ctx;
+                        analyserRef.current = analyser;
+                        hasAnalyserRef.current = true;
+                    }
+                } catch {
+                    // AudioContext not available — fall back to SpeechRecognition-only silence detection
+                    hasAnalyserRef.current = false;
+                }
+            }
 
             const recognition = new SpeechRecognition();
             recognition.continuous = true;
@@ -1032,6 +1181,10 @@ export default function ChatPage() {
             recognition.onstart = () => {
                 setIsListening(true);
                 setVoiceText("Speak now...");
+                // Start audio level monitoring if analyser is available
+                if (hasAnalyserRef.current) {
+                    startAudioLevelMonitoring();
+                }
             };
 
             recognition.onresult = (event: any) => {
@@ -1050,26 +1203,28 @@ export default function ChatPage() {
                 const display = (finalText + (interimText ? interimText : "")).trim();
                 setVoiceText(display || "Speak now...");
 
-                // Reset silence timer — user is still talking
-                clearSilenceTimer();
-                setVoicePaused(false);
-
-                // If we have finalized text and no interim (pause in speech), start countdown
-                if (finalText.trim() && !interimText) {
-                    startSilenceTimer();
+                // If we DON'T have the AnalyserNode, fall back to SpeechRecognition-based silence
+                if (!hasAnalyserRef.current) {
+                    clearSilenceTimer();
+                    setVoicePaused(false);
+                    if (finalText.trim() && !interimText) {
+                        startSilenceCountdown();
+                    }
                 }
+                // With AnalyserNode, silence detection is handled by the audio loop
             };
 
             recognition.onerror = (e: any) => {
                 if (e.error === "not-allowed") {
                     setMicPermission("denied");
                     setShowMicModal(true);
+                    stopAudioAnalysis();
                     setIsListening(false);
                     return;
                 }
-                // "no-speech" is normal — user paused, just wait
                 if (e.error === "no-speech") return;
                 clearSilenceTimer();
+                stopAudioAnalysis();
                 setIsListening(false);
                 setVoiceText("");
                 setVoicePaused(false);
@@ -1078,9 +1233,10 @@ export default function ChatPage() {
 
             recognition.onend = () => {
                 if (voiceTranscriptRef.current.trim() && silenceTimerRef.current) {
-                    return;
+                    return; // Silence timer is running — let it handle sending
                 }
                 if (!silenceTimerRef.current) {
+                    stopAudioAnalysis();
                     setIsListening(false);
                     setVoicePaused(false);
                 }
@@ -1090,27 +1246,32 @@ export default function ChatPage() {
             recognition.start();
         };
 
-        // If permission not yet granted, request it via getUserMedia
+        // Request mic permission via getUserMedia (also gets the stream for AnalyserNode)
         if (micPermission === "prompt" || micPermission === "checking") {
             navigator.mediaDevices.getUserMedia({ audio: true })
                 .then((stream) => {
-                    // Permission granted — stop the stream (we just needed the prompt)
-                    stream.getTracks().forEach(t => t.stop());
                     setMicPermission("granted");
-                    attemptStart();
+                    attemptStart(stream);
                 })
-                .catch(() => {
-                    setMicPermission("denied");
+                .catch((err) => {
+                    if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+                        setMicPermission("not-found");
+                    } else {
+                        setMicPermission("denied");
+                    }
                     setShowMicModal(true);
                 });
         } else {
-            // Permission already granted
-            attemptStart();
+            // Permission already granted — get a fresh stream for the AnalyserNode
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then((stream) => attemptStart(stream))
+                .catch(() => attemptStart()); // If stream fails, start without analyser
         }
-    }, [clearSilenceTimer, startSilenceTimer, micPermission]);
+    }, [clearSilenceTimer, startSilenceCountdown, startAudioLevelMonitoring, stopAudioAnalysis, micPermission]);
 
     const stopListening = useCallback(() => {
         clearSilenceTimer();
+        stopAudioAnalysis();
         voiceTranscriptRef.current = "";
         if (recognitionRef.current) {
             try { recognitionRef.current.stop(); } catch { /* ok */ }
@@ -1307,7 +1468,7 @@ export default function ChatPage() {
 
     return (
         <div className="max-w-3xl mx-auto flex flex-col h-chat">
-            {/* Mic permission / unsupported modal */}
+            {/* Mic permission / unsupported / not-found modal */}
             {showMicModal && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowMicModal(false)}>
                     <div className="bg-card border border-border rounded-2xl p-5 sm:p-6 max-w-sm w-full shadow-xl space-y-4" onClick={(e) => e.stopPropagation()}>
@@ -1315,11 +1476,15 @@ export default function ChatPage() {
                             <div className="flex items-center gap-2">
                                 {micPermission === "unsupported" ? (
                                     <Globe className="w-5 h-5 text-amber-500" />
+                                ) : micPermission === "not-found" ? (
+                                    <Volume2 className="w-5 h-5 text-amber-500" />
                                 ) : (
                                     <AlertCircle className="w-5 h-5 text-danger" />
                                 )}
                                 <h3 className="font-semibold text-sm">
-                                    {micPermission === "unsupported" ? "Voice Not Available" : "Microphone Blocked"}
+                                    {micPermission === "unsupported" ? "Voice Not Available"
+                                        : micPermission === "not-found" ? "No Microphone Found"
+                                            : "Microphone Blocked"}
                                 </h3>
                             </div>
                             <button onClick={() => setShowMicModal(false)} className="p-1 text-muted hover:text-foreground transition touch-compact">
@@ -1339,15 +1504,65 @@ export default function ChatPage() {
                                     <span>You can still type your commands in the text box below.</span>
                                 </div>
                             </div>
+                        ) : micPermission === "not-found" ? (
+                            <div className="space-y-3">
+                                <p className="text-sm text-muted leading-relaxed">
+                                    No microphone was detected on this device. Please connect a microphone or headset and try again.
+                                </p>
+                                <div className="bg-sidebar rounded-lg p-3 text-xs text-muted flex items-start gap-2">
+                                    <Smartphone className="w-4 h-4 shrink-0 mt-0.5" />
+                                    <span>
+                                        {platformRef.current === "ios" || platformRef.current === "android"
+                                            ? "Make sure your phone\u2019s microphone isn\u2019t being used by another app."
+                                            : "Check that your microphone is plugged in and selected as the input device in System Preferences."}
+                                    </span>
+                                </div>
+                                <button
+                                    onClick={async () => {
+                                        try {
+                                            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                                            stream.getTracks().forEach(t => t.stop());
+                                            setMicPermission("granted");
+                                            setShowMicModal(false);
+                                        } catch (err: any) {
+                                            if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+                                                // Still no mic
+                                            } else {
+                                                setMicPermission("denied");
+                                            }
+                                        }
+                                    }}
+                                    className="w-full bg-primary text-white text-sm font-medium py-3 rounded-xl hover:bg-primary-dark transition flex items-center justify-center gap-2"
+                                >
+                                    <Mic className="w-4 h-4" />
+                                    Try Again
+                                </button>
+                            </div>
                         ) : (
                             <div className="space-y-3">
                                 <p className="text-sm text-muted leading-relaxed">
-                                    Microphone access was denied. To enable voice input, update your browser settings:
+                                    Microphone access was denied. Follow these steps to enable it:
                                 </p>
-                                <div className="bg-sidebar rounded-lg p-3 text-xs text-foreground leading-relaxed flex items-start gap-2">
-                                    <Settings className="w-4 h-4 shrink-0 mt-0.5 text-primary" />
-                                    <span>{getBrowserInstructions(browserRef.current)}</span>
-                                </div>
+                                {(() => {
+                                    const info = getMicInstructions(browserRef.current, platformRef.current);
+                                    return (
+                                        <>
+                                            <div className="bg-sidebar rounded-lg p-3 space-y-2">
+                                                {info.steps.map((step, i) => (
+                                                    <div key={i} className="flex items-start gap-2 text-xs text-foreground leading-relaxed">
+                                                        <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+                                                            {i + 1}
+                                                        </span>
+                                                        <span>{step}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            {info.note && (
+                                                <p className="text-[11px] text-muted italic px-1">{info.note}</p>
+                                            )}
+                                        </>
+                                    );
+                                })()}
                                 <button
                                     onClick={async () => {
                                         try {
@@ -1362,8 +1577,13 @@ export default function ChatPage() {
                                     className="w-full bg-primary text-white text-sm font-medium py-3 rounded-xl hover:bg-primary-dark transition flex items-center justify-center gap-2"
                                 >
                                     <Mic className="w-4 h-4" />
-                                    Request Permission Again
+                                    Grant Microphone Access
                                 </button>
+                                {platformRef.current !== "desktop" && (
+                                    <p className="text-[10px] text-muted text-center">
+                                        You may need to reload this page after changing settings
+                                    </p>
+                                )}
                             </div>
                         )}
 
@@ -1568,9 +1788,18 @@ export default function ChatPage() {
                             </button>
                         </div>
                     </div>
+                    {/* Real-time audio level indicator */}
+                    {!voicePaused && audioLevel > 0 && (
+                        <div className="h-1.5 bg-border rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-primary rounded-full transition-[width] duration-75 ease-out"
+                                style={{ width: `${Math.max(audioLevel * 100, 3)}%` }}
+                            />
+                        </div>
+                    )}
                     {/* Silence countdown bar */}
                     {voicePaused && silenceCountdown > 0 && (
-                        <div className="h-1 bg-border rounded-full overflow-hidden">
+                        <div className="h-1.5 bg-border rounded-full overflow-hidden">
                             <div
                                 className="h-full bg-amber-500 rounded-full transition-all duration-100 ease-linear"
                                 style={{ width: `${silenceCountdown * 100}%` }}
@@ -1589,18 +1818,19 @@ export default function ChatPage() {
                         disabled={isTyping}
                         className={`p-3 rounded-xl transition flex items-center justify-center shrink-0 ${isListening
                                 ? "bg-danger text-white animate-pulse"
-                                : micPermission === "denied" || micPermission === "unsupported"
+                                : micPermission === "denied" || micPermission === "unsupported" || micPermission === "not-found"
                                     ? "bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-500"
                                     : "bg-gradient-to-br from-primary to-blue-600 text-white hover:shadow-lg hover:shadow-primary/30 disabled:opacity-50"
                             }`}
                         title={
                             isListening ? "Stop listening"
                                 : micPermission === "unsupported" ? "Voice not available in this browser"
-                                    : micPermission === "denied" ? "Microphone blocked \u2014 tap to fix"
-                                        : "Speak to AI"
+                                    : micPermission === "not-found" ? "No microphone found \u2014 tap to fix"
+                                        : micPermission === "denied" ? "Microphone blocked \u2014 tap to fix"
+                                            : "Speak to AI"
                         }
                     >
-                        {isListening ? <MicOff className="w-4 h-4" /> : micPermission === "denied" ? <AlertCircle className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                        {isListening ? <MicOff className="w-4 h-4" /> : micPermission === "denied" || micPermission === "not-found" ? <AlertCircle className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
                     </button>
 
                     <div className="flex-1 relative min-w-0">
