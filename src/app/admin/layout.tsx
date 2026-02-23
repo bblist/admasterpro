@@ -13,6 +13,7 @@ import {
     X,
     Bell,
     Settings,
+    Cpu,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -20,6 +21,7 @@ const adminNav = [
     { href: "/admin", label: "Overview", icon: LayoutDashboard },
     { href: "/admin/users", label: "Users", icon: Users },
     { href: "/admin/revenue", label: "Revenue", icon: DollarSign },
+    { href: "/admin/ai-costs", label: "AI Costs", icon: Cpu },
     { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
 ];
 
