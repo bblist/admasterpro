@@ -31,6 +31,10 @@ import {
     ChevronRight,
     Wand2,
     Activity,
+    AlertCircle,
+    Globe,
+    Settings,
+    X,
 } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -840,6 +844,39 @@ const initialMessages: Message[] = [
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
+type MicPermission = "checking" | "prompt" | "granted" | "denied" | "unsupported";
+
+const detectBrowser = (): string => {
+    if (typeof navigator === "undefined") return "unknown";
+    const ua = navigator.userAgent;
+    if (/Firefox/i.test(ua)) return "firefox";
+    if (/Edg/i.test(ua)) return "edge";
+    if (/OPR|Opera/i.test(ua)) return "opera";
+    if (/CriOS/i.test(ua)) return "chrome-ios";
+    if (/Chrome/i.test(ua)) return "chrome";
+    if (/Safari/i.test(ua)) return "safari";
+    return "unknown";
+};
+
+const getBrowserInstructions = (browser: string): string => {
+    switch (browser) {
+        case "chrome":
+            return "Tap the lock icon in the address bar \u2192 Site settings \u2192 Microphone \u2192 Allow";
+        case "chrome-ios":
+            return "Open Settings \u2192 Chrome \u2192 Microphone \u2192 Enable";
+        case "safari":
+            return "Open Safari \u2192 Settings for this Site \u2192 Microphone \u2192 Allow";
+        case "edge":
+            return "Tap the lock icon in the address bar \u2192 Permissions \u2192 Microphone \u2192 Allow";
+        case "firefox":
+            return "Speech recognition is not available in Firefox. Please use Chrome, Edge, or Safari.";
+        case "opera":
+            return "Tap the lock icon in the address bar \u2192 Site settings \u2192 Microphone \u2192 Allow";
+        default:
+            return "Check your browser settings to allow microphone access for this site.";
+    }
+};
+
 export default function ChatPage() {
     const [messages, setMessages] = useState<Message[]>(initialMessages);
     const [input, setInput] = useState("");
@@ -849,6 +886,8 @@ export default function ChatPage() {
     const [voiceText, setVoiceText] = useState("");
     const [voicePaused, setVoicePaused] = useState(false);
     const [silenceCountdown, setSilenceCountdown] = useState(0);
+    const [micPermission, setMicPermission] = useState<MicPermission>("checking");
+    const [showMicModal, setShowMicModal] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const recognitionRef = useRef<any>(null);
@@ -856,6 +895,7 @@ export default function ChatPage() {
     const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const voiceTranscriptRef = useRef("");
+    const browserRef = useRef("unknown");
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -871,6 +911,41 @@ export default function ChatPage() {
             if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
             if (countdownRef.current) clearInterval(countdownRef.current);
         };
+    }, []);
+
+    // Check microphone permission + SpeechRecognition availability on mount
+    useEffect(() => {
+        browserRef.current = detectBrowser();
+
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            setMicPermission("unsupported");
+            return;
+        }
+
+        // Check permission via Permissions API (where supported)
+        if (navigator.permissions && navigator.permissions.query) {
+            navigator.permissions.query({ name: "microphone" as PermissionName })
+                .then((status) => {
+                    if (status.state === "granted") setMicPermission("granted");
+                    else if (status.state === "denied") setMicPermission("denied");
+                    else setMicPermission("prompt");
+
+                    // Listen for permission changes
+                    status.onchange = () => {
+                        if (status.state === "granted") setMicPermission("granted");
+                        else if (status.state === "denied") setMicPermission("denied");
+                        else setMicPermission("prompt");
+                    };
+                })
+                .catch(() => {
+                    // Permissions API not available for microphone (Safari) — assume prompt
+                    setMicPermission("prompt");
+                });
+        } else {
+            // No Permissions API (older Safari) — assume prompt
+            setMicPermission("prompt");
+        }
     }, []);
 
     // ─── Voice Recognition ──────────────────────────────────────────────────
@@ -928,96 +1003,111 @@ export default function ChatPage() {
     }, [clearSilenceTimer]);
 
     const startListening = useCallback(() => {
+        // Check if SpeechRecognition is available
         const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
         if (!SpeechRecognition) {
-            // Fallback: simulate voice for demo
-            setIsListening(true);
-            setVoiceText("Listening...");
-            setTimeout(() => {
-                const demos = [
-                    "Create 3 text ads for drain cleaning",
-                    "Show me my stats",
-                    "Make a display ad for summer sale",
-                    "Find where I'm wasting money",
-                    "Move the image to the top left",
-                ];
-                const picked = demos[Math.floor(Math.random() * demos.length)];
-                setVoiceText(picked);
-                setTimeout(() => {
-                    setIsListening(false);
-                    setVoiceText("");
-                    sendMessageRef.current(picked);
-                }, 800);
-            }, 2000);
+            setMicPermission("unsupported");
+            setShowMicModal(true);
             return;
         }
 
-        voiceTranscriptRef.current = "";
-        setVoiceText("");
-        setVoicePaused(false);
-        clearSilenceTimer();
+        // If permission is denied, show instructions modal
+        if (micPermission === "denied") {
+            setShowMicModal(true);
+            return;
+        }
 
-        const recognition = new SpeechRecognition();
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = "en-US";
-
-        recognition.onstart = () => {
-            setIsListening(true);
-            setVoiceText("Speak now...");
-        };
-
-        recognition.onresult = (event: any) => {
-            let finalText = "";
-            let interimText = "";
-            for (let i = 0; i < event.results.length; i++) {
-                const result = event.results[i];
-                if (result.isFinal) {
-                    finalText += result[0].transcript;
-                } else {
-                    interimText += result[0].transcript;
-                }
-            }
-
-            voiceTranscriptRef.current = finalText;
-            const display = (finalText + (interimText ? interimText : "")).trim();
-            setVoiceText(display || "Speak now...");
-
-            // Reset silence timer — user is still talking
-            clearSilenceTimer();
-            setVoicePaused(false);
-
-            // If we have finalized text and no interim (pause in speech), start countdown
-            if (finalText.trim() && !interimText) {
-                startSilenceTimer();
-            }
-        };
-
-        recognition.onerror = (e: any) => {
-            // "no-speech" is normal — user paused, just wait
-            if (e.error === "no-speech") return;
-            clearSilenceTimer();
-            setIsListening(false);
+        // Request mic permission via getUserMedia first (triggers browser prompt)
+        const attemptStart = () => {
+            voiceTranscriptRef.current = "";
             setVoiceText("");
             setVoicePaused(false);
-            voiceTranscriptRef.current = "";
-        };
+            clearSilenceTimer();
 
-        recognition.onend = () => {
-            // If we still have unsent text when recognition ends unexpectedly, restart
-            if (voiceTranscriptRef.current.trim() && silenceTimerRef.current) {
-                // Silence timer is running — let it handle sending
-                return;
-            }
-            if (!silenceTimerRef.current) {
-                setIsListening(false);
+            const recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = "en-US";
+
+            recognition.onstart = () => {
+                setIsListening(true);
+                setVoiceText("Speak now...");
+            };
+
+            recognition.onresult = (event: any) => {
+                let finalText = "";
+                let interimText = "";
+                for (let i = 0; i < event.results.length; i++) {
+                    const result = event.results[i];
+                    if (result.isFinal) {
+                        finalText += result[0].transcript;
+                    } else {
+                        interimText += result[0].transcript;
+                    }
+                }
+
+                voiceTranscriptRef.current = finalText;
+                const display = (finalText + (interimText ? interimText : "")).trim();
+                setVoiceText(display || "Speak now...");
+
+                // Reset silence timer — user is still talking
+                clearSilenceTimer();
                 setVoicePaused(false);
-            }
+
+                // If we have finalized text and no interim (pause in speech), start countdown
+                if (finalText.trim() && !interimText) {
+                    startSilenceTimer();
+                }
+            };
+
+            recognition.onerror = (e: any) => {
+                if (e.error === "not-allowed") {
+                    setMicPermission("denied");
+                    setShowMicModal(true);
+                    setIsListening(false);
+                    return;
+                }
+                // "no-speech" is normal — user paused, just wait
+                if (e.error === "no-speech") return;
+                clearSilenceTimer();
+                setIsListening(false);
+                setVoiceText("");
+                setVoicePaused(false);
+                voiceTranscriptRef.current = "";
+            };
+
+            recognition.onend = () => {
+                if (voiceTranscriptRef.current.trim() && silenceTimerRef.current) {
+                    return;
+                }
+                if (!silenceTimerRef.current) {
+                    setIsListening(false);
+                    setVoicePaused(false);
+                }
+            };
+
+            recognitionRef.current = recognition;
+            recognition.start();
         };
 
-        recognitionRef.current = recognition;
-        recognition.start();
-    }, [clearSilenceTimer, startSilenceTimer]);
+        // If permission not yet granted, request it via getUserMedia
+        if (micPermission === "prompt" || micPermission === "checking") {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then((stream) => {
+                    // Permission granted — stop the stream (we just needed the prompt)
+                    stream.getTracks().forEach(t => t.stop());
+                    setMicPermission("granted");
+                    attemptStart();
+                })
+                .catch(() => {
+                    setMicPermission("denied");
+                    setShowMicModal(true);
+                });
+        } else {
+            // Permission already granted
+            attemptStart();
+        }
+    }, [clearSilenceTimer, startSilenceTimer, micPermission]);
 
     const stopListening = useCallback(() => {
         clearSilenceTimer();
@@ -1168,7 +1258,7 @@ export default function ChatPage() {
     };
 
     const renderStatsCards = (stats: StatsCard[]) => (
-        <div className="grid grid-cols-3 gap-2 mt-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-3">
             {stats.map((stat, i) => (
                 <div key={i} className="bg-white border border-gray-200 rounded-lg p-2.5 text-center shadow-sm">
                     <div className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">{stat.label}</div>
@@ -1216,33 +1306,103 @@ export default function ChatPage() {
     // ─── Render ─────────────────────────────────────────────────────────────
 
     return (
-        <div className="max-w-3xl mx-auto h-[calc(100vh-8rem)] flex flex-col">
+        <div className="max-w-3xl mx-auto flex flex-col h-chat">
+            {/* Mic permission / unsupported modal */}
+            {showMicModal && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowMicModal(false)}>
+                    <div className="bg-card border border-border rounded-2xl p-5 sm:p-6 max-w-sm w-full shadow-xl space-y-4" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                {micPermission === "unsupported" ? (
+                                    <Globe className="w-5 h-5 text-amber-500" />
+                                ) : (
+                                    <AlertCircle className="w-5 h-5 text-danger" />
+                                )}
+                                <h3 className="font-semibold text-sm">
+                                    {micPermission === "unsupported" ? "Voice Not Available" : "Microphone Blocked"}
+                                </h3>
+                            </div>
+                            <button onClick={() => setShowMicModal(false)} className="p-1 text-muted hover:text-foreground transition touch-compact">
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        {micPermission === "unsupported" ? (
+                            <div className="space-y-3">
+                                <p className="text-sm text-muted leading-relaxed">
+                                    {browserRef.current === "firefox"
+                                        ? "Firefox doesn\u2019t support the Web Speech Recognition API. Voice input requires Chrome, Edge, or Safari."
+                                        : "Your browser doesn\u2019t support voice input. Try Chrome, Edge, or Safari for the best experience."}
+                                </p>
+                                <div className="bg-sidebar rounded-lg p-3 text-xs text-muted flex items-start gap-2">
+                                    <Settings className="w-4 h-4 shrink-0 mt-0.5" />
+                                    <span>You can still type your commands in the text box below.</span>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                <p className="text-sm text-muted leading-relaxed">
+                                    Microphone access was denied. To enable voice input, update your browser settings:
+                                </p>
+                                <div className="bg-sidebar rounded-lg p-3 text-xs text-foreground leading-relaxed flex items-start gap-2">
+                                    <Settings className="w-4 h-4 shrink-0 mt-0.5 text-primary" />
+                                    <span>{getBrowserInstructions(browserRef.current)}</span>
+                                </div>
+                                <button
+                                    onClick={async () => {
+                                        try {
+                                            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                                            stream.getTracks().forEach(t => t.stop());
+                                            setMicPermission("granted");
+                                            setShowMicModal(false);
+                                        } catch {
+                                            // Still denied — instructions remain
+                                        }
+                                    }}
+                                    className="w-full bg-primary text-white text-sm font-medium py-3 rounded-xl hover:bg-primary-dark transition flex items-center justify-center gap-2"
+                                >
+                                    <Mic className="w-4 h-4" />
+                                    Request Permission Again
+                                </button>
+                            </div>
+                        )}
+
+                        <button
+                            onClick={() => setShowMicModal(false)}
+                            className="w-full text-xs text-muted py-2 hover:text-foreground transition"
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Chat header */}
             <div className="flex items-center justify-between pb-3 border-b border-border mb-3">
-                <div className="flex items-center gap-3">
-                    <img src="https://api.dicebear.com/9.x/bottts-neutral/svg?seed=AdMasterAI&backgroundColor=4f46e5" alt="AI" className="w-10 h-10 rounded-xl shadow-lg shadow-primary/20" />
-                    <div>
-                        <h1 className="font-semibold flex items-center gap-2">
-                            AI Assistant
-                            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                    <img src="https://api.dicebear.com/9.x/bottts-neutral/svg?seed=AdMasterAI&backgroundColor=4f46e5" alt="AI" className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl shadow-lg shadow-primary/20 shrink-0" />
+                    <div className="min-w-0">
+                        <h1 className="font-semibold text-sm sm:text-base flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                            <span className="truncate">AI Assistant</span>
+                            <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
                                 <Zap className="w-2.5 h-2.5" /> GPT-4o
                             </span>
-                            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700">
+                            <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700">
                                 <Sparkles className="w-2.5 h-2.5" /> Claude 4.6
                             </span>
                         </h1>
-                        <div className="flex items-center gap-1.5 text-xs text-success">
+                        <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-success">
                             <div className="w-1.5 h-1.5 bg-success rounded-full animate-pulse"></div>
-                            Online &bull; Speak or type &bull; I&apos;ll do the work
+                            <span className="truncate">Online &bull; Speak or type &bull; I&apos;ll do the work</span>
                         </div>
                     </div>
                 </div>
                 <button
                     onClick={handleClear}
-                    className="text-xs border border-border rounded-lg px-2.5 py-1.5 text-muted hover:text-foreground hover:border-primary transition flex items-center gap-1.5"
+                    className="text-xs border border-border rounded-lg px-2 py-1.5 sm:px-2.5 text-muted hover:text-foreground hover:border-primary transition flex items-center gap-1.5 shrink-0"
                 >
                     <RotateCcw className="w-3 h-3" />
-                    New Chat
+                    <span className="hidden sm:inline">New Chat</span>
                 </button>
             </div>
 
@@ -1278,10 +1438,10 @@ export default function ChatPage() {
                     // User message
                     if (msg.role === "user") {
                         return (
-                            <div key={msg.id} className="flex gap-3 flex-row-reverse py-2">
-                                <img src="https://api.dicebear.com/9.x/thumbs/svg?seed=MikeClient&backgroundColor=e2e8f0" alt="You" className="w-8 h-8 rounded-lg shrink-0" />
-                                <div className="max-w-[80%] text-right">
-                                    <div className="bg-primary text-white rounded-xl rounded-tr-sm px-4 py-2.5 text-sm leading-relaxed inline-block text-left">
+                            <div key={msg.id} className="flex gap-2 sm:gap-3 flex-row-reverse py-2">
+                                <img src="https://api.dicebear.com/9.x/thumbs/svg?seed=MikeClient&backgroundColor=e2e8f0" alt="You" className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg shrink-0" />
+                                <div className="max-w-[85%] sm:max-w-[80%] text-right">
+                                    <div className="bg-primary text-white rounded-xl rounded-tr-sm px-3 sm:px-4 py-2 sm:py-2.5 text-sm leading-relaxed inline-block text-left">
                                         {msg.content}
                                     </div>
                                     <div className="text-[10px] text-muted mt-1">{msg.timestamp}</div>
@@ -1292,9 +1452,9 @@ export default function ChatPage() {
 
                     // AI message
                     return (
-                        <div key={msg.id} className="flex gap-3 py-2">
-                            <img src="https://api.dicebear.com/9.x/bottts-neutral/svg?seed=AdMasterAI&backgroundColor=4f46e5" alt="AI" className="w-8 h-8 rounded-lg shrink-0 shadow-sm" />
-                            <div className="max-w-[88%] min-w-0">
+                        <div key={msg.id} className="flex gap-2 sm:gap-3 py-2">
+                            <img src="https://api.dicebear.com/9.x/bottts-neutral/svg?seed=AdMasterAI&backgroundColor=4f46e5" alt="AI" className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg shrink-0 shadow-sm" />
+                            <div className="max-w-[90%] sm:max-w-[88%] min-w-0">
                                 {/* Model badge */}
                                 {msg.model && (
                                     <div className="mb-1 flex items-center gap-1.5">
@@ -1377,9 +1537,9 @@ export default function ChatPage() {
 
             {/* Voice listening overlay */}
             {isListening && (
-                <div className="border border-primary/30 bg-primary/5 rounded-xl px-4 py-3 mb-3 space-y-2">
-                    <div className="flex items-center gap-3">
-                        <div className="relative">
+                <div className="border border-primary/30 bg-primary/5 rounded-xl px-3 sm:px-4 py-3 mb-3 space-y-2">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="relative shrink-0">
                             <Mic className={`w-5 h-5 ${voicePaused ? "text-amber-500" : "text-primary"}`} />
                             {!voicePaused && <div className="absolute -inset-1 border-2 border-primary/30 rounded-full animate-ping"></div>}
                         </div>
@@ -1393,18 +1553,18 @@ export default function ChatPage() {
                             {voicePaused && voiceTranscriptRef.current.trim() && (
                                 <button
                                     onClick={voiceSendNow}
-                                    className="text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-lg hover:bg-primary/20 transition flex items-center gap-1 font-medium"
+                                    className="text-xs bg-primary/10 text-primary px-2.5 sm:px-3 py-2 rounded-lg hover:bg-primary/20 transition flex items-center gap-1 font-medium"
                                 >
                                     <Send className="w-3 h-3" />
-                                    Send
+                                    <span className="hidden sm:inline">Send</span>
                                 </button>
                             )}
                             <button
                                 onClick={stopListening}
-                                className="text-xs bg-danger/10 text-danger px-3 py-1.5 rounded-lg hover:bg-danger/20 transition flex items-center gap-1"
+                                className="text-xs bg-danger/10 text-danger px-2.5 sm:px-3 py-2 rounded-lg hover:bg-danger/20 transition flex items-center gap-1"
                             >
                                 <MicOff className="w-3 h-3" />
-                                Cancel
+                                <span className="hidden sm:inline">Cancel</span>
                             </button>
                         </div>
                     </div>
@@ -1421,34 +1581,41 @@ export default function ChatPage() {
             )}
 
             {/* Input area */}
-            <div className="border-t border-border pt-3 space-y-2.5">
-                <div className="flex gap-2">
+            <div className="border-t border-border pt-3 pb-safe space-y-2.5">
+                <div className="flex gap-1.5 sm:gap-2">
                     {/* Voice button */}
                     <button
                         onClick={isListening ? stopListening : startListening}
                         disabled={isTyping}
-                        className={`p-3 rounded-xl transition flex items-center justify-center ${isListening
+                        className={`p-3 rounded-xl transition flex items-center justify-center shrink-0 ${isListening
                                 ? "bg-danger text-white animate-pulse"
-                                : "bg-gradient-to-br from-primary to-blue-600 text-white hover:shadow-lg hover:shadow-primary/30 disabled:opacity-50"
+                                : micPermission === "denied" || micPermission === "unsupported"
+                                    ? "bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-500"
+                                    : "bg-gradient-to-br from-primary to-blue-600 text-white hover:shadow-lg hover:shadow-primary/30 disabled:opacity-50"
                             }`}
-                        title={isListening ? "Stop listening" : "Speak to AI"}
+                        title={
+                            isListening ? "Stop listening"
+                                : micPermission === "unsupported" ? "Voice not available in this browser"
+                                    : micPermission === "denied" ? "Microphone blocked \u2014 tap to fix"
+                                        : "Speak to AI"
+                        }
                     >
-                        {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                        {isListening ? <MicOff className="w-4 h-4" /> : micPermission === "denied" ? <AlertCircle className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
                     </button>
 
-                    <div className="flex-1 relative">
+                    <div className="flex-1 relative min-w-0">
                         <input
                             ref={inputRef}
                             type="text"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={(e) => e.key === "Enter" && sendMessage(input)}
-                            placeholder='Try: "Create 3 text ads for drain cleaning" or click mic to speak...'
+                            placeholder='Type a command or tap mic...'
                             disabled={isTyping || isListening}
-                            className="w-full bg-card border border-border rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none focus:border-primary transition disabled:opacity-50"
+                            className="w-full bg-card border border-border rounded-xl px-3 sm:px-4 py-3 pr-10 sm:pr-12 text-sm focus:outline-none focus:border-primary transition disabled:opacity-50"
                         />
                         <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                            <button className="p-1.5 text-muted hover:text-primary transition rounded-lg" title="Attach file">
+                            <button className="p-1.5 text-muted hover:text-primary transition rounded-lg touch-compact" title="Attach file">
                                 <Paperclip className="w-4 h-4" />
                             </button>
                         </div>
@@ -1457,26 +1624,26 @@ export default function ChatPage() {
                     <button
                         onClick={() => sendMessage(input)}
                         disabled={!input.trim() || isTyping}
-                        className="bg-primary hover:bg-primary-dark text-white p-3 rounded-xl transition disabled:opacity-50"
+                        className="bg-primary hover:bg-primary-dark text-white p-3 rounded-xl transition disabled:opacity-50 shrink-0"
                     >
                         <Send className="w-4 h-4" />
                     </button>
                 </div>
 
-                {/* Quick actions + hint */}
-                <div className="flex items-center gap-2 flex-wrap">
+                {/* Quick actions — horizontally scrollable on mobile */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
                     {quickActions.map((action) => (
                         <button
                             key={action.label}
                             onClick={() => sendMessage(action.label)}
                             disabled={isTyping}
-                            className="text-xs border border-border rounded-lg px-3 py-1.5 text-muted hover:border-primary hover:text-primary transition flex items-center gap-1.5 disabled:opacity-50"
+                            className="text-xs border border-border rounded-lg px-3 py-1.5 text-muted hover:border-primary hover:text-primary transition flex items-center gap-1.5 disabled:opacity-50 whitespace-nowrap shrink-0"
                         >
                             <action.icon className="w-3 h-3" />
                             {action.label}
                         </button>
                     ))}
-                    <span className="text-[10px] text-muted ml-auto">Press mic \ud83c\udf99\ufe0f to speak</span>
+                    <span className="text-[10px] text-muted ml-auto hidden sm:inline whitespace-nowrap">Press mic \ud83c\udf99\ufe0f to speak</span>
                 </div>
             </div>
         </div>

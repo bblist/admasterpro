@@ -93,3 +93,89 @@ body {
 .pulse-green {
   animation: pulse-green 2s infinite;
 }
+
+/* ── Mobile Optimizations ───────────────────────────────── */
+
+/* Safe area insets for notch phones (iPhone X+) */
+html {
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* Smooth momentum scrolling on iOS */
+.overflow-auto,
+.overflow-y-auto,
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent iOS zoom on input focus (needs ≥16px) */
+input,
+textarea,
+select {
+  font-size: 16px !important;
+}
+
+@media (min-width: 768px) {
+  input,
+  textarea,
+  select {
+    font-size: inherit !important;
+  }
+}
+
+/* Minimum touch targets (44×44px per Apple HIG) */
+button,
+a,
+[role="button"] {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Except inline text links & icon-only compact buttons */
+a:not(.btn),
+.touch-compact {
+  min-height: unset;
+  min-width: unset;
+}
+
+/* Dynamic viewport height for mobile address bar */
+.h-dvh {
+  height: 100vh; /* fallback */
+  height: 100dvh;
+}
+
+/* Chat container height — accounts for dashboard header + padding */
+.h-chat {
+  height: calc(100vh - 5rem);
+  height: calc(100dvh - 5rem);
+}
+
+/* Safe bottom padding for fixed bottom bars */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Prevent text selection on interactive elements */
+button,
+[role="button"] {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Tap highlight removal on mobile */
+button,
+a,
+input,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Hide scrollbar for horizontal scroll containers */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
