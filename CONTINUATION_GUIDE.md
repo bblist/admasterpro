@@ -47,10 +47,10 @@ If for some reason you lose the key, download it again from the AWS Lightsail co
 | Item | Value |
 |------|-------|
 | **Cloud** | AWS Lightsail |
-| **Instance Name** | `admasterpro` |
+| **Instance Name** | `admasterpro-v2` |
 | **Region** | `us-east-1` (N. Virginia) |
 | **AZ** | `us-east-1a` |
-| **Bundle** | `nano_3_0` — 512MB RAM, 2 vCPU, 20GB SSD, $5/mo |
+| **Bundle** | `small_3_0` — 2GB RAM, 2 vCPU, 60GB SSD, $12/mo |
 | **OS** | Ubuntu 24.04 LTS |
 | **Static IP** | `3.225.249.236` |
 | **Domain** | `admasterai.nobleblocks.com` |
@@ -301,10 +301,10 @@ To fix HTTPS on the ELB-based subdomains:
 The 512MB instance gets overwhelmed during builds. Wait 5-10 minutes and retry. If it persists:
 ```bash
 # Check instance state
-aws lightsail get-instance --instance-name admasterpro --region us-east-1 --query 'instance.state.name'
+aws lightsail get-instance --instance-name admasterpro-v2 --region us-east-1 --query 'instance.state.name'
 
 # Reboot if needed
-aws lightsail reboot-instance --instance-name admasterpro --region us-east-1
+aws lightsail reboot-instance --instance-name admasterpro-v2 --region us-east-1
 ```
 
 ### App not serving after reboot
