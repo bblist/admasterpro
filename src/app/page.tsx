@@ -280,9 +280,8 @@ export default function LandingPage() {
             ].map((plan, i) => (
               <div
                 key={i}
-                className={`bg-card border rounded-xl p-6 relative ${
-                  plan.popular ? "border-primary shadow-lg scale-105" : "border-border"
-                }`}
+                className={`bg-card border rounded-xl p-6 relative ${plan.popular ? "border-primary shadow-lg scale-105" : "border-border"
+                  }`}
               >
                 {plan.popular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-white text-xs font-medium px-3 py-1 rounded-full">
@@ -304,11 +303,10 @@ export default function LandingPage() {
                 </ul>
                 <Link
                   href="/onboarding"
-                  className={`block text-center py-2.5 rounded-lg font-medium text-sm transition ${
-                    plan.popular
+                  className={`block text-center py-2.5 rounded-lg font-medium text-sm transition ${plan.popular
                       ? "bg-primary hover:bg-primary-dark text-white"
                       : "border border-border hover:border-primary text-foreground"
-                  }`}
+                    }`}
                 >
                   {plan.cta}
                 </Link>
