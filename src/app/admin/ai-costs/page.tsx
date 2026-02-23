@@ -22,7 +22,7 @@ import { useState } from "react";
 
 // Types
 
-type LLMModel = "gpt-4o" | "claude-5.6";
+type LLMModel = "gpt-4o" | "claude-4.6";
 
 interface ClientAICost {
     id: number;
@@ -130,7 +130,7 @@ export default function AdminAICostsPage() {
                     AI Costs & Usage
                 </h2>
                 <p className="text-gray-500 text-sm mt-1">
-                    Track AI spending per client, model usage, and margins across GPT-4o and Claude 5.6.
+                    Track AI spending per client, model usage, and margins across GPT-4o and Claude 4.6.
                 </p>
             </div>
 
@@ -232,7 +232,7 @@ export default function AdminAICostsPage() {
                             <div className="flex-1">
                                 <div className="flex items-center justify-between mb-1">
                                     <span className="text-xs text-gray-400 flex items-center gap-1.5">
-                                        <Sparkles className="w-3 h-3 text-orange-400" /> Claude 5.6 (Fallback)
+                                        <Sparkles className="w-3 h-3 text-orange-400" /> Claude 4.6 (Fallback)
                                     </span>
                                     <span className="text-xs text-white font-medium">{100 - Number(gpt4oPct)}% of queries</span>
                                 </div>
@@ -281,7 +281,7 @@ export default function AdminAICostsPage() {
                     </div>
                     <div className="flex items-center justify-center gap-4 mt-3 text-[11px] text-gray-500">
                         <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" /> GPT-4o</span>
-                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-500" /> Claude 5.6</span>
+                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-500" /> Claude 4.6</span>
                     </div>
                     <div className="border-t border-gray-800 pt-3 mt-3 grid grid-cols-3 gap-3 text-center">
                         <div>
@@ -337,7 +337,7 @@ export default function AdminAICostsPage() {
                     <div className="col-span-3">Client</div>
                     <div className="col-span-1 text-right">Plan</div>
                     <div className="col-span-2 text-right">GPT-4o</div>
-                    <div className="col-span-2 text-right">Claude 5.6</div>
+                    <div className="col-span-2 text-right">Claude 4.6</div>
                     <div className="col-span-1 text-right">Total Cost</div>
                     <div className="col-span-1 text-right">Sub Fee</div>
                     <div className="col-span-1 text-right">Margin</div>
@@ -401,7 +401,7 @@ export default function AdminAICostsPage() {
                                             <div className="text-sm text-white font-medium">{(client.gpt4oTokens / 1000).toFixed(0)}K</div>
                                         </div>
                                         <div>
-                                            <div className="text-[11px] text-gray-500">Claude 5.6 Tokens</div>
+                                            <div className="text-[11px] text-gray-500">Claude 4.6 Tokens</div>
                                             <div className="text-sm text-white font-medium">{(client.claude56Tokens / 1000).toFixed(0)}K</div>
                                         </div>
                                         <div>
@@ -484,9 +484,9 @@ export default function AdminAICostsPage() {
                         <div className="text-[11px] text-gray-500 mt-1">{clientCosts.filter(c => c.plan === "Free").length} free users generating AI costs with $0 revenue. Consider query limits.</div>
                     </div>
                     <div className="bg-gray-800/40 rounded-lg p-3">
-                        <div className="text-xs text-blue-400 font-medium mb-1">Claude 5.6 Savings</div>
+                        <div className="text-xs text-blue-400 font-medium mb-1">Claude 4.6 Savings</div>
                         <div className="text-lg font-bold text-white">${(totals.claude56Total * 0.15).toFixed(2)}/mo saved</div>
-                        <div className="text-[11px] text-gray-500 mt-1">Claude 5.6 costs ~13% less than GPT-4o per token. Used as fallback for {100 - Number(gpt4oPct)}% of queries.</div>
+                        <div className="text-[11px] text-gray-500 mt-1">Claude 4.6 costs ~13% less than GPT-4o per token. Used as fallback for {100 - Number(gpt4oPct)}% of queries.</div>
                     </div>
                     <div className="bg-gray-800/40 rounded-lg p-3">
                         <div className="text-xs text-green-400 font-medium mb-1">Revenue per AI Dollar</div>

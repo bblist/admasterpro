@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import {
     Search,
     Filter,
@@ -178,9 +178,8 @@ export default function AdminUsersPage() {
                         </thead>
                         <tbody>
                             {filtered.map((user) => (
-                                <>
+                                <React.Fragment key={user.id}>
                                     <tr
-                                        key={user.id}
                                         className={`border-b border-gray-800/50 hover:bg-gray-800/30 cursor-pointer transition-colors ${expandedUser === user.id ? "bg-gray-800/30" : ""
                                             }`}
                                         onClick={() =>
@@ -293,7 +292,7 @@ export default function AdminUsersPage() {
                                             </td>
                                         </tr>
                                     )}
-                                </>
+                                </React.Fragment>
                             ))}
                         </tbody>
                     </table>

@@ -75,7 +75,7 @@ const platformHealth = [
     { label: "Avg Response Time", value: "142ms", status: "good" },
     { label: "Google Ads API", value: "Connected", status: "good" },
     { label: "AI Primary (GPT-4o)", value: "Operational", status: "good" },
-    { label: "AI Fallback (Claude 5.6)", value: "Operational", status: "good" },
+    { label: "AI Fallback (Claude 4.6)", value: "Operational", status: "good" },
     { label: "Queue Backlog", value: "23 jobs", status: "warning" },
     { label: "Error Rate (24h)", value: "0.03%", status: "good" },
 ];

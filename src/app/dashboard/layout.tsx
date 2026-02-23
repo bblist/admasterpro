@@ -15,6 +15,8 @@ import {
     X,
     ShoppingBag,
     BookOpen,
+    HelpCircle,
+    Lightbulb,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -26,6 +28,8 @@ const navItems = [
     { href: "/dashboard/drafts", label: "Ad Drafts", icon: FileText },
     { href: "/dashboard/shopping", label: "Shopping Ads", icon: ShoppingBag },
     { href: "/dashboard/knowledge-base", label: "Knowledge Base", icon: BookOpen },
+    { href: "/dashboard/examples", label: "AI Examples", icon: Lightbulb },
+    { href: "/dashboard/faq", label: "FAQ", icon: HelpCircle },
     { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
@@ -108,10 +112,13 @@ export default function DashboardLayout({
                                 Upgrade to Pro →
                             </Link>
                         </div>
-                        <button className="flex items-center gap-2 px-3 py-2 text-sm text-muted hover:text-danger transition w-full">
+                        <Link
+                            href="/login"
+                            className="flex items-center gap-2 px-3 py-2 text-sm text-muted hover:text-danger transition w-full"
+                        >
                             <LogOut className="w-4 h-4" />
                             Sign Out
-                        </button>
+                        </Link>
                     </div>
                 </div>
             </aside>

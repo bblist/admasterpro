@@ -43,7 +43,7 @@ import Tooltip from "@/components/Tooltip";
 
 type AdType = "text" | "display";
 type AdFilter = "all" | "text" | "display";
-type LLMModel = "gpt-4o" | "claude-5.6";
+type LLMModel = "gpt-4o" | "claude-4.6";
 
 type ImagePosition =
     | "center"
@@ -134,13 +134,13 @@ const modelBadge = (model: LLMModel) => {
     }
     return (
         <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 border border-orange-200">
-            <Sparkles className="w-3 h-3" /> Claude 5.6
+            <Sparkles className="w-3 h-3" /> Claude 4.6
         </span>
     );
 };
 
 const modelLabel = (model: LLMModel) =>
-    model === "gpt-4o" ? "GPT-4o (Primary)" : "Claude 5.6 (Fallback)";
+    model === "gpt-4o" ? "GPT-4o (Primary)" : "Claude 4.6 (Fallback)";
 
 // Position label map
 
@@ -249,7 +249,7 @@ const initialDrafts: Draft[] = [
             },
             {
                 versionId: 2,
-                model: "claude-5.6",
+                model: "claude-4.6",
                 content: {
                     headline1: "Pipe Burst? We\u2019re On Our Way",
                     headline2: "30-Min Response \u2022 Free Estimates",
@@ -319,7 +319,7 @@ const initialDrafts: Draft[] = [
             },
             {
                 versionId: 3,
-                model: "claude-5.6",
+                model: "claude-4.6",
                 content: {
                     headline1: "Miami Drain Cleaning Experts",
                     headline2: "Starting at $49 \u2022 5-Star Rated",
@@ -394,7 +394,7 @@ const initialDrafts: Draft[] = [
         versions: [
             {
                 versionId: 1,
-                model: "claude-5.6",
+                model: "claude-4.6",
                 content: {
                     title: "ClearVision \u2014 Eye Exam Ad",
                     dimensions: "160\u00d7600",
@@ -438,7 +438,7 @@ const initialDrafts: Draft[] = [
             },
             {
                 versionId: 2,
-                model: "claude-5.6",
+                model: "claude-4.6",
                 content: {
                     headline1: "Your Car Deserves Pinnacle Treatment",
                     headline2: "Ceramic Coating \u2022 Paint Correction",
@@ -537,7 +537,7 @@ export default function DraftsPage() {
                 prev.map((d) => {
                     if (d.id !== draftId) return d;
                     const newVersionId = Math.max(...d.versions.map((v) => v.versionId)) + 1;
-                    const models: LLMModel[] = ["gpt-4o", "claude-5.6"];
+                    const models: LLMModel[] = ["gpt-4o", "claude-4.6"];
                     const model = models[Math.floor(Math.random() * 2)];
                     const now = new Date();
                     const timeStr = `${now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} \u2022 ${now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
@@ -1091,7 +1091,7 @@ export default function DraftsPage() {
                 <div>
                     <h1 className="text-2xl font-bold flex items-center gap-2">
                         Ad Drafts
-                        <Tooltip text="All ads are AI-generated drafts. Nothing runs until you click Go Live. Use Regenerate to get fresh variations from GPT-4o or Claude 5.6." />
+                        <Tooltip text="All ads are AI-generated drafts. Nothing runs until you click Go Live. Use Regenerate to get fresh variations from GPT-4o or Claude 4.6." />
                     </h1>
                     <p className="text-muted text-sm mt-1">
                         Review AI-generated ads before they go live. Nothing runs until you approve it.
@@ -1154,13 +1154,13 @@ export default function DraftsPage() {
                     <div>
                         <div className="text-sm font-semibold">AI Models Active</div>
                         <div className="text-xs text-muted mt-0.5">
-                            Primary: <strong>GPT-4o</strong> &bull; Fallback: <strong>Claude 5.6</strong> &bull; Each regeneration may use either model for diverse ad copy.
+                            Primary: <strong>GPT-4o</strong> &bull; Fallback: <strong>Claude 4.6</strong> &bull; Each regeneration may use either model for diverse ad copy.
                         </div>
                     </div>
                 </div>
                 <div className="flex gap-2">
                     {modelBadge("gpt-4o")}
-                    {modelBadge("claude-5.6")}
+                    {modelBadge("claude-4.6")}
                 </div>
             </div>
 

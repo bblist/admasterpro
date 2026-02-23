@@ -35,7 +35,7 @@ import {
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-type LLMModel = "gpt-4o" | "claude-5.6";
+type LLMModel = "gpt-4o" | "claude-4.6";
 
 interface AdPreview {
     type: "text" | "display";
@@ -83,7 +83,7 @@ const modelBadge = (model: LLMModel) => {
     }
     return (
         <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700">
-            <Sparkles className="w-2.5 h-2.5" /> Claude 5.6
+            <Sparkles className="w-2.5 h-2.5" /> Claude 4.6
         </span>
     );
 };
@@ -440,7 +440,7 @@ const generateResponse = (intent: IntentMatch, rawText: string): Omit<Message, "
         case "check_competitors": {
             return {
                 role: "ai",
-                model: "claude-5.6",
+                model: "claude-4.6",
                 content: "I analyzed your competitors in the **Miami plumbing** market:\n\n" +
                     "\ud83c\udfc6 **1. Roto-Rooter Miami** \u2014 Avg pos: 1.2, 12 ads, \"$50 Off\"\n" +
                     "\ud83e\udd48 **2. Mr. Rooter Plumbing** \u2014 Avg pos: 2.1, 8 ads, \"Neighborly Promise\"\n" +
@@ -564,7 +564,7 @@ const generateResponse = (intent: IntentMatch, rawText: string): Omit<Message, "
             // Try exact match bank first, then true fallback
             return {
                 role: "ai",
-                model: Math.random() > 0.4 ? "gpt-4o" : "claude-5.6",
+                model: Math.random() > 0.4 ? "gpt-4o" : "claude-4.6",
                 content: "Got it! Let me work on that for you.\n\n" +
                     "Based on your account data:\n\n" +
                     "\u2022 Your account is healthy with a **7.99% CTR**\n" +
@@ -603,7 +603,7 @@ const exactMatchBank: Record<string, () => Omit<Message, "id">> = {
     "What can you do?": () => generateResponse({ intent: "help", params: {} }, ""),
     "Show call details": () => ({
         role: "ai",
-        model: "claude-5.6",
+        model: "claude-4.6",
         content: "Here are your **18 calls** from the last 7 days:\n\n" +
             "| # | Date | Duration | Keyword | Result |\n" +
             "|---|------|----------|---------|--------|\n" +
@@ -686,7 +686,7 @@ const exactMatchBank: Record<string, () => Omit<Message, "id">> = {
     "Write counter-ads": () => generateResponse({ intent: "create_text_ads", params: { topic: "counter-competitor messaging" } }, ""),
     "Regenerate Ad #2": () => ({
         role: "ai",
-        model: "claude-5.6",
+        model: "claude-4.6",
         content: "Done! I regenerated Ad #2 with a fresh angle. Here\u2019s the new version:",
         timestamp: timeNow(),
         ads: [
@@ -698,7 +698,7 @@ const exactMatchBank: Record<string, () => Omit<Message, "id">> = {
                 displayUrl: "www.mikesplumbing.com",
             },
         ],
-        taskSummary: { done: ["Regenerated Ad #2 using Claude 5.6", "New version saved to Drafts (v2)", "Previous version kept in version history"] },
+        taskSummary: { done: ["Regenerated Ad #2 using Claude 4.6", "New version saved to Drafts (v2)", "Previous version kept in version history"] },
         actions: [
             { label: "Use this version", type: "primary" },
             { label: "Try another angle", type: "secondary" },
@@ -768,7 +768,7 @@ const exactMatchBank: Record<string, () => Omit<Message, "id">> = {
     "Add more sizes": () => generateResponse({ intent: "create_display_ads", params: { topic: "additional sizes" } }, ""),
     "How to beat Roto-Rooter?": () => ({
         role: "ai",
-        model: "claude-5.6",
+        model: "claude-4.6",
         content: "**Battle plan to beat Roto-Rooter:**\n\n" +
             "**1. Speed** \u2014 They don\u2019t mention response time. You guarantee 30 min.\n\u2003Ad: \"Why Wait 2 Hours? We\u2019re There in 30 Minutes.\"\n\n" +
             "**2. Price match + one-up**\n\u2003They: $50 off. You: $49 drain cleaning + free estimates.\n\n" +
@@ -808,7 +808,7 @@ const initialMessages: Message[] = [
     {
         id: 1,
         role: "system",
-        content: "AI Assistant connected \u2022 Models: GPT-4o + Claude 5.6 \u2022 Voice enabled \ud83c\udf99\ufe0f",
+        content: "AI Assistant connected \u2022 Models: GPT-4o + Claude 4.6 \u2022 Voice enabled \ud83c\udf99\ufe0f",
         timestamp: "Session started",
     },
     {
@@ -850,6 +850,7 @@ export default function ChatPage() {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const recognitionRef = useRef<any>(null);
+    const sendMessageRef = useRef<(text: string) => void>(() => {});
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -880,7 +881,7 @@ export default function ChatPage() {
                 setTimeout(() => {
                     setIsListening(false);
                     setVoiceText("");
-                    sendMessage(picked);
+                    sendMessageRef.current(picked);
                 }, 800);
             }, 2000);
             return;
@@ -906,7 +907,7 @@ export default function ChatPage() {
                 setTimeout(() => {
                     setIsListening(false);
                     setVoiceText("");
-                    if (transcript.trim()) sendMessage(transcript.trim());
+                    if (transcript.trim()) sendMessageRef.current(transcript.trim());
                 }, 300);
             }
         };
@@ -982,6 +983,11 @@ export default function ChatPage() {
             setIsTyping(false);
         }, delay);
     }, [isTyping]);
+
+    // Keep ref in sync so startListening can call sendMessage via ref
+    useEffect(() => {
+        sendMessageRef.current = sendMessage;
+    }, [sendMessage]);
 
     const handleCopy = (id: number, content: string) => {
         navigator.clipboard.writeText(content.replace(/\*\*/g, ""));
@@ -1071,11 +1077,10 @@ export default function ChatPage() {
                     <div className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">{stat.label}</div>
                     <div className="text-lg font-bold mt-0.5">{stat.value}</div>
                     {stat.change && (
-                        <div className={`text-[10px] font-medium mt-0.5 ${
-                            stat.trend === "up" ? "text-emerald-600" :
-                            stat.trend === "down" ? "text-red-500" :
-                            "text-gray-400"
-                        }`}>
+                        <div className={`text-[10px] font-medium mt-0.5 ${stat.trend === "up" ? "text-emerald-600" :
+                                stat.trend === "down" ? "text-red-500" :
+                                    "text-gray-400"
+                            }`}>
                             {stat.trend === "up" ? "\u25b2 " : stat.trend === "down" ? "\u25bc " : ""}{stat.change}
                         </div>
                     )}
@@ -1126,7 +1131,7 @@ export default function ChatPage() {
                                 <Zap className="w-2.5 h-2.5" /> GPT-4o
                             </span>
                             <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700">
-                                <Sparkles className="w-2.5 h-2.5" /> Claude 5.6
+                                <Sparkles className="w-2.5 h-2.5" /> Claude 4.6
                             </span>
                         </h1>
                         <div className="flex items-center gap-1.5 text-xs text-success">
@@ -1226,13 +1231,12 @@ export default function ChatPage() {
                                                 key={i}
                                                 onClick={() => sendMessage(action.label)}
                                                 disabled={isTyping}
-                                                className={`text-xs px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
-                                                    action.type === "primary"
+                                                className={`text-xs px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${action.type === "primary"
                                                         ? "bg-primary text-white hover:bg-primary-dark disabled:opacity-50"
                                                         : action.type === "danger"
                                                             ? "bg-danger/10 text-danger hover:bg-danger/20 disabled:opacity-50"
                                                             : "border border-border hover:border-primary text-foreground disabled:opacity-50"
-                                                }`}
+                                                    }`}
                                             >
                                                 {action.type === "primary" && <ArrowRight className="w-3 h-3" />}
                                                 {action.label}
@@ -1302,11 +1306,10 @@ export default function ChatPage() {
                     <button
                         onClick={isListening ? stopListening : startListening}
                         disabled={isTyping}
-                        className={`p-3 rounded-xl transition flex items-center justify-center ${
-                            isListening
+                        className={`p-3 rounded-xl transition flex items-center justify-center ${isListening
                                 ? "bg-danger text-white animate-pulse"
                                 : "bg-gradient-to-br from-primary to-blue-600 text-white hover:shadow-lg hover:shadow-primary/30 disabled:opacity-50"
-                        }`}
+                            }`}
                         title={isListening ? "Stop listening" : "Speak to AI"}
                     >
                         {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
