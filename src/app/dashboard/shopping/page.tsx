@@ -272,16 +272,15 @@ export default function ShoppingPage() {
                                         </div>
                                     </td>
                                     <td className="px-5 py-4">
-                                        <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${
-                                            product.status === "active" ? "bg-success/10 text-success" :
-                                            product.status === "disapproved" ? "bg-danger/10 text-danger" :
-                                            "bg-warning/10 text-warning"
-                                        }`}>
+                                        <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${product.status === "active" ? "bg-success/10 text-success" :
+                                                product.status === "disapproved" ? "bg-danger/10 text-danger" :
+                                                    "bg-warning/10 text-warning"
+                                            }`}>
                                             {product.status === "active" ? <CheckCircle className="w-3 h-3" /> :
-                                             product.status === "disapproved" ? <AlertTriangle className="w-3 h-3" /> :
-                                             <RefreshCw className="w-3 h-3" />}
+                                                product.status === "disapproved" ? <AlertTriangle className="w-3 h-3" /> :
+                                                    <RefreshCw className="w-3 h-3" />}
                                             {product.status === "active" ? "Active" :
-                                             product.status === "disapproved" ? "Disapproved" : "Pending"}
+                                                product.status === "disapproved" ? "Disapproved" : "Pending"}
                                         </span>
                                     </td>
                                     <td className="px-5 py-4 text-right">

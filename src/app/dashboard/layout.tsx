@@ -85,8 +85,8 @@ export default function DashboardLayout({
                                     href={item.href}
                                     onClick={() => setSidebarOpen(false)}
                                     className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition ${isActive
-                                            ? "bg-primary text-white"
-                                            : "text-muted hover:bg-border/50 hover:text-foreground"
+                                        ? "bg-primary text-white"
+                                        : "text-muted hover:bg-border/50 hover:text-foreground"
                                         }`}
                                 >
                                     <item.icon className="w-4 h-4" />
