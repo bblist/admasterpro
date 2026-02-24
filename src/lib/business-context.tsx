@@ -134,16 +134,16 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
         [activeBusiness]
     );
 
-    /** Check if the user is trying to create ads for a DIFFERENT known business */
+    /** Check if the user is referencing a DIFFERENT known business in any request */
     const getOffTopicBusiness = useCallback(
         (text: string): BusinessProfile | null => {
             const t = text.toLowerCase();
 
-            // Only check when user is asking to create/write/make something
-            const isCreativeRequest = /\b(create|write|make|generate|draft|design|build)\b.*\b(ads?|copy|banner|campaign|display)\b/i.test(t) ||
-                /\b(ads?|copy|banner|campaign)\b.*\b(for|about)\b/i.test(t);
+            // Check if this is any kind of action or query (not just casual text)
+            const isRequestOrQuery = /\b(create|write|make|generate|draft|design|build|show|display|get|check|update|change|modify|edit|pause|stop|find|scan|look|export|manage|compare|review|analyze|print|send|download|how|what|can you|please|tell me)\b/i.test(t) ||
+                /\b(ads?|copy|banner|campaign|stats?|performance|budget|spend|keywords?|report|account|business)\b/i.test(t);
 
-            if (!isCreativeRequest) return null;
+            if (!isRequestOrQuery) return null;
 
             // Check if it mentions another business by name
             for (const biz of BUSINESSES) {
@@ -157,8 +157,8 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
                 // Partial name match (e.g., "sakura", "clearvision", "pinnacle", "bella")
                 if (nameWords.some((w) => w.length > 4 && t.includes(w))) return biz;
 
-                // Industry-specific service match when used with "for [business type]"
-                const forMatch = t.match(/(?:for|about)\s+(?:a\s+|an\s+|the\s+|my\s+)?(.+?)(?:\s*$|\s*with|\s*using|\s*campaign|\s*ad)/);
+                // Industry-specific service match when used with action prepositions
+                const forMatch = t.match(/(?:for|about|on|under|at|of)\s+(?:a\s+|an\s+|the\s+|my\s+|our\s+)?(.+?)(?:\s*$|\s*with|\s*using|\s*campaign|\s*ad|\s*account|\s*business)/);
                 if (forMatch) {
                     const topic = forMatch[1].toLowerCase().trim();
                     // Check if the topic matches another business's unique services but NOT the active one
@@ -169,15 +169,14 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
             }
 
             // Check for clearly unrelated industries (not matching any known business)
-            const forMatch = t.match(/(?:for|about)\s+(?:a\s+|an\s+|the\s+|my\s+)?(.+?)(?:\s*$|\s*with|\s*using|\s*campaign|\s*ad)/);
+            const forMatch = t.match(/(?:for|about|on|under)\s+(?:a\s+|an\s+|the\s+|my\s+|our\s+)?(.+?)(?:\s*$|\s*with|\s*using|\s*campaign|\s*ad|\s*account|\s*business)/);
             if (forMatch) {
                 const topic = forMatch[1].toLowerCase().trim();
                 // If the topic doesn't match ANY service of the active business, it's off-topic
                 const matchesActive = activeBusiness.services.some((s) => topic.includes(s.toLowerCase()));
                 const isGeneric = /\b(top service|my business|our products?|our services?|something cool|anything|new)\b/i.test(topic);
                 if (!matchesActive && !isGeneric && topic.length > 3) {
-                    // Return null but let the chat layer handle the "unrelated topic" case
-                    return null; // Will be handled as a soft guard in the chat
+                    return null;
                 }
             }
 

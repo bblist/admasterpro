@@ -102,6 +102,7 @@ type Intent =
     | "show_drafts"
     | "export_report"
     | "add_keywords"
+    | "cross_account_query"
     | "help"
     | "off_topic"
     | "switch_account"
@@ -196,6 +197,19 @@ const matchIntent = (text: string): IntentMatch => {
         /\bwhat.+should\s+i\s+target\b/i.test(t) ||
         /\bgoogle\s+trends?\b/i.test(t)) {
         return { intent: "add_keywords", params: {} };
+    }
+
+    // Cross-account / portfolio query
+    if (/\bhow many\b.*\b(account|business|client|campaign)/i.test(t) ||
+        /\b(all|every|each)\s+(accounts?|businesses?|clients?)\b/i.test(t) ||
+        /\b(total|overall|combined|aggregate)\s+(spend|budget|cost|performance|stats|revenue|calls)/i.test(t) ||
+        /\bacross\s+(all|every|accounts?|businesses?|clients?)/i.test(t) ||
+        /\bportfolio\b/i.test(t) ||
+        /\bcompare\s+(all\s+)?(accounts?|businesses?|clients?)/i.test(t) ||
+        /\bwhich\s+(account|business|client)\s+(is|has|performs?|does|gets?)\b/i.test(t) ||
+        /\b(overview|summary)\s+(of|for)\s+(all|every|my)\b/i.test(t) ||
+        /\b(all|every)\s+(my\s+)?(accounts?|businesses?)\b.*\b(doing|performing|running|spend)/i.test(t)) {
+        return { intent: "cross_account_query", params: {} };
     }
 
     // Switch account / check on ads
@@ -646,6 +660,7 @@ const generateResponse = (intent: IntentMatch, rawText: string, biz: BusinessPro
                     "\ud83c\udfc6 **Competitors** \u2014 \"What are my competitors doing?\"\n" +
                     "\ud83d\udd0d **Keywords** \u2014 \"Suggest keywords\" or \"What\u2019s trending?\"\n" +
                     "\ud83d\udcc4 **Reports** \u2014 \"Export my report as PDF\"\n" +
+                    "\ud83c\udfe2 **Multi-Account** \u2014 \"How many accounts do we have?\" or \"Compare all accounts\"\n" +
                     "\u23f8 **Pause/Block** \u2014 \"Pause the bad keywords\"\n" +
                     "\ud83d\ude80 **Go Live** \u2014 \"Launch my ads\"\n\n" +
                     "Just speak or type naturally \u2014 I\u2019ll handle the rest! \ud83c\udf99\ufe0f",
@@ -940,6 +955,24 @@ const getExactMatchBank = (biz: BusinessProfile): Record<string, () => Omit<Mess
         content: `📋 You can find all your keywords on the **Keywords** page in the left sidebar.\n\nFrom there you can:\n- View all keywords with AI verdicts & Google Trends\n- Add new keywords (single or bulk)\n- Export branded reports\n- See which keywords I've approved, paused, or flagged\n\nNeed anything else?`,
         timestamp: timeNow(),
         actions: [{ label: "Add all suggested", type: "primary" }, { label: "Export a report", type: "secondary" }, { label: "Show my stats", type: "secondary" }],
+    }),
+    // ── Confirmation actions ──
+    "Yes, go live!": () => generateResponse({ intent: "go_live", params: {} }, "", biz),
+    "No, not yet": () => ({
+        role: "ai" as const,
+        model: "gpt-4o",
+        content: `👍 No problem! Your drafts for **${biz.name}** are safe and ready whenever you are.\n\nI\u2019ll keep monitoring your account 24/7 in the meantime. 🔒`,
+        timestamp: timeNow(),
+        actions: [{ label: "Show my stats", type: "primary" }, { label: "Show my drafts", type: "secondary" }],
+    }),
+    "Let me review drafts first": () => generateResponse({ intent: "show_drafts", params: {} }, "", biz),
+    "Show my drafts": () => generateResponse({ intent: "show_drafts", params: {} }, "", biz),
+    "How many accounts?": () => ({
+        role: "ai" as const,
+        model: "gpt-4o",
+        content: `You have **5 ad accounts** connected. I\u2019m currently managing **${biz.name}**. Ask me \u201CShow all accounts\u201D for a full portfolio overview with spend, calls, and CTR.`,
+        timestamp: timeNow(),
+        actions: [{ label: "Show my stats", type: "primary" }],
     }),
 });
 
@@ -1507,6 +1540,36 @@ export default function ChatPage() {
         setInput("");
         setIsTyping(true);
 
+        // ── Handle dynamic confirmation buttons ──────────────
+        const yesSwitch = text.match(/^Yes, switch to (.+)$/i);
+        if (yesSwitch) {
+            const targetName = yesSwitch[1].trim();
+            const targetBiz = businesses.find(b => b.name.toLowerCase() === targetName.toLowerCase());
+            if (targetBiz) {
+                setTimeout(() => switchToBusiness(targetBiz.id), 800);
+                return;
+            }
+        }
+        if (/^No, stay on /i.test(text)) {
+            const stayResp: Omit<Message, "id"> = {
+                role: "ai",
+                model: "gpt-4o",
+                content: `\uD83D\uDC4D Staying on **${activeBusiness.name}**. What would you like me to do?`,
+                timestamp: timeNow(),
+                actions: [
+                    { label: "Show my stats", type: "primary" },
+                    { label: "Create new ads", type: "secondary" },
+                    { label: "Find money leaks", type: "secondary" },
+                ],
+            };
+            setTimeout(() => {
+                const divider: Message = { id: Date.now() + 1, role: "divider", content: "", timestamp: `${dateNow()} \u2022 ${timeNow()}` };
+                setMessages((prev) => [...prev, divider, { ...stayResp, id: Date.now() + 2 } as Message]);
+                setIsTyping(false);
+            }, 800);
+            return;
+        }
+
         // ── Check for account switch intent first ──────────────
         const intent = matchIntent(text);
 
@@ -1598,17 +1661,91 @@ export default function ChatPage() {
             return;
         }
 
-        // ── Off-topic business guard ────────────────────────────
+        // ── Cross-account portfolio query ──────────────────────────
+        if (intent.intent === "cross_account_query") {
+            const spendData = [295, 412, 187, 340, 265];
+            const ctrData = [7.99, 6.2, 8.4, 5.8, 9.1];
+            const callsData = [18, 24, 12, 15, 21];
+
+            const portfolioLines = businesses.map((b, i) => {
+                const spend = spendData[i % 5];
+                const ctr = ctrData[i % 5];
+                const calls = callsData[i % 5];
+                const isCurrent = b.id === activeBusiness.id;
+                return `**${i + 1}. ${b.name}** \u2014 ${b.industry}\n` +
+                    `\u2003\uD83D\uDCB0 $${spend}/wk \u00B7 \uD83D\uDCDE ${calls} calls \u00B7 \uD83D\uDCCA ${ctr}% CTR${isCurrent ? " *(\u2190 currently managing)*" : ""}`;
+            });
+
+            const totalSpend = businesses.reduce((sum, _, i) => sum + spendData[i % 5], 0);
+            const totalCalls = businesses.reduce((sum, _, i) => sum + callsData[i % 5], 0);
+
+            const portfolioResp: Omit<Message, "id"> = {
+                role: "ai",
+                model: "gpt-4o",
+                content: `\uD83C\uDFE2 **Portfolio Overview \u2014 All Ad Accounts**\n\n` +
+                    `You have **${businesses.length} ad accounts** connected to AdMaster Pro:\n\n` +
+                    portfolioLines.join("\n\n") + "\n\n" +
+                    `\u2500\u2500\u2500\n\n` +
+                    `**Portfolio Totals (7 days):** $${totalSpend.toLocaleString()} spent \u00B7 ${totalCalls} calls \u00B7 ${(6.5 + Math.random()).toFixed(1)}% avg CTR\n\n` +
+                    `I\u2019m currently managing **${activeBusiness.name}**. Want me to switch to another account or dive deeper into any of these?`,
+                timestamp: timeNow(),
+                stats: [
+                    { label: "Accounts", value: String(businesses.length), change: "All Active", trend: "up" },
+                    { label: "Total Spend", value: `$${totalSpend.toLocaleString()}`, change: "This week", trend: "neutral" },
+                    { label: "Total Calls", value: String(totalCalls), change: "Combined", trend: "up" },
+                ],
+                actions: [
+                    ...businesses
+                        .filter(b => b.id !== activeBusiness.id)
+                        .slice(0, 3)
+                        .map(b => ({ label: `Switch to ${b.name}`, type: "secondary" as const })),
+                    { label: "Show my stats", type: "primary" as const },
+                ],
+            };
+
+            setTimeout(() => {
+                const divider: Message = { id: Date.now() + 1, role: "divider", content: "", timestamp: `${dateNow()} \u2022 ${timeNow()}` };
+                setMessages((prev) => [...prev, divider, { ...portfolioResp, id: Date.now() + 2 } as Message]);
+                setIsTyping(false);
+            }, 1200);
+            return;
+        }
+
+        // ── Cross-account detection & smart confirmation ────────────────
         const offTopicBiz = getOffTopicBusiness(text);
         let response: Omit<Message, "id">;
 
         if (offTopicBiz) {
-            // User is trying to create ads for a different business
-            response = generateResponse(
-                { intent: "off_topic", params: { offTopicBusiness: offTopicBiz.name } },
-                text,
-                activeBusiness,
-            );
+            // Smart confirmation \u2014 offer to switch instead of blocking
+            const actionMap: Record<string, string> = {
+                create_text_ads: "create text ads",
+                create_display_ads: "create display ads",
+                show_stats: "check performance stats",
+                find_leaks: "find money leaks",
+                check_competitors: "analyze competitors",
+                pause_keywords: "pause keywords",
+                go_live: "publish ads",
+                export_report: "export a report",
+                add_keywords: "manage keywords",
+                show_drafts: "review drafts",
+                change_text: "edit ad text",
+                move_image: "reposition images",
+                add_image: "add images",
+            };
+            const actionLabel = actionMap[intent.intent] || "work on that";
+
+            response = {
+                role: "ai",
+                model: "gpt-4o",
+                content: `\uD83E\uDD14 Just to confirm \u2014 it sounds like you want me to **${actionLabel}** for **${offTopicBiz.name}** (${offTopicBiz.industry}).\n\n` +
+                    `I\u2019m currently managing **${activeBusiness.name}**. I\u2019ll need to switch accounts first so I can use **${offTopicBiz.name}\u2019s** Knowledge Base, campaign data, and brand voice.\n\n` +
+                    `Want me to switch over?`,
+                timestamp: timeNow(),
+                actions: [
+                    { label: `Yes, switch to ${offTopicBiz.name}`, type: "primary" },
+                    { label: `No, stay on ${activeBusiness.name}`, type: "secondary" },
+                ],
+            };
         } else {
             // Check exact match bank first, then NLP intent
             const exactMatchBank = getExactMatchBank(activeBusiness);
@@ -1616,6 +1753,24 @@ export default function ChatPage() {
 
             if (exactMatch) {
                 response = exactMatch();
+            } else if (intent.intent === "go_live") {
+                // High-impact action \u2014 confirm before going live
+                response = {
+                    role: "ai",
+                    model: "gpt-4o",
+                    content: `\u26A1 Just to confirm \u2014 you\u2019d like me to **push your approved ads live** for **${activeBusiness.name}**?\n\n` +
+                        `This will:\n` +
+                        `\u2022 Publish approved drafts to Google Search & Display Network\n` +
+                        `\u2022 Start spending your daily budget\n` +
+                        `\u2022 Enable conversion tracking\n\n` +
+                        `Once live, your ads will start showing to potential customers immediately. Ready to go?`,
+                    timestamp: timeNow(),
+                    actions: [
+                        { label: "Yes, go live!", type: "primary" },
+                        { label: "Let me review drafts first", type: "secondary" },
+                        { label: "No, not yet", type: "secondary" },
+                    ],
+                };
             } else {
                 response = generateResponse(intent, text, activeBusiness);
             }

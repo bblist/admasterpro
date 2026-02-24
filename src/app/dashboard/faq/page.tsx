@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronDown, Search, MessageCircle, CreditCard, Shield, Zap, BarChart3, Settings, HelpCircle, type LucideIcon } from "lucide-react";
+import { ChevronDown, Search, MessageCircle, CreditCard, Shield, Zap, BarChart3, Settings, HelpCircle, Users, type LucideIcon } from "lucide-react";
 
 interface FAQItem {
     q: string;
@@ -133,6 +133,33 @@ const categories: FAQCategory[] = [
             {
                 q: "Are you GDPR/CCPA compliant?",
                 a: "Yes. We comply with GDPR (EU), CCPA (California), and other applicable privacy regulations. You can request data export or deletion at any time from Settings or by contacting support."
+            },
+        ],
+    },
+    {
+        label: "Multi-Account Management",
+        icon: Users,
+        color: "text-indigo-500 bg-indigo-500/10",
+        items: [
+            {
+                q: "Can I ask the AI about all my accounts at once?",
+                a: "Yes! Even when you\u2019re managing a specific account, you can ask top-level questions about your entire portfolio. Try:\n\n\u2022 \"How many ad accounts do we have running?\"\n\u2022 \"Show me a portfolio overview\"\n\u2022 \"Compare all accounts\"\n\u2022 \"What\u2019s the total spend across all businesses?\"\n\nThe AI will give you a complete breakdown of all accounts with spend, calls, and CTR."
+            },
+            {
+                q: "Can I manage another account without switching manually?",
+                a: "Yes! Just tell the AI what you need and mention the account name. For example:\n\n\u2022 \"Update the ads under our dental account\"\n\u2022 \"Check the budget on Sakura Sushi\"\n\u2022 \"Show stats for the fashion store\"\n\nThe AI will recognize you\u2019re referencing a different account and **ask you to confirm** before switching. This prevents accidental changes to the wrong account."
+            },
+            {
+                q: "When does the AI ask for confirmation?",
+                a: "The AI is smart about when to confirm vs. when to just act. It will ask for confirmation when:\n\n\u2022 **Cross-account actions** \u2014 You mention another business (\"create ads for the dental clinic\")\n\u2022 **Going live** \u2014 Publishing ads that will spend your budget\n\u2022 **Budget changes** \u2014 Anything that affects your ad spend\n\nIt will NOT ask for simple queries like showing stats, checking keywords, or viewing drafts for the current account. The goal is to protect you from costly mistakes without slowing you down."
+            },
+            {
+                q: "How do I switch between ad accounts?",
+                a: "You have several options:\n\n**1. Voice/Text command:**\n\u2022 \"Switch to Brighton Dental\"\n\u2022 \"Go to my sushi restaurant account\"\n\u2022 \"Check on my other ads\"\n\n**2. Business menu:** Click the business avatar in the sidebar to see all accounts.\n\n**3. Indirect reference:** Ask about another business and the AI will offer to switch: \"How are the dental ads doing?\" \u2192 AI confirms \u2192 switches for you.\n\nEach account has its own chat history, so nothing is lost when switching."
+            },
+            {
+                q: "What example questions can I ask across accounts?",
+                a: "Here are some powerful cross-account questions:\n\n**Portfolio-level:**\n\u2022 \"How many ad accounts do we have running?\"\n\u2022 \"Which account has the best CTR?\"\n\u2022 \"What\u2019s our total ad spend this week?\"\n\u2022 \"Give me a portfolio overview\"\n\n**Cross-account actions:**\n\u2022 \"Can you update the ads under our xyz account?\"\n\u2022 \"Check for money leaks on the dental account\"\n\u2022 \"Create display ads for Sakura Sushi\"\n\u2022 \"Export a report for all accounts\"\n\nThe AI understands context and will route your request to the right account."
             },
         ],
     },
