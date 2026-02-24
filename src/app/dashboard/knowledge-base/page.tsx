@@ -823,6 +823,21 @@ export default function KnowledgeBasePage() {
             </div>
 
             {/* AI Training Status */}
+            <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                    <div className="bg-amber-100 dark:bg-amber-900/30 rounded-lg p-2 shrink-0">
+                        <Sparkles className="w-4 h-4 text-amber-600" />
+                    </div>
+                    <div>
+                        <div className="text-sm font-medium text-amber-800 dark:text-amber-400">Sample Data Shown</div>
+                        <p className="text-xs text-amber-700/80 dark:text-amber-500/80 mt-0.5">
+                            The assets and entries below are demo examples. Upload your own brand assets, enter your business details, and the AI will learn your brand for better ad copy and recommendations.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* AI Training Status */}
             <div className="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 border border-primary/20 rounded-xl p-4">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">

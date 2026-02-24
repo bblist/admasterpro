@@ -29,29 +29,43 @@ function PricingContent() {
     const planOrder = ["free", "starter", "pro"];
     const plans = planOrder.map((id) => PLANS[id]);
 
+    // Read real user session from cookie
+    const getUserSession = () => {
+        try {
+            const match = document.cookie.match(/session=([^;]+)/);
+            if (!match) return null;
+            const s = JSON.parse(decodeURIComponent(match[1]));
+            return s?.authenticated ? s : null;
+        } catch { return null; }
+    };
+
     const handleSubscribe = async (planId: string) => {
         if (planId === "free") {
             window.location.href = "/onboarding";
             return;
         }
 
-        // TODO: Get actual userId from session
-        // For now, redirect to login if not authenticated
+        const session = getUserSession();
+        if (!session) {
+            // Not logged in — redirect to login, then come back
+            window.location.href = `/login?next=/pricing`;
+            return;
+        }
+
         try {
             const res = await fetch("/api/stripe", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     plan: planId,
-                    userId: "temp_user", // will be replaced with real user
-                    email: "user@example.com", // will be replaced
+                    userId: session.id,
+                    email: session.email,
                 }),
             });
             const data = await res.json();
             if (data.url) {
                 window.location.href = data.url;
             } else if (data.demo) {
-                // Stripe not configured yet — go to onboarding
                 window.location.href = "/onboarding";
             }
         } catch {
@@ -60,6 +74,12 @@ function PricingContent() {
     };
 
     const handleTopUp = async (topUpId: string) => {
+        const session = getUserSession();
+        if (!session) {
+            window.location.href = `/login?next=/pricing`;
+            return;
+        }
+
         try {
             const res = await fetch("/api/stripe", {
                 method: "POST",
@@ -67,8 +87,8 @@ function PricingContent() {
                 body: JSON.stringify({
                     action: "topup",
                     topUpId,
-                    userId: "temp_user",
-                    email: "user@example.com",
+                    userId: session.id,
+                    email: session.email,
                 }),
             });
             const data = await res.json();

@@ -24,7 +24,7 @@ function LoginForm() {
         window.location.href = "/api/auth/callback";
     };
 
-    const handleEmailSignIn = (e: React.FormEvent) => {
+    const handleEmailSignIn = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!email.trim()) {
             setEmailError("Email is required");
@@ -37,17 +37,22 @@ function LoginForm() {
         setEmailError("");
         setLoading(true);
 
-        // Set a session cookie for email sign-in (demo mode for now)
-        document.cookie = `session=${encodeURIComponent(JSON.stringify({
-            id: "email_" + email.replace(/[^a-z0-9]/gi, "_"),
-            email,
-            name: email.split("@")[0],
-            picture: null,
-            authenticated: true,
-            method: "email",
-        }))};path=/;max-age=${60 * 60 * 24 * 7};samesite=lax`;
-
-        router.push(redirectTo);
+        try {
+            const res = await fetch("/api/auth/email", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email }),
+            });
+            if (res.ok) {
+                router.push(redirectTo);
+            } else {
+                setEmailError("Sign-in failed. Please try again.");
+                setLoading(false);
+            }
+        } catch {
+            setEmailError("Network error. Please try again.");
+            setLoading(false);
+        }
     };
 
     return (
@@ -195,9 +200,7 @@ function LoginForm() {
                                 <span>SSL Encrypted</span>
                             </div>
                             <span>•</span>
-                            <span>SOC 2 Compliant</span>
-                            <span>•</span>
-                            <span>GDPR Ready</span>
+                            <span>Data Protected</span>
                         </div>
                     </div>
                 </div>

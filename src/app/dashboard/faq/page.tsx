@@ -36,7 +36,7 @@ const categories: FAQCategory[] = [
             },
             {
                 q: "Is there a free trial?",
-                a: "Yes! Every account starts with a free plan that includes 3 AI suggestions per day. This lets you see how the AI works, preview ad drafts, and explore the platform. Upgrade to Pro ($49/mo) or Agency ($149/mo) for unlimited AI usage, display ad creation, and multi-client support."
+                a: "Yes! Every account starts with a free plan that includes 10 AI messages per month. This lets you see how the AI works, preview ad drafts, and explore the platform. Upgrade to Starter ($49/mo) for 200 messages or Pro ($149/mo) for unlimited AI usage and all features."
             },
             {
                 q: "What industries does AdMaster Pro work for?",
@@ -78,7 +78,7 @@ const categories: FAQCategory[] = [
         items: [
             {
                 q: "What are the pricing plans?",
-                a: "• **Free** — 3 AI suggestions/day, 1 campaign, basic stats\n• **Pro ($49/mo)** — Unlimited AI, 10 campaigns, display ads, call tracking, competitor analysis\n• **Agency ($149/mo)** — Everything in Pro + multi-client management, white-label reports, API access, priority support\n\nAll paid plans include a 14-day money-back guarantee."
+                a: "• **Free** — 10 AI messages/month, 1 campaign, basic stats\n• **Starter ($49/mo)** — 200 AI messages/month, 5 campaigns, display ads, call tracking\n• **Pro ($149/mo)** — Unlimited AI, unlimited campaigns, multi-client management, priority support\n\nAll paid plans include a 7-day free trial."
             },
             {
                 q: "What payment methods do you accept?",
@@ -174,7 +174,7 @@ const categories: FAQCategory[] = [
             },
             {
                 q: "Can I connect multiple Google Ads accounts?",
-                a: "Yes, with the Agency plan. You can manage multiple client accounts from a single dashboard, switch between them, and get consolidated reporting. Each client has their own Knowledge Base and AI conversation history."
+                a: "Yes, with the Pro plan. You can manage multiple client accounts from a single dashboard, switch between them, and get consolidated reporting. Each client has their own Knowledge Base and AI conversation history."
             },
             {
                 q: "How do I connect my Google Ads account?",

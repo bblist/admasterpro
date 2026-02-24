@@ -389,11 +389,11 @@ export default function LandingPage() {
             <span className="font-semibold text-sm">AdMaster Pro</span>
           </div>
           <div className="flex gap-6 text-sm text-muted">
-            <a href="/privacy" className="hover:text-foreground transition">Privacy</a>
-            <a href="/terms" className="hover:text-foreground transition">Terms</a>
+            <Link href="/privacy" className="hover:text-foreground transition">Privacy</Link>
+            <Link href="/terms" className="hover:text-foreground transition">Terms</Link>
             <a href="mailto:support@admasterai.com" className="hover:text-foreground transition">Support</a>
           </div>
-          <div className="text-sm text-muted">&copy; 2026 AdMaster Pro. All rights reserved.</div>
+          <div className="text-sm text-muted">&copy; 2025 AdMaster Pro. All rights reserved.</div>
         </div>
       </footer>
     </div>

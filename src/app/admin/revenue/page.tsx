@@ -24,14 +24,14 @@ const monthlyRevenue = [
 const planBreakdown = [
     { plan: "Free", users: 487, revenue: 0, pct: 0, color: "bg-gray-600" },
     { plan: "Pro ($49/mo)", users: 612, revenue: 29988, pct: 78, color: "bg-blue-600" },
-    { plan: "Agency ($149/mo)", users: 148, revenue: 22052, pct: 22, color: "bg-purple-600" },
+    { plan: "Pro ($149/mo)", users: 148, revenue: 22052, pct: 22, color: "bg-purple-600" },
 ];
 
 const topRevenueClients = [
-    { name: "Downtown Dental Network", plan: "Agency", mrr: 149, adSpend: 28500, ltv: 1788, months: 12 },
-    { name: "Metro Law Group", plan: "Agency", mrr: 149, adSpend: 45200, ltv: 1043, months: 7 },
-    { name: "Premier Real Estate", plan: "Agency", mrr: 149, adSpend: 38900, ltv: 894, months: 6 },
-    { name: "Pacific Auto Dealers", plan: "Agency", mrr: 149, adSpend: 32100, ltv: 1192, months: 8 },
+    { name: "Downtown Dental Network", plan: "Pro", mrr: 149, adSpend: 28500, ltv: 1788, months: 12 },
+    { name: "Metro Law Group", plan: "Pro", mrr: 149, adSpend: 45200, ltv: 1043, months: 7 },
+    { name: "Premier Real Estate", plan: "Pro", mrr: 149, adSpend: 38900, ltv: 894, months: 6 },
+    { name: "Pacific Auto Dealers", plan: "Pro", mrr: 149, adSpend: 32100, ltv: 1192, months: 8 },
     { name: "Citywide HVAC Services", plan: "Pro", mrr: 49, adSpend: 24800, ltv: 196, months: 4 },
     { name: "Joe's Pizza Chain", plan: "Pro", mrr: 49, adSpend: 8900, ltv: 147, months: 3 },
     { name: "Mountain View Gym", plan: "Pro", mrr: 49, adSpend: 6700, ltv: 147, months: 3 },
@@ -40,13 +40,13 @@ const topRevenueClients = [
 
 const transactions = [
     { date: "Feb 24, 2026", description: "Pro subscription — Mike's Plumbing Co", amount: 49, type: "subscription" },
-    { date: "Feb 24, 2026", description: "Agency subscription — Downtown Dental", amount: 149, type: "subscription" },
+    { date: "Feb 24, 2026", description: "Pro subscription — Downtown Dental", amount: 149, type: "subscription" },
     { date: "Feb 23, 2026", description: "Pro subscription — Sunrise Yoga Studio", amount: 49, type: "subscription" },
     { date: "Feb 23, 2026", description: "Refund — Quick Fix IT Solutions", amount: -49, type: "refund" },
     { date: "Feb 22, 2026", description: "Pro subscription — Mountain View Gym", amount: 49, type: "subscription" },
-    { date: "Feb 22, 2026", description: "Agency subscription — Metro Law Group", amount: 149, type: "subscription" },
+    { date: "Feb 22, 2026", description: "Pro subscription — Metro Law Group", amount: 149, type: "subscription" },
     { date: "Feb 21, 2026", description: "Pro upgrade — Joe's Pizza Chain", amount: 49, type: "upgrade" },
-    { date: "Feb 21, 2026", description: "Agency subscription — Pacific Auto", amount: 149, type: "subscription" },
+    { date: "Feb 21, 2026", description: "Pro subscription — Pacific Auto", amount: 149, type: "subscription" },
 ];
 
 export default function AdminRevenuePage() {

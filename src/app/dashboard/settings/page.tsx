@@ -490,18 +490,20 @@ export default function SettingsPage() {
         <h2 className="font-semibold mb-4">Connected Account</h2>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-              <span className="text-blue-600 font-bold text-sm">G</span>
+            <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+              <span className="text-muted font-bold text-sm">G</span>
             </div>
             <div>
-              <div className="text-sm font-medium">Mike&apos;s Plumbing LLC</div>
-              <div className="text-xs text-muted">Google Ads Account: xxx-xxx-1234</div>
+              <div className="text-sm font-medium text-muted">No Google Ads account connected</div>
+              <div className="text-xs text-muted">Sign in with Google to link your Ads account</div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-success rounded-full"></div>
-            <span className="text-xs text-success">Connected</span>
-          </div>
+          <button
+            onClick={() => window.location.href = "/api/auth/callback"}
+            className="text-sm text-primary hover:text-primary-dark font-medium transition"
+          >
+            Connect
+          </button>
         </div>
       </div>
 

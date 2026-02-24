@@ -15,10 +15,10 @@ import {
 
 // Demo users data
 const allUsers = [
-    { id: 1, name: "Metro Law Group", email: "billing@metrolaw.com", plan: "Agency", status: "active", joined: "2025-08-12", lastActive: "2 min ago", adSpend: 45200, savedByAI: 8900, queries: 342, campaigns: 18 },
-    { id: 2, name: "Premier Real Estate", email: "ads@premierrealty.com", plan: "Agency", status: "active", joined: "2025-09-03", lastActive: "15 min ago", adSpend: 38900, savedByAI: 6200, queries: 287, campaigns: 14 },
-    { id: 3, name: "Pacific Auto Dealers", email: "marketing@pacificauto.com", plan: "Agency", status: "active", joined: "2025-07-22", lastActive: "1 hour ago", adSpend: 32100, savedByAI: 7800, queries: 456, campaigns: 22 },
-    { id: 4, name: "Downtown Dental Network", email: "office@downtowndental.com", plan: "Agency", status: "active", joined: "2025-10-15", lastActive: "3 hours ago", adSpend: 28500, savedByAI: 4300, queries: 198, campaigns: 9 },
+    { id: 1, name: "Metro Law Group", email: "billing@metrolaw.com", plan: "Pro", status: "active", joined: "2025-08-12", lastActive: "2 min ago", adSpend: 45200, savedByAI: 8900, queries: 342, campaigns: 18 },
+    { id: 2, name: "Premier Real Estate", email: "ads@premierrealty.com", plan: "Pro", status: "active", joined: "2025-09-03", lastActive: "15 min ago", adSpend: 38900, savedByAI: 6200, queries: 287, campaigns: 14 },
+    { id: 3, name: "Pacific Auto Dealers", email: "marketing@pacificauto.com", plan: "Pro", status: "active", joined: "2025-07-22", lastActive: "1 hour ago", adSpend: 32100, savedByAI: 7800, queries: 456, campaigns: 22 },
+    { id: 4, name: "Downtown Dental Network", email: "office@downtowndental.com", plan: "Pro", status: "active", joined: "2025-10-15", lastActive: "3 hours ago", adSpend: 28500, savedByAI: 4300, queries: 198, campaigns: 9 },
     { id: 5, name: "Citywide HVAC Services", email: "admin@citywidehvac.com", plan: "Pro", status: "active", joined: "2025-11-01", lastActive: "30 min ago", adSpend: 24800, savedByAI: 5100, queries: 523, campaigns: 8 },
     { id: 6, name: "Mike's Plumbing Co", email: "mike@mikesplumbing.com", plan: "Pro", status: "active", joined: "2026-02-24", lastActive: "2 hours ago", adSpend: 4200, savedByAI: 890, queries: 67, campaigns: 3 },
     { id: 7, name: "Sarah's Bakery", email: "sarah@sarahsbakery.com", plan: "Free", status: "active", joined: "2026-02-24", lastActive: "5 hours ago", adSpend: 800, savedByAI: 120, queries: 12, campaigns: 2 },
@@ -127,7 +127,7 @@ export default function AdminUsersPage() {
                     <option value="all">All Plans</option>
                     <option value="Free">Free</option>
                     <option value="Pro">Pro</option>
-                    <option value="Agency">Agency</option>
+                    <option value="Pro">Pro</option>
                 </select>
                 <select
                     value={statusFilter}
@@ -206,7 +206,7 @@ export default function AdminUsersPage() {
                                         </td>
                                         <td className="p-4">
                                             <span
-                                                className={`text-xs font-medium px-2 py-1 rounded-full ${user.plan === "Agency"
+                                                className={`text-xs font-medium px-2 py-1 rounded-full ${user.plan === "Pro"
                                                         ? "bg-purple-900/40 text-purple-400"
                                                         : user.plan === "Pro"
                                                             ? "bg-blue-900/40 text-blue-400"

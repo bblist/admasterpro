@@ -48,10 +48,10 @@ interface DailyCost {
 // Demo Data
 
 const clientCosts: ClientAICost[] = [
-    { id: 1, name: "Metro Law Group", plan: "Agency", gpt4oQueries: 287, gpt4oTokens: 1842000, gpt4oCost: 42.18, claude56Queries: 55, claude56Tokens: 312000, claude56Cost: 6.24, totalCost: 48.42, platformFee: 149, margin: 100.58, lastQuery: "2 min ago" },
-    { id: 2, name: "Premier Real Estate", plan: "Agency", gpt4oQueries: 234, gpt4oTokens: 1523000, gpt4oCost: 34.87, claude56Queries: 53, claude56Tokens: 298000, claude56Cost: 5.96, totalCost: 40.83, platformFee: 149, margin: 108.17, lastQuery: "15 min ago" },
-    { id: 3, name: "Pacific Auto Dealers", plan: "Agency", gpt4oQueries: 389, gpt4oTokens: 2456000, gpt4oCost: 56.23, claude56Queries: 67, claude56Tokens: 389000, claude56Cost: 7.78, totalCost: 64.01, platformFee: 149, margin: 84.99, lastQuery: "1 hour ago" },
-    { id: 4, name: "Downtown Dental Network", plan: "Agency", gpt4oQueries: 156, gpt4oTokens: 987000, gpt4oCost: 22.60, claude56Queries: 42, claude56Tokens: 245000, claude56Cost: 4.90, totalCost: 27.50, platformFee: 149, margin: 121.50, lastQuery: "3 hours ago" },
+    { id: 1, name: "Metro Law Group", plan: "Pro", gpt4oQueries: 287, gpt4oTokens: 1842000, gpt4oCost: 42.18, claude56Queries: 55, claude56Tokens: 312000, claude56Cost: 6.24, totalCost: 48.42, platformFee: 149, margin: 100.58, lastQuery: "2 min ago" },
+    { id: 2, name: "Premier Real Estate", plan: "Pro", gpt4oQueries: 234, gpt4oTokens: 1523000, gpt4oCost: 34.87, claude56Queries: 53, claude56Tokens: 298000, claude56Cost: 5.96, totalCost: 40.83, platformFee: 149, margin: 108.17, lastQuery: "15 min ago" },
+    { id: 3, name: "Pacific Auto Dealers", plan: "Pro", gpt4oQueries: 389, gpt4oTokens: 2456000, gpt4oCost: 56.23, claude56Queries: 67, claude56Tokens: 389000, claude56Cost: 7.78, totalCost: 64.01, platformFee: 149, margin: 84.99, lastQuery: "1 hour ago" },
+    { id: 4, name: "Downtown Dental Network", plan: "Pro", gpt4oQueries: 156, gpt4oTokens: 987000, gpt4oCost: 22.60, claude56Queries: 42, claude56Tokens: 245000, claude56Cost: 4.90, totalCost: 27.50, platformFee: 149, margin: 121.50, lastQuery: "3 hours ago" },
     { id: 5, name: "Citywide HVAC Services", plan: "Pro", gpt4oQueries: 412, gpt4oTokens: 2890000, gpt4oCost: 66.15, claude56Queries: 111, claude56Tokens: 623000, claude56Cost: 12.46, totalCost: 78.61, platformFee: 49, margin: -29.61, lastQuery: "30 min ago" },
     { id: 6, name: "Mike\u2019s Plumbing Co", plan: "Pro", gpt4oQueries: 52, gpt4oTokens: 345000, gpt4oCost: 7.90, claude56Queries: 15, claude56Tokens: 89000, claude56Cost: 1.78, totalCost: 9.68, platformFee: 49, margin: 39.32, lastQuery: "2 hours ago" },
     { id: 7, name: "Sarah\u2019s Bakery", plan: "Free", gpt4oQueries: 8, gpt4oTokens: 52000, gpt4oCost: 1.19, claude56Queries: 4, claude56Tokens: 23000, claude56Cost: 0.46, totalCost: 1.65, platformFee: 0, margin: -1.65, lastQuery: "5 hours ago" },
@@ -312,7 +312,7 @@ export default function AdminAICostsPage() {
                             </div>
                             <select value={planFilter} onChange={(e) => setPlanFilter(e.target.value)} className="bg-gray-800 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-white cursor-pointer focus:outline-none focus:border-blue-500">
                                 <option value="all">All Plans</option>
-                                <option value="Agency">Agency</option>
+                                <option value="Pro">Pro</option>
                                 <option value="Pro">Pro</option>
                                 <option value="Free">Free</option>
                             </select>
@@ -358,7 +358,7 @@ export default function AdminAICostsPage() {
                                     </div>
                                 </div>
                                 <div className="col-span-1 text-right">
-                                    <span className={`text-[11px] font-medium px-1.5 py-0.5 rounded-full ${client.plan === "Agency" ? "bg-purple-900/40 text-purple-400" :
+                                    <span className={`text-[11px] font-medium px-1.5 py-0.5 rounded-full ${client.plan === "Pro" ? "bg-purple-900/40 text-purple-400" :
                                             client.plan === "Pro" ? "bg-blue-900/40 text-blue-400" :
                                                 "bg-gray-800 text-gray-400"
                                         }`}>{client.plan}</span>

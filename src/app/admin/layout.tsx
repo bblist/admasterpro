@@ -103,7 +103,7 @@ export default function AdminLayout({
                             Back to User Dashboard
                         </Link>
                         <div className="mt-3 text-xs text-gray-600">
-                            Logged in as <span className="text-gray-400">admin@admasterpro.com</span>
+                            Logged in as <span className="text-gray-400">Admin</span>
                         </div>
                     </div>
                 </div>

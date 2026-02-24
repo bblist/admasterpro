@@ -230,6 +230,29 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
     const [notifOpen, setNotifOpen] = useState(false);
     const notifRef = useRef<HTMLDivElement>(null);
 
+    // User session and plan state
+    const [userPlan, setUserPlan] = useState<string>("free");
+    const [userName, setUserName] = useState<string>("");
+    const [userPicture, setUserPicture] = useState<string | null>(null);
+
+    useEffect(() => {
+        // Fetch subscription info
+        fetch("/api/subscription")
+            .then((r) => r.ok ? r.json() : null)
+            .then((data) => { if (data?.plan) setUserPlan(data.plan); })
+            .catch(() => {});
+
+        // Parse session cookie for name/picture (cookie is httpOnly, so fall back to API)
+        // We'll use a simple /api/me endpoint or parse from response
+        fetch("/api/subscription")
+            .then((r) => r.ok ? r.json() : null)
+            .then((data) => {
+                if (data?.userName) setUserName(data.userName);
+                if (data?.userPicture) setUserPicture(data.userPicture);
+            })
+            .catch(() => {});
+    }, []);
+
     const unreadCount = notifications.filter((n) => !n.read).length;
 
     // Close notification panel on outside click
@@ -321,22 +344,35 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                     {/* Bottom */}
                     <div className="p-3 border-t border-border">
                         <div className="bg-primary-light rounded-lg p-3 mb-3">
-                            <div className="text-xs font-medium text-primary mb-1">Free Plan</div>
-                            <div className="text-xs text-primary/70">Upgrade for unlimited AI + all features</div>
-                            <Link
-                                href="/pricing"
-                                className="text-xs font-medium text-primary hover:underline mt-1 inline-block"
-                            >
-                                View Plans →
-                            </Link>
+                            <div className="text-xs font-medium text-primary mb-1">
+                                {userPlan === "pro" ? "Pro Plan" : userPlan === "starter" ? "Starter Plan" : "Free Plan"}
+                            </div>
+                            <div className="text-xs text-primary/70">
+                                {userPlan === "pro"
+                                    ? "Unlimited AI messages + all features"
+                                    : userPlan === "starter"
+                                        ? "200 AI messages/mo + display ads"
+                                        : "Upgrade for more AI messages + features"}
+                            </div>
+                            {userPlan !== "pro" && (
+                                <Link
+                                    href="/pricing"
+                                    className="text-xs font-medium text-primary hover:underline mt-1 inline-block"
+                                >
+                                    {userPlan === "free" ? "View Plans →" : "Upgrade →"}
+                                </Link>
+                            )}
                         </div>
-                        <Link
-                            href="/login"
+                        <button
+                            onClick={async () => {
+                                await fetch("/api/auth/signout", { method: "POST" });
+                                window.location.href = "/login";
+                            }}
                             className="flex items-center gap-2 px-3 py-2 text-sm text-muted hover:text-danger transition w-full"
                         >
                             <LogOut className="w-4 h-4" />
                             Sign Out
-                        </Link>
+                        </button>
                     </div>
                 </div>
             </aside>
@@ -457,8 +493,12 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                                 </div>
                             )}
                         </div>
-                        <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white text-sm font-medium">
-                            S
+                        <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white text-sm font-medium overflow-hidden">
+                            {userPicture ? (
+                                <img src={userPicture} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                                userName ? userName.charAt(0).toUpperCase() : "U"
+                            )}
                         </div>
                     </div>
                 </header>

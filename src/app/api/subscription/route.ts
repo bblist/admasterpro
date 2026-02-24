@@ -1,28 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionFromRequest } from "@/lib/session";
 
 export async function GET(req: NextRequest) {
-    // Parse user from session cookie
-    let userId: string | null = null;
-    const cookieHeader = req.headers.get("cookie");
-    if (cookieHeader) {
-        const match = cookieHeader.match(/session=([^;]+)/);
-        if (match) {
-            try {
-                const session = JSON.parse(decodeURIComponent(match[1]));
-                userId = session.id || null;
-            } catch { /* ignore */ }
-        }
-    }
+    const session = getSessionFromRequest(req.headers.get("cookie"));
 
-    if (!userId) {
+    if (!session?.id) {
         return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     try {
         const { prisma } = await import("@/lib/db");
 
+        const user = await prisma.user.findUnique({
+            where: { id: session.id },
+            select: { name: true, picture: true },
+        });
+
         const subscription = await prisma.subscription.findUnique({
-            where: { userId },
+            where: { userId: session.id },
         });
 
         if (!subscription) {
@@ -34,6 +29,8 @@ export async function GET(req: NextRequest) {
                 aiMessagesLimit: 10,
                 bonusTokens: 0,
                 currentPeriodEnd: null,
+                userName: user?.name || session.name || "",
+                userPicture: user?.picture || session.picture || null,
             });
         }
 
@@ -44,6 +41,8 @@ export async function GET(req: NextRequest) {
             aiMessagesLimit: subscription.aiMessagesLimit,
             bonusTokens: subscription.bonusTokens,
             currentPeriodEnd: subscription.currentPeriodEnd?.toISOString() || null,
+            userName: user?.name || session.name || "",
+            userPicture: user?.picture || session.picture || null,
         });
     } catch (error) {
         console.error("[Subscription API] Error:", error);
@@ -55,6 +54,8 @@ export async function GET(req: NextRequest) {
             aiMessagesLimit: 10,
             bonusTokens: 0,
             currentPeriodEnd: null,
+            userName: session.name || "",
+            userPicture: session.picture || null,
         });
     }
 }
