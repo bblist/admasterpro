@@ -471,20 +471,45 @@ function PricingContent() {
             </section>
 
             {/* Footer */}
-            <footer className="border-t border-border py-8 px-4">
-                <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 bg-primary rounded flex items-center justify-center">
-                            <Zap className="w-4 h-4 text-white" />
+            <footer className="border-t border-border py-12 px-4">
+                <div className="max-w-6xl mx-auto">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
+                        <div>
+                            <div className="flex items-center gap-2 mb-4">
+                                <div className="w-6 h-6 bg-primary rounded flex items-center justify-center">
+                                    <Zap className="w-4 h-4 text-white" />
+                                </div>
+                                <span className="font-semibold text-sm">AdMaster Pro</span>
+                            </div>
+                            <p className="text-xs text-muted leading-relaxed">AI-powered Google Ads management for small businesses.</p>
                         </div>
-                        <span className="font-semibold text-sm">AdMaster Pro</span>
+                        <div>
+                            <h4 className="font-semibold text-sm mb-3">Product</h4>
+                            <div className="flex flex-col gap-2 text-sm text-muted">
+                                <a href="/pricing" className="hover:text-foreground transition">Pricing</a>
+                                <a href="/audit" className="hover:text-foreground transition">Free Audit</a>
+                                <a href="/faq" className="hover:text-foreground transition">FAQ</a>
+                                <a href="/login" className="hover:text-foreground transition">Login</a>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold text-sm mb-3">Company</h4>
+                            <div className="flex flex-col gap-2 text-sm text-muted">
+                                <a href="/about" className="hover:text-foreground transition">About Us</a>
+                                <a href="mailto:support@admasterai.com" className="hover:text-foreground transition">Contact</a>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold text-sm mb-3">Legal</h4>
+                            <div className="flex flex-col gap-2 text-sm text-muted">
+                                <a href="/privacy" className="hover:text-foreground transition">Privacy Policy</a>
+                                <a href="/terms" className="hover:text-foreground transition">Terms of Service</a>
+                            </div>
+                        </div>
                     </div>
-                    <div className="flex gap-6 text-sm text-muted">
-                        <a href="/privacy" className="hover:text-foreground transition">Privacy</a>
-                        <a href="/terms" className="hover:text-foreground transition">Terms</a>
-                        <a href="mailto:support@admasterai.com" className="hover:text-foreground transition">Support</a>
+                    <div className="border-t border-border pt-6 text-center text-xs text-muted">
+                        &copy; {new Date().getFullYear()} NobleBlocks LLC. All rights reserved.
                     </div>
-                    <div className="text-sm text-muted">&copy; 2026 NobleBlocks LLC. All rights reserved.</div>
                 </div>
             </footer>
         </div>

@@ -1,0 +1,42 @@
+# AdMaster Pro — robots.txt
+# https://admasterai.nobleblocks.com
+
+User-agent: *
+Allow: /
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /api/
+Disallow: /onboarding/
+Disallow: /login
+Disallow: /signup
+
+# Sitemap
+Sitemap: https://admasterai.nobleblocks.com/sitemap.xml
+
+# AI Crawlers
+User-agent: GPTBot
+Allow: /
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /api/
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /api/
+
+User-agent: anthropic-ai
+Allow: /
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /api/
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /api/

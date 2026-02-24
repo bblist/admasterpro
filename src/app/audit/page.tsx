@@ -312,13 +312,45 @@ export default function AuditPage() {
             </section>
 
             {/* Footer */}
-            <footer className="border-t border-border py-8">
-                <div className="max-w-6xl mx-auto px-4 text-center text-xs text-muted">
-                    &copy; {new Date().getFullYear()} AdMaster Pro by NobleBlocks. All rights reserved.
-                    <span className="mx-2">·</span>
-                    <Link href="/privacy" className="hover:text-foreground transition">Privacy</Link>
-                    <span className="mx-2">·</span>
-                    <Link href="/terms" className="hover:text-foreground transition">Terms</Link>
+            <footer className="border-t border-border py-12 px-4">
+                <div className="max-w-6xl mx-auto">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
+                        <div>
+                            <div className="flex items-center gap-2 mb-4">
+                                <div className="w-6 h-6 bg-primary rounded flex items-center justify-center">
+                                    <Zap className="w-4 h-4 text-white" />
+                                </div>
+                                <span className="font-semibold text-sm">AdMaster Pro</span>
+                            </div>
+                            <p className="text-xs text-muted leading-relaxed">AI-powered Google Ads management for small businesses.</p>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold text-sm mb-3">Product</h4>
+                            <div className="flex flex-col gap-2 text-sm text-muted">
+                                <Link href="/pricing" className="hover:text-foreground transition">Pricing</Link>
+                                <Link href="/audit" className="hover:text-foreground transition">Free Audit</Link>
+                                <Link href="/faq" className="hover:text-foreground transition">FAQ</Link>
+                                <Link href="/login" className="hover:text-foreground transition">Login</Link>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold text-sm mb-3">Company</h4>
+                            <div className="flex flex-col gap-2 text-sm text-muted">
+                                <Link href="/about" className="hover:text-foreground transition">About Us</Link>
+                                <a href="mailto:support@admasterai.com" className="hover:text-foreground transition">Contact</a>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold text-sm mb-3">Legal</h4>
+                            <div className="flex flex-col gap-2 text-sm text-muted">
+                                <Link href="/privacy" className="hover:text-foreground transition">Privacy Policy</Link>
+                                <Link href="/terms" className="hover:text-foreground transition">Terms of Service</Link>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="border-t border-border pt-6 text-center text-xs text-muted">
+                        &copy; {new Date().getFullYear()} NobleBlocks LLC. All rights reserved.
+                    </div>
                 </div>
             </footer>
         </div>

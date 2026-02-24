@@ -1,0 +1,30 @@
+# AdMaster Pro
+> AI-powered Google Ads management for small businesses
+
+AdMaster Pro is a SaaS platform by NobleBlocks LLC that helps small businesses and marketing agencies manage Google Ads campaigns using AI (GPT-4o and Claude). It automates ad copy generation, detects money leaks, and provides actionable optimization recommendations.
+
+## Key Features
+- AI-powered ad copy generation (text, display, and responsive ads)
+- Automated money leak detection and budget analysis
+- Voice and text-based campaign management
+- Knowledge Base for business-specific AI context
+- Free AI-powered website audit tool
+- Multi-account management for agencies
+- Performance analytics and reporting
+- Call tracking integration
+
+## Pricing
+- Free: $0/month — 10 AI messages, 1 campaign
+- Starter: $49/month — 200 AI messages, 5 campaigns, display ads, call tracking
+- Pro: $149/month — Unlimited AI messages, unlimited campaigns, multi-account, priority support
+- All paid plans include a 7-day free trial
+
+## Links
+- Homepage: https://admasterai.nobleblocks.com
+- Pricing: https://admasterai.nobleblocks.com/pricing
+- Free Audit: https://admasterai.nobleblocks.com/audit
+- About: https://admasterai.nobleblocks.com/about
+- FAQ: https://admasterai.nobleblocks.com/faq
+- Terms: https://admasterai.nobleblocks.com/terms
+- Privacy: https://admasterai.nobleblocks.com/privacy
+- Support: support@admasterai.com
