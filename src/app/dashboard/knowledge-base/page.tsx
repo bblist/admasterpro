@@ -41,6 +41,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import Tooltip from "@/components/Tooltip";
+import { useBusiness } from "@/lib/business-context";
 
 // Types
 
@@ -417,6 +418,7 @@ const statusBadge = (status: CrawlStatus) => {
 // Component
 
 export default function KnowledgeBasePage() {
+    const { activeBusiness } = useBusiness();
     const [activeTab, setActiveTab] = useState<TabId>("assets");
     const [selectedAsset, setSelectedAsset] = useState<number | null>(null);
     const [selectedText, setSelectedText] = useState<number | null>(null);
@@ -455,9 +457,20 @@ export default function KnowledgeBasePage() {
                         Knowledge Base
                         <Tooltip text="Everything you add here teaches the AI about your business. The more context you provide, the more accurate your AI-generated ads will be. No hallucinations!" />
                     </h1>
-                    <p className="text-muted text-sm mt-1">
-                        Feed the AI with your business content so it creates ads that are accurate, on-brand, and never makes things up.
-                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                        <div className={`w-5 h-5 rounded bg-gradient-to-br ${activeBusiness.color} flex items-center justify-center text-white text-[8px] font-bold`}>
+                            {activeBusiness.initials}
+                        </div>
+                        <p className="text-muted text-sm">
+                            <span className="font-medium text-foreground">{activeBusiness.name}</span>
+                            <span className="mx-1.5">&bull;</span>
+                            {activeBusiness.industry}
+                            <span className="mx-1.5">&bull;</span>
+                            <span className={activeBusiness.kbStatus === "trained" ? "text-green-600" : activeBusiness.kbStatus === "training" ? "text-amber-600" : "text-gray-400"}>
+                                {activeBusiness.kbStatus === "trained" ? "KB Trained \u2705" : activeBusiness.kbStatus === "training" ? "Training\u2026" : "Not yet trained"}
+                            </span>
+                        </p>
+                    </div>
                 </div>
             </div>
 

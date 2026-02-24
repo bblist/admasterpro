@@ -102,6 +102,7 @@ type Intent =
     | "show_drafts"
     | "help"
     | "off_topic"
+    | "switch_account"
     | "unknown";
 
 interface IntentMatch {
@@ -175,6 +176,17 @@ const matchIntent = (text: string): IntentMatch => {
     // Show drafts
     if (/\b(show|list|display|view)\b.*\b(draft|ads?|my ads)\b/i.test(t)) {
         return { intent: "show_drafts", params: {} };
+    }
+
+    // Switch account / check on ads
+    if (/\b(switch|change|go to|open|check on)\b.*\b(account|business|ads?|another)\b/i.test(t) ||
+        /\b(my other|different)\s*(account|business|ads?)\b/i.test(t) ||
+        /\bwhich\s*(account|business)\b/i.test(t) ||
+        /\bcheck\s+on\s+my\s+ads\b/i.test(t) ||
+        /\bswitch\s+to\b/i.test(t)) {
+        // See if they named a specific business
+        const nameMatch = t.match(/(?:switch to|go to|open|check on)\s+(?:my\s+)?(.+?)(?:\s+account|\s+business|\s+ads?)?\s*$/i);
+        return { intent: "switch_account", params: { target: nameMatch ? nameMatch[1].trim() : "" } };
     }
 
     // Help
@@ -932,7 +944,8 @@ const getMicInstructions = (browser: string, platform: Platform): { steps: strin
 };
 
 export default function ChatPage() {
-    const { activeBusiness, getOffTopicBusiness } = useBusiness();
+    const { activeBusiness, businesses, setActiveBusiness, getOffTopicBusiness } = useBusiness();
+    const chatHistoryRef = useRef<Map<string, Message[]>>(new Map());
     const [messages, setMessages] = useState<Message[]>(() => getInitialMessages(activeBusiness));
     const [input, setInput] = useState("");
     const [isTyping, setIsTyping] = useState(false);
@@ -971,14 +984,24 @@ export default function ChatPage() {
         inputRef.current?.focus();
     }, []);
 
-    // Reset chat when business changes
+    // Persist & restore per-business chat history when business changes
     useEffect(() => {
         if (prevBusinessRef.current !== activeBusiness.id) {
+            // Save current chat history for the previous business
+            chatHistoryRef.current.set(prevBusinessRef.current, messages);
             prevBusinessRef.current = activeBusiness.id;
-            setMessages(getInitialMessages(activeBusiness));
+
+            // Restore or initialize for the new business
+            const saved = chatHistoryRef.current.get(activeBusiness.id);
+            if (saved && saved.length > 0) {
+                setMessages(saved);
+            } else {
+                setMessages(getInitialMessages(activeBusiness));
+            }
             setInput("");
             setIsTyping(false);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeBusiness]);
 
     // Cleanup voice timers + audio context on unmount
@@ -1290,6 +1313,49 @@ export default function ChatPage() {
         setVoicePaused(false);
     }, [clearSilenceTimer]);
 
+    // ─── In-chat business switch handler ────────────────────────────────────
+
+    const switchToBusiness = useCallback((bizId: string) => {
+        const biz = businesses.find((b) => b.id === bizId);
+        if (!biz || biz.id === activeBusiness.id) return;
+
+        // Save current chat before switching
+        chatHistoryRef.current.set(activeBusiness.id, messages);
+
+        // Switch context
+        setActiveBusiness(bizId);
+
+        // Load or create history for new business
+        const saved = chatHistoryRef.current.get(bizId);
+        const baseHistory = saved && saved.length > 0 ? saved : getInitialMessages(biz);
+
+        // Add a context-switch system message + greeting
+        const switchMsg: Message = {
+            id: Date.now(),
+            role: "system",
+            content: `Switched to ${biz.name} \u2022 ${biz.industry} \u2022 KB: ${biz.kbStatus === "trained" ? "Trained \u2705" : biz.kbStatus === "training" ? "Training\u2026" : "Empty"}`,
+            timestamp: timeNow(),
+        };
+
+        const greeting: Message = {
+            id: Date.now() + 1,
+            role: "ai",
+            model: "gpt-4o",
+            content: `\ud83d\udd04 Switched to **${biz.name}** (${biz.industry}).\n\n` +
+                `I\u2019m now using **${biz.name}\u2019s Knowledge Base** \u2014 all my responses, ad copy, and insights are based on this account\u2019s data, brand voice, and campaign history.\n\n` +
+                `What would you like to do for **${biz.name}**?`,
+            timestamp: timeNow(),
+            actions: [
+                { label: "Show my stats", type: "primary" },
+                { label: "Create new ads", type: "secondary" },
+                { label: "Find money leaks", type: "secondary" },
+            ],
+        };
+
+        setMessages([...baseHistory, switchMsg, greeting]);
+        setIsTyping(false);
+    }, [businesses, activeBusiness, messages, setActiveBusiness]);
+
     // ─── Send Message ───────────────────────────────────────────────────────
 
     const sendMessage = useCallback((text: string) => {
@@ -1305,6 +1371,97 @@ export default function ChatPage() {
         setMessages((prev) => [...prev, userMsg]);
         setInput("");
         setIsTyping(true);
+
+        // ── Check for account switch intent first ──────────────
+        const intent = matchIntent(text);
+
+        if (intent.intent === "switch_account") {
+            const target = intent.params.target?.toLowerCase() || "";
+
+            // Try to find a matching business by name
+            let matchedBiz = businesses.find((b) => {
+                const name = b.name.toLowerCase();
+                return target && (name.includes(target) || target.includes(name.replace(/[^\w\s]/g, "").split(/\s+/).filter((w: string) => w.length > 2).join(" ")));
+            });
+
+            // Also check for partial keyword matches (e.g., "plumbing", "sushi", "fashion")
+            if (!matchedBiz && target) {
+                matchedBiz = businesses.find((b) => {
+                    return b.services.some((s) => target.includes(s.toLowerCase())) ||
+                           b.industry.toLowerCase().split(/\s|\//).some((w) => w.length > 2 && target.includes(w));
+                });
+            }
+
+            if (matchedBiz && matchedBiz.id !== activeBusiness.id) {
+                // Direct switch to the named business
+                setTimeout(() => {
+                    switchToBusiness(matchedBiz!.id);
+                }, 800);
+                return;
+            }
+
+            if (matchedBiz && matchedBiz.id === activeBusiness.id) {
+                // Already on that account
+                const response: Omit<Message, "id"> = {
+                    role: "ai",
+                    model: "gpt-4o",
+                    content: `You\u2019re already managing **${activeBusiness.name}** (${activeBusiness.industry}). I\u2019m using this account\u2019s Knowledge Base and campaign history.\n\nWhat would you like to do?`,
+                    timestamp: timeNow(),
+                    actions: [
+                        { label: "Show my stats", type: "primary" },
+                        { label: "Create new ads", type: "secondary" },
+                    ],
+                };
+                setTimeout(() => {
+                    setMessages((prev) => [...prev, { ...response, id: Date.now() + 2 } as Message]);
+                    setIsTyping(false);
+                }, 800);
+                return;
+            }
+
+            // No specific business named + more than one business → ask which one
+            if (businesses.length > 1) {
+                const bizList = businesses
+                    .map((b, i) => `**${i + 1}.** ${b.name} \u2014 ${b.industry}${b.id === activeBusiness.id ? " *(current)*" : ""}`)
+                    .join("\n");
+
+                const response: Omit<Message, "id"> = {
+                    role: "ai",
+                    model: "gpt-4o",
+                    content: `Sure! Which ad account would you like me to check on? Here are your accounts:\n\n${bizList}\n\nJust click one below or tell me the name.`,
+                    timestamp: timeNow(),
+                    actions: businesses
+                        .filter((b) => b.id !== activeBusiness.id)
+                        .slice(0, 4)
+                        .map((b) => ({
+                            label: `Switch to ${b.name}`,
+                            type: "secondary" as const,
+                        })),
+                };
+                setTimeout(() => {
+                    setMessages((prev) => [...prev, { ...response, id: Date.now() + 2 } as Message]);
+                    setIsTyping(false);
+                }, 1000);
+                return;
+            }
+
+            // Only 1 business — nothing to switch to
+            const response: Omit<Message, "id"> = {
+                role: "ai",
+                model: "gpt-4o",
+                content: `You only have one ad account: **${activeBusiness.name}** (${activeBusiness.industry}). I\u2019m already using this account\u2019s data and Knowledge Base.\n\nNeed to add another business? Go to **Knowledge Base** in the sidebar.`,
+                timestamp: timeNow(),
+                actions: [
+                    { label: "Show my stats", type: "primary" },
+                    { label: "Create new ads", type: "secondary" },
+                ],
+            };
+            setTimeout(() => {
+                setMessages((prev) => [...prev, { ...response, id: Date.now() + 2 } as Message]);
+                setIsTyping(false);
+            }, 800);
+            return;
+        }
 
         // ── Off-topic business guard ────────────────────────────
         const offTopicBiz = getOffTopicBusiness(text);
@@ -1325,7 +1482,6 @@ export default function ChatPage() {
             if (exactMatch) {
                 response = exactMatch();
             } else {
-                const intent = matchIntent(text);
                 response = generateResponse(intent, text, activeBusiness);
             }
         }
@@ -1352,7 +1508,7 @@ export default function ChatPage() {
             setMessages((prev) => [...prev, divider, aiMsg]);
             setIsTyping(false);
         }, delay);
-    }, [isTyping, activeBusiness, getOffTopicBusiness]);
+    }, [isTyping, activeBusiness, businesses, getOffTopicBusiness, switchToBusiness]);
 
     // Keep ref in sync so startListening can call sendMessage via ref
     useEffect(() => {
