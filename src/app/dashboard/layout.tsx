@@ -18,25 +18,37 @@ import {
     HelpCircle,
     Lightbulb,
     ChevronDown,
+    ChevronRight,
     Check,
     Plus,
     Brain,
+    Layers,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { BusinessProvider, useBusiness } from "@/lib/business-context";
 
-const navItems = [
+// ─── Nav items (real sections + demo section) ─────────────────────────────
+
+const mainNavItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/dashboard/chat", label: "AI Assistant", icon: MessageCircle },
     { href: "/dashboard/campaigns", label: "Campaigns", icon: FileText },
     { href: "/dashboard/keywords", label: "Keywords", icon: Search },
     { href: "/dashboard/drafts", label: "Ad Drafts", icon: FileText },
-    { href: "/dashboard/shopping", label: "Shopping Ads", icon: ShoppingBag },
+    { href: "/dashboard/shopping", label: "Shopping Ads", icon: ShoppingBag, shoppingOnly: true },
     { href: "/dashboard/knowledge-base", label: "Knowledge Base", icon: BookOpen },
-    { href: "/dashboard/examples", label: "AI Examples", icon: Lightbulb },
     { href: "/dashboard/faq", label: "FAQ", icon: HelpCircle },
     { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
+
+const demoNavItems = [
+    { href: "/dashboard/demo/drafts", label: "Ad Drafts", icon: FileText },
+    { href: "/dashboard/demo/shopping", label: "Shopping Ads", icon: ShoppingBag },
+    { href: "/dashboard/demo/examples", label: "AI Examples", icon: Lightbulb },
+];
+
+// Industries that can use shopping ads
+const shoppingIndustries = ["Retail", "Fashion", "E-commerce", "Boutique"];
 
 // ─── Business Switcher ──────────────────────────────────────────────────────
 
@@ -144,6 +156,13 @@ function BusinessSwitcher() {
 function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [demoOpen, setDemoOpen] = useState(() => pathname.startsWith("/dashboard/demo"));
+    const { activeBusiness } = useBusiness();
+
+    // Determine if current business supports shopping ads
+    const hasShoppingAds = shoppingIndustries.some((kw) =>
+        activeBusiness.industry.toLowerCase().includes(kw.toLowerCase())
+    );
 
     return (
         <div className="min-h-screen bg-background flex">
@@ -181,24 +200,68 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                     <BusinessSwitcher />
 
                     {/* Nav */}
-                    <nav className="flex-1 p-3 space-y-1">
-                        {navItems.map((item) => {
-                            const isActive = pathname === item.href;
-                            return (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    onClick={() => setSidebarOpen(false)}
-                                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition ${isActive
-                                        ? "bg-primary text-white"
+                    <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+                        {mainNavItems
+                            .filter((item) => !(item as { shoppingOnly?: boolean }).shoppingOnly || hasShoppingAds)
+                            .map((item) => {
+                                const isActive = pathname === item.href;
+                                return (
+                                    <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        onClick={() => setSidebarOpen(false)}
+                                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition ${isActive
+                                            ? "bg-primary text-white"
+                                            : "text-muted hover:bg-border/50 hover:text-foreground"
+                                            }`}
+                                    >
+                                        <item.icon className="w-4 h-4" />
+                                        {item.label}
+                                    </Link>
+                                );
+                            })}
+
+                        {/* Demo Examples section */}
+                        <div className="pt-2 mt-2 border-t border-border">
+                            <button
+                                onClick={() => setDemoOpen(!demoOpen)}
+                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition ${
+                                    pathname.startsWith("/dashboard/demo")
+                                        ? "bg-primary/10 text-primary font-medium"
                                         : "text-muted hover:bg-border/50 hover:text-foreground"
-                                        }`}
-                                >
-                                    <item.icon className="w-4 h-4" />
-                                    {item.label}
-                                </Link>
-                            );
-                        })}
+                                }`}
+                            >
+                                <Layers className="w-4 h-4" />
+                                <span className="flex-1 text-left">Demo Examples</span>
+                                {demoOpen ? (
+                                    <ChevronDown className="w-3.5 h-3.5" />
+                                ) : (
+                                    <ChevronRight className="w-3.5 h-3.5" />
+                                )}
+                            </button>
+
+                            {demoOpen && (
+                                <div className="ml-4 mt-1 space-y-0.5 border-l-2 border-border pl-2">
+                                    {demoNavItems.map((item) => {
+                                        const isActive = pathname === item.href;
+                                        return (
+                                            <Link
+                                                key={item.href}
+                                                href={item.href}
+                                                onClick={() => setSidebarOpen(false)}
+                                                className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] transition ${isActive
+                                                    ? "bg-primary text-white"
+                                                    : "text-muted hover:bg-border/50 hover:text-foreground"
+                                                    }`}
+                                            >
+                                                <item.icon className="w-3.5 h-3.5" />
+                                                {item.label}
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
                     </nav>
 
                     {/* Bottom */}

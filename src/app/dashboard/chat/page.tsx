@@ -81,20 +81,7 @@ interface Message {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-const modelBadge = (model: LLMModel) => {
-    if (model === "gpt-4o") {
-        return (
-            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
-                <Zap className="w-2.5 h-2.5" /> GPT-4o
-            </span>
-        );
-    }
-    return (
-        <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700">
-            <Sparkles className="w-2.5 h-2.5" /> Claude 4.6
-        </span>
-    );
-};
+
 
 const timeNow = () => new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 const dateNow = () => new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -727,7 +714,7 @@ const getExactMatchBank = (biz: BusinessProfile): Record<string, () => Omit<Mess
                 displayUrl: `www.${biz.url}`,
             },
         ],
-        taskSummary: { done: ["Regenerated Ad #2 using Claude 4.6", "New version saved to Drafts (v2)", "Previous version kept in version history"] },
+        taskSummary: { done: ["Regenerated Ad #2 with a fresh angle", "New version saved to Drafts (v2)", "Previous version kept in version history"] },
         actions: [
             { label: "Use this version", type: "primary" },
             { label: "Try another angle", type: "secondary" },
@@ -824,7 +811,7 @@ const getInitialMessages = (biz: BusinessProfile): Message[] => [
     {
         id: 1,
         role: "system",
-        content: `AI Assistant connected \u2022 Managing: ${biz.name} \u2022 Models: GPT-4o + Claude 4.6 \u2022 Voice enabled \ud83c\udf99\ufe0f`,
+        content: `AI Assistant connected \u2022 Managing: ${biz.name} \u2022 Voice enabled \ud83c\udf99\ufe0f`,
         timestamp: "Session started",
     },
     {
@@ -1639,12 +1626,6 @@ export default function ChatPage() {
                     <div className="min-w-0">
                         <h1 className="font-semibold text-sm sm:text-base flex items-center gap-1.5 sm:gap-2 flex-wrap">
                             <span className="truncate">AI Assistant</span>
-                            <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
-                                <Zap className="w-2.5 h-2.5" /> GPT-4o
-                            </span>
-                            <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700">
-                                <Sparkles className="w-2.5 h-2.5" /> Claude 4.6
-                            </span>
                         </h1>
                         <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-success">
                             <div className="w-1.5 h-1.5 bg-success rounded-full animate-pulse"></div>
@@ -1710,12 +1691,7 @@ export default function ChatPage() {
                         <div key={msg.id} className="flex gap-2 sm:gap-3 py-2">
                             <img src="https://api.dicebear.com/9.x/bottts-neutral/svg?seed=AdMasterAI&backgroundColor=4f46e5" alt="AI" className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg shrink-0 shadow-sm" />
                             <div className="max-w-[90%] sm:max-w-[88%] min-w-0">
-                                {/* Model badge */}
-                                {msg.model && (
-                                    <div className="mb-1 flex items-center gap-1.5">
-                                        {modelBadge(msg.model)}
-                                    </div>
-                                )}
+
 
                                 {/* Message content */}
                                 <div className="bg-card border border-border rounded-xl rounded-tl-sm px-4 py-3 text-sm leading-relaxed">
