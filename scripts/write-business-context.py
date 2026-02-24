@@ -1,4 +1,7 @@
-"use client";
+#!/usr/bin/env python3
+"""Rewrite business-context.tsx to use real data from API."""
+
+content = '''"use client";
 
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import { authFetch } from "@/lib/auth-client";
@@ -13,22 +16,11 @@ export interface BusinessProfile {
     googleAdsId: string | null;
     initials: string;
     color: string;
-    // Legacy fields used by chat page for ad generation context
-    services: string[];
-    location: string;
-    url: string;
-    shortDesc: string;
-    competitors: string[];
-    brandVoice: string;
-    targetAudience: string;
-    geo: string;
-    goals: string[];
-    kbStatus: string;
 }
 
 interface BusinessContextValue {
     businesses: BusinessProfile[];
-    activeBusiness: BusinessProfile;
+    activeBusiness: BusinessProfile | null;
     setActiveBusiness: (id: string) => void;
     addBusiness: (name: string, website?: string, industry?: string) => Promise<BusinessProfile | null>;
     refreshBusinesses: () => Promise<void>;
@@ -39,7 +31,7 @@ interface BusinessContextValue {
 
 function getInitials(name: string): string {
     return name
-        .split(/\s+/)
+        .split(/\\s+/)
         .map(w => w[0])
         .filter(Boolean)
         .slice(0, 2)
@@ -62,24 +54,6 @@ function getColor(index: number): string {
     return COLORS[index % COLORS.length];
 }
 
-// Generate legacy fields from basic business data for chat page compatibility
-function withLegacyFields(b: { name: string; industry?: string; website?: string | null }): Pick<BusinessProfile, "services" | "location" | "url" | "shortDesc" | "competitors" | "brandVoice" | "targetAudience" | "geo" | "goals" | "kbStatus"> {
-    const domain = b.website ? b.website.replace(/^https?:\/\//, "").replace(/\/$/, "") : `${b.name.toLowerCase().replace(/\s+/g, "")}.com`;
-    const ind = b.industry || "General";
-    return {
-        services: [ind.split("/")[0].trim().toLowerCase(), "consultation", "support"],
-        location: "your area",
-        url: domain,
-        shortDesc: `Professional ${ind.toLowerCase()} services from ${b.name}`,
-        competitors: [],
-        brandVoice: "Professional, friendly, and trustworthy",
-        targetAudience: `People looking for ${ind.toLowerCase()} services`,
-        geo: "Local",
-        goals: ["Increase leads", "Grow revenue"],
-        kbStatus: "empty",
-    };
-}
-
 // ─── Default Business (when no businesses exist) ────────────────────────────
 
 const DEFAULT_BUSINESS: BusinessProfile = {
@@ -90,7 +64,6 @@ const DEFAULT_BUSINESS: BusinessProfile = {
     googleAdsId: null,
     initials: "MB",
     color: "from-blue-500 to-blue-700",
-    ...withLegacyFields({ name: "My Business" }),
 };
 
 // ─── Context ────────────────────────────────────────────────────────────────
@@ -111,7 +84,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
             }
             const data = await res.json();
             const biz: BusinessProfile[] = (data.businesses || []).map(
-                (b: { id: string; name: string; industry?: string; website?: string; googleAdsId?: string; kbStatus?: string }, i: number) => ({
+                (b: { id: string; name: string; industry?: string; website?: string; googleAdsId?: string }, i: number) => ({
                     id: b.id,
                     name: b.name,
                     industry: b.industry || "",
@@ -119,12 +92,10 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
                     googleAdsId: b.googleAdsId || null,
                     initials: getInitials(b.name),
                     color: getColor(i),
-                    ...withLegacyFields(b),
-                    kbStatus: b.kbStatus || "empty",
                 })
             );
             setBusinesses(biz);
-            // If no active business set, or active doesn\u2019t exist, use first
+            // If no active business set, or active doesn\\u2019t exist, use first
             if (biz.length > 0 && (!activeId || !biz.find(b => b.id === activeId))) {
                 setActiveId(biz[0].id);
             }
@@ -164,7 +135,6 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
                 googleAdsId: data.business.googleAdsId || null,
                 initials: getInitials(data.business.name),
                 color: getColor(businesses.length),
-                ...withLegacyFields(data.business),
             };
             setBusinesses(prev => [...prev, newBiz]);
             setActiveId(newBiz.id);
@@ -207,3 +177,9 @@ export function useBusiness() {
     if (!ctx) throw new Error("useBusiness must be used within BusinessProvider");
     return ctx;
 }
+'''
+
+with open('/Users/bblist/admasterpro/src/lib/business-context.tsx', 'w') as f:
+    f.write(content)
+
+print("Business context rewritten successfully")

@@ -26,6 +26,12 @@ import {
     TOP_UP_TOKENS,
 } from "@/lib/stripe";
 import { PLANS, TOP_UPS } from "@/lib/plans";
+import {
+    sendSubscriptionEmail,
+    sendPaymentReceipt,
+    sendPaymentFailedEmail,
+    sendTopUpEmail,
+} from "@/lib/email";
 
 // ─── POST: Checkout or Webhook ──────────────────────────────────────────────
 
@@ -165,6 +171,15 @@ async function handleWebhook(req: NextRequest) {
                     });
 
                     console.log(`[Stripe] User ${userId} subscribed to ${plan}`);
+
+                    // Send subscription confirmation email
+                    try {
+                        const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, name: true } });
+                        if (user?.email) {
+                            const amount = plan === "pro" ? 149 : 49;
+                            await sendSubscriptionEmail(user.email, user.name || "there", plan === "pro" ? "Pro" : "Starter", amount);
+                        }
+                    } catch (e) { console.error("[Stripe] Email send failed:", e); }
                 } else if (session.mode === "payment") {
                     // Top-up payment completed
                     const topUpId = session.metadata?.topUpId;
@@ -189,6 +204,15 @@ async function handleWebhook(req: NextRequest) {
                         });
 
                         console.log(`[Stripe] User ${userId} purchased ${tokens} bonus tokens ($${topUpId})`);
+
+                        // Send top-up confirmation email
+                        try {
+                            const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, name: true } });
+                            if (user?.email) {
+                                const amount = topUpId === "topup_30" ? 30 : topUpId === "topup_50" ? 50 : 100;
+                                await sendTopUpEmail(user.email, user.name || "there", tokens, amount);
+                            }
+                        } catch (e) { console.error("[Stripe] Top-up email failed:", e); }
                     }
                 }
                 break;
@@ -266,9 +290,66 @@ async function handleWebhook(req: NextRequest) {
                             where: { id: existing.id },
                             data: { status: "past_due" },
                         });
+
+                        // Send payment failed email
+                        try {
+                            const user = await prisma.user.findUnique({ where: { id: existing.userId }, select: { email: true, name: true } });
+                            if (user?.email) {
+                                await sendPaymentFailedEmail(user.email, user.name || "there", existing.plan === "pro" ? "Pro" : "Starter");
+                            }
+                        } catch (e) { console.error("[Stripe] Payment failed email error:", e); }
                     }
                 }
                 console.log(`[Stripe] Payment failed for ${invoice.customer_email}`);
+                break;
+            }
+
+            case "invoice.paid": {
+                // Monthly renewal — reset usage counters
+                const invoice = event.data.object as {
+                    subscription?: string;
+                    customer_email?: string;
+                    amount_paid?: number;
+                    billing_reason?: string;
+                    hosted_invoice_url?: string;
+                };
+
+                // Only process recurring payments (not the initial subscription payment)
+                if (invoice.subscription && invoice.billing_reason === "subscription_cycle") {
+                    const existing = await prisma.subscription.findFirst({
+                        where: { stripeSubscriptionId: invoice.subscription },
+                    });
+
+                    if (existing) {
+                        const planConfig = PLANS[existing.plan];
+
+                        await prisma.subscription.update({
+                            where: { id: existing.id },
+                            data: {
+                                status: "active",
+                                aiMessagesUsed: 0,  // Reset monthly usage
+                                currentPeriodStart: new Date(),
+                            },
+                        });
+
+                        // Send payment receipt email
+                        try {
+                            const user = await prisma.user.findUnique({ where: { id: existing.userId }, select: { email: true, name: true } });
+                            if (user?.email) {
+                                const amount = (invoice.amount_paid || 0) / 100;
+                                await sendPaymentReceipt(
+                                    user.email,
+                                    user.name || "there",
+                                    amount,
+                                    `${existing.plan === "pro" ? "Pro" : "Starter"} Plan — Monthly Renewal`,
+                                    invoice.hosted_invoice_url
+                                );
+                            }
+                        } catch (e) { console.error("[Stripe] Receipt email error:", e); }
+
+                        console.log(`[Stripe] Invoice paid for ${invoice.customer_email} — usage reset`);
+                    }
+                }
                 break;
             }
 

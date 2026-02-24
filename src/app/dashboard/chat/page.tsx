@@ -988,11 +988,21 @@ const quickActions = [
 
 // ─── Initial Messages ───────────────────────────────────────────────────────
 
-const getInitialMessages = (biz: BusinessProfile): Message[] => [
+const getInitialMessages = (bizIn: BusinessProfile | null): Message[] => {
+    const biz: BusinessProfile = bizIn || {
+        id: "default", name: "My Business", industry: "General", website: null,
+        googleAdsId: null, initials: "MB", color: "from-blue-500 to-blue-700",
+        services: ["service", "consultation", "support"], location: "your area",
+        url: "mybusiness.com", shortDesc: "Professional services",
+        competitors: [], brandVoice: "Professional", targetAudience: "Customers",
+        geo: "Local", goals: ["Grow"], kbStatus: "empty",
+    };
+    const name = biz.name;
+    return [
     {
         id: 1,
         role: "system",
-        content: `AI Assistant connected \u2022 Managing: ${biz.name} \u2022 Voice enabled \ud83c\udf99\ufe0f`,
+        content: `AI Assistant connected \u2022 Managing: ${name} \u2022 Voice enabled \ud83c\udf99\ufe0f`,
         timestamp: "Session started",
     },
     {
@@ -1000,7 +1010,7 @@ const getInitialMessages = (biz: BusinessProfile): Message[] => [
         role: "ai",
         model: "gpt-4o",
         content:
-            `Hey! \ud83d\udc4b I\u2019m your AI ad assistant for **${biz.name}**. Just **speak or type** what you need \u2014 I\u2019ll handle everything.\n\n` +
+            `Hey! \ud83d\udc4b I\u2019m your AI ad assistant for **${name}**. Just **speak or type** what you need \u2014 I\u2019ll handle everything.\n\n` +
             `I just scanned your **${biz.name}** account for the last 7 days:\n\n` +
             "**Good news:** 18 conversions this week \u2014 5 more than last week! \ud83c\udf89\n\n" +
             `**Needs attention:** I found 3 keywords wasting **$45.50/week**:\n` +
@@ -1021,6 +1031,7 @@ const getInitialMessages = (biz: BusinessProfile): Message[] => [
         ],
     },
 ];
+};
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
@@ -1113,7 +1124,9 @@ const getMicInstructions = (browser: string, platform: Platform): { steps: strin
 };
 
 export default function ChatPage() {
-    const { activeBusiness, businesses, setActiveBusiness, getOffTopicBusiness } = useBusiness();
+    const { activeBusiness, businesses, setActiveBusiness } = useBusiness();
+    // getOffTopicBusiness was removed — stub it to always return null
+    const getOffTopicBusiness = (_text: string): BusinessProfile | null => null;
     const chatHistoryRef = useRef<Map<string, Message[]>>(new Map());
     const [messages, setMessages] = useState<Message[]>(() => getInitialMessages(activeBusiness));
     const [input, setInput] = useState("");

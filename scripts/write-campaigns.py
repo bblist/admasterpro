@@ -1,4 +1,7 @@
-"use client";
+#!/usr/bin/env python3
+"""Write the campaigns page with real Google Ads data integration."""
+
+content = '''"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import {
@@ -306,7 +309,7 @@ export default function CampaignsPage() {
             {campaigns.length > 0 && (
                 <div className="bg-primary-light border border-primary/20 rounded-xl p-4">
                     <p className="text-sm">
-                        <strong>\ud83d\udca1 Pro tip:</strong> Ask the AI &mdash; &ldquo;Analyze my campaign performance and suggest optimizations&rdquo;
+                        <strong>\\ud83d\\udca1 Pro tip:</strong> Ask the AI &mdash; &ldquo;Analyze my campaign performance and suggest optimizations&rdquo;
                         to get specific recommendations for improving your ROAS.
                     </p>
                 </div>
@@ -314,3 +317,9 @@ export default function CampaignsPage() {
         </div>
     );
 }
+'''
+
+with open('/Users/bblist/admasterpro/src/app/dashboard/campaigns/page.tsx', 'w') as f:
+    f.write(content)
+
+print("Campaigns page written successfully")

@@ -17,6 +17,10 @@ import {
   Sparkles,
   Crown,
   ChevronRight,
+  Loader2,
+  CheckCircle,
+  ExternalLink,
+  Plus,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -41,16 +45,35 @@ export default function SettingsPage() {
   const [weeklyReport, setWeeklyReport] = useState(true);
   const [summaryTime, setSummaryTime] = useState("08:00");
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [sub, setSub] = useState<SubscriptionInfo | null>(null);
   const [loadingSub, setLoadingSub] = useState(true);
   const [billingAction, setBillingAction] = useState<string | null>(null);
 
+  // Load subscription + saved settings
   useEffect(() => {
     authFetch("/api/subscription")
       .then((r) => r.ok ? r.json() : null)
       .then((data) => { if (data) setSub(data); })
       .catch(() => {})
       .finally(() => setLoadingSub(false));
+
+    authFetch("/api/settings")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.settings) {
+          const s = data.settings;
+          if (s.autoPilot !== undefined) setAutoPilot(s.autoPilot);
+          if (s.budgetLimit) setDailyBudget(s.budgetLimit);
+          if (s.notifications?.email !== undefined) setEmailNotifs(s.notifications.email);
+          if (s.notifications?.whatsapp !== undefined) setWhatsappNotifs(s.notifications.whatsapp);
+          if (s.notifications?.dailySummary !== undefined) setDailySummary(s.notifications.dailySummary);
+          if (s.notifications?.instantAlerts !== undefined) setInstantAlerts(s.notifications.instantAlerts);
+          if (s.notifications?.weeklyReport !== undefined) setWeeklyReport(s.notifications.weeklyReport);
+          if (s.notifications?.summaryTime) setSummaryTime(s.notifications.summaryTime);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const handleBillingAction = async (action: string) => {
@@ -76,9 +99,31 @@ export default function SettingsPage() {
     }
   };
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await authFetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          autoPilot,
+          budgetLimit: dailyBudget,
+          notifications: {
+            email: emailNotifs,
+            whatsapp: whatsappNotifs,
+            dailySummary,
+            instantAlerts,
+            weeklyReport,
+            summaryTime,
+          },
+        }),
+      });
+      if (res.ok) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      }
+    } catch { /* ignore */ }
+    finally { setSaving(false); }
   };
 
   const planLabel = (p: string) =>
@@ -487,36 +532,23 @@ export default function SettingsPage() {
       </div>
 
       {/* Connected Account */}
-      <div className="bg-card border border-border rounded-xl p-6">
-        <h2 className="font-semibold mb-4">Connected Account</h2>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
-              <span className="text-muted font-bold text-sm">G</span>
-            </div>
-            <div>
-              <div className="text-sm font-medium text-muted">No Google Ads account connected</div>
-              <div className="text-xs text-muted">Sign in with Google to link your Ads account</div>
-            </div>
-          </div>
-          <button
-            onClick={() => window.location.href = "/api/auth/callback"}
-            className="text-sm text-primary hover:text-primary-dark font-medium transition"
-          >
-            Connect
-          </button>
-        </div>
-      </div>
+      <ConnectedAccountSection />
 
       {/* Save */}
       <div className="flex justify-end pb-6">
         <button
           onClick={handleSave}
-          className="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg text-sm font-medium transition flex items-center gap-2"
+          disabled={saving}
+          className="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg text-sm font-medium transition flex items-center gap-2 disabled:opacity-50"
         >
-          {saved ? (
+          {saving ? (
             <>
-              <Shield className="w-4 h-4" />
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Saving...
+            </>
+          ) : saved ? (
+            <>
+              <CheckCircle className="w-4 h-4" />
               Saved!
             </>
           ) : (
@@ -527,6 +559,128 @@ export default function SettingsPage() {
           )}
         </button>
       </div>
+    </div>
+  );
+}
+
+// ─── Connected Account Section ──────────────────────────────────────────────
+
+function ConnectedAccountSection() {
+  const [accounts, setAccounts] = useState<Array<{ customerId: string; descriptiveName: string }>>([]);
+  const [businesses, setBusinesses] = useState<Array<{ id: string; name: string; googleAdsId: string | null }>>([]);
+  const [loading, setLoading] = useState(true);
+  const [connected, setConnected] = useState(false);
+
+  useEffect(() => {
+    authFetch("/api/google-ads/accounts")
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data) {
+          setAccounts(data.accounts || []);
+          setBusinesses(data.businesses || []);
+          setConnected(data.connected === true);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const linkAccount = async (businessId: string, customerId: string) => {
+    try {
+      const res = await authFetch("/api/google-ads/accounts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ businessId, googleAdsCustomerId: customerId }),
+      });
+      if (res.ok) {
+        setBusinesses(prev => prev.map(b =>
+          b.id === businessId ? { ...b, googleAdsId: customerId } : b
+        ));
+      }
+    } catch { /* ignore */ }
+  };
+
+  return (
+    <div className="bg-card border border-border rounded-xl p-6">
+      <h2 className="font-semibold mb-4">Connected Accounts</h2>
+
+      {loading ? (
+        <div className="flex items-center gap-2 text-sm text-muted">
+          <Loader2 className="w-4 h-4 animate-spin" /> Loading account info...
+        </div>
+      ) : !connected ? (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+              <span className="text-muted font-bold text-sm">G</span>
+            </div>
+            <div>
+              <div className="text-sm font-medium text-muted">No Google account connected</div>
+              <div className="text-xs text-muted">Sign in with Google to link your Ads account</div>
+            </div>
+          </div>
+          <button
+            onClick={() => window.location.href = "/api/auth/callback"}
+            className="text-sm text-primary hover:text-primary-dark font-medium transition flex items-center gap-1"
+          >
+            Connect <ExternalLink className="w-3 h-3" />
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {/* Connected status */}
+          <div className="flex items-center gap-2 text-sm">
+            <CheckCircle className="w-4 h-4 text-green-500" />
+            <span className="text-green-700 font-medium">Google account connected</span>
+          </div>
+
+          {/* Available Google Ads accounts */}
+          {accounts.length > 0 && (
+            <div>
+              <h3 className="text-sm font-medium mb-2">Google Ads Accounts</h3>
+              <div className="space-y-2">
+                {accounts.map(acc => {
+                  const linkedBiz = businesses.find(b => b.googleAdsId === acc.customerId);
+                  return (
+                    <div key={acc.customerId} className="flex items-center justify-between bg-muted/20 rounded-lg p-3">
+                      <div>
+                        <div className="text-sm font-medium">{acc.descriptiveName}</div>
+                        <div className="text-xs text-muted">ID: {acc.customerId}</div>
+                      </div>
+                      {linkedBiz ? (
+                        <span className="text-xs text-green-600 font-medium flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3" /> Linked to {linkedBiz.name}
+                        </span>
+                      ) : businesses.length > 0 ? (
+                        <select
+                          onChange={(e) => { if (e.target.value) linkAccount(e.target.value, acc.customerId); }}
+                          className="text-xs bg-card border border-border rounded px-2 py-1"
+                          defaultValue=""
+                        >
+                          <option value="">Link to business...</option>
+                          {businesses.filter(b => !b.googleAdsId).map(b => (
+                            <option key={b.id} value={b.id}>{b.name}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <Link href="/dashboard/knowledge-base" className="text-xs text-primary hover:underline flex items-center gap-1">
+                          <Plus className="w-3 h-3" /> Add business first
+                        </Link>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {accounts.length === 0 && (
+            <div className="text-sm text-muted">
+              No Google Ads accounts found. Make sure your Google account has access to at least one Google Ads account.
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

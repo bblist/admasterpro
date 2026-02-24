@@ -1,4 +1,7 @@
-"use client";
+#!/usr/bin/env python3
+"""Write the keywords page with real Google Ads data."""
+
+content = '''"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import {
@@ -99,8 +102,8 @@ export default function KeywordsPage() {
     const filtered = keywords
         .filter(k => matchFilter === "all" || k.matchType === matchFilter)
         .sort((a, b) => {
-            const aVal = (a as unknown as Record<string, unknown>)[sortField] as number || 0;
-            const bVal = (b as unknown as Record<string, unknown>)[sortField] as number || 0;
+            const aVal = (a as Record<string, unknown>)[sortField] as number || 0;
+            const bVal = (b as Record<string, unknown>)[sortField] as number || 0;
             return bVal - aVal;
         });
 
@@ -308,3 +311,9 @@ export default function KeywordsPage() {
         </div>
     );
 }
+'''
+
+with open('/Users/bblist/admasterpro/src/app/dashboard/keywords/page.tsx', 'w') as f:
+    f.write(content)
+
+print("Keywords page written successfully")

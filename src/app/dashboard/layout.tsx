@@ -21,6 +21,8 @@ import {
     Check,
     Plus,
     Brain,
+    BarChart3,
+    Phone,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { BusinessProvider, useBusiness } from "@/lib/business-context";
@@ -107,6 +109,8 @@ const mainNavItems = [
     { href: "/dashboard/chat", label: "AI Assistant", icon: MessageCircle },
     { href: "/dashboard/campaigns", label: "Campaigns", icon: FileText },
     { href: "/dashboard/keywords", label: "Keywords", icon: Search },
+    { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
+    { href: "/dashboard/calls", label: "Call Tracking", icon: Phone },
     { href: "/dashboard/drafts", label: "Ad Drafts", icon: FileText },
     { href: "/dashboard/shopping", label: "Shopping Ads", icon: ShoppingBag, shoppingOnly: true },
     { href: "/dashboard/knowledge-base", label: "Knowledge Base", icon: BookOpen },
@@ -134,11 +138,9 @@ function BusinessSwitcher() {
         return () => document.removeEventListener("mousedown", handler);
     }, []);
 
-    const kbColor = activeBusiness.kbStatus === "trained"
+    const kbColor = activeBusiness?.googleAdsId
         ? "bg-green-500"
-        : activeBusiness.kbStatus === "training"
-            ? "bg-amber-500 animate-pulse"
-            : "bg-gray-400";
+        : "bg-gray-400";
 
     return (
         <div ref={ref} className="relative">
@@ -146,15 +148,15 @@ function BusinessSwitcher() {
                 onClick={() => setOpen(!open)}
                 className="w-full flex items-center gap-2.5 px-4 py-3 border-b border-border hover:bg-border/30 transition text-left group"
             >
-                <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${activeBusiness.color} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
-                    {activeBusiness.initials}
+                <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${activeBusiness?.color || "from-blue-500 to-blue-700"} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
+                    {activeBusiness?.initials || "?"}
                 </div>
                 <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium truncate flex items-center gap-1.5">
-                        {activeBusiness.name}
-                        <div className={`w-1.5 h-1.5 rounded-full ${kbColor} shrink-0`} title={`KB: ${activeBusiness.kbStatus}`} />
+                        {activeBusiness?.name || "No Business"}
+                        <div className={`w-1.5 h-1.5 rounded-full ${kbColor} shrink-0`} title={activeBusiness?.googleAdsId ? "Ads Connected" : "No Ads"} />
                     </div>
-                    <div className="text-[11px] text-muted truncate">{activeBusiness.industry}</div>
+                    <div className="text-[11px] text-muted truncate">{activeBusiness?.industry || "Add a business"}</div>
                 </div>
                 <ChevronDown className={`w-4 h-4 text-muted shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
             </button>
@@ -165,17 +167,13 @@ function BusinessSwitcher() {
                         Your Businesses
                     </div>
                     {businesses.map((biz) => {
-                        const isActive = biz.id === activeBusiness.id;
-                        const statusColor = biz.kbStatus === "trained"
+                        const isActive = biz.id === activeBusiness?.id;
+                        const statusColor = biz.googleAdsId
                             ? "text-green-600"
-                            : biz.kbStatus === "training"
-                                ? "text-amber-600"
-                                : "text-gray-400";
-                        const statusLabel = biz.kbStatus === "trained"
-                            ? "KB Trained"
-                            : biz.kbStatus === "training"
-                                ? "Training..."
-                                : "No KB";
+                            : "text-gray-400";
+                        const statusLabel = biz.googleAdsId
+                            ? "Ads Connected"
+                            : "No Ads";
                         return (
                             <button
                                 key={biz.id}
@@ -275,9 +273,9 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
     }, []);
 
     // Determine if current business supports shopping ads
-    const hasShoppingAds = shoppingIndustries.some((kw) =>
+    const hasShoppingAds = activeBusiness ? shoppingIndustries.some((kw) =>
         activeBusiness.industry.toLowerCase().includes(kw.toLowerCase())
-    );
+    ) : false;
 
     return (
         <div className="min-h-screen bg-background flex">
@@ -403,7 +401,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                             </button>
 
                             {notifOpen && (
-                                <div className="absolute right-0 top-full mt-2 w-96 bg-card border border-border rounded-xl shadow-2xl z-50 overflow-hidden">
+                                <div className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-96 max-w-96 bg-card border border-border rounded-xl shadow-2xl z-50 overflow-hidden">
                                     {/* Header */}
                                     <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card">
                                         <div className="flex items-center gap-2">

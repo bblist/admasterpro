@@ -1,4 +1,7 @@
-"use client";
+#!/usr/bin/env python3
+"""Write the dashboard home page with real stats."""
+
+content = '''"use client";
 
 import { useState, useEffect } from "react";
 import {
@@ -134,7 +137,7 @@ export default function DashboardPage() {
                         <MessageSquare className="w-4 h-4 text-muted" />
                     </div>
                     <div className="text-3xl font-bold">
-                        {totalAvailable > 999 ? "\u221e" : totalAvailable}
+                        {totalAvailable > 999 ? "\\u221e" : totalAvailable}
                         <span className="text-sm font-normal text-muted"> remaining</span>
                     </div>
                     <div className="mt-2">
@@ -326,3 +329,9 @@ export default function DashboardPage() {
         </div>
     );
 }
+'''
+
+with open('/Users/bblist/admasterpro/src/app/dashboard/page.tsx', 'w') as f:
+    f.write(content)
+
+print("Dashboard home page written successfully")
