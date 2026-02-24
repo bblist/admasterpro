@@ -62,7 +62,7 @@ export default function LandingPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <Link
-              href="/onboarding"
+              href="/audit"
               className="bg-primary hover:bg-primary-dark text-white px-8 py-3 rounded-lg font-medium text-lg transition flex items-center justify-center gap-2"
             >
               Get Your Free Ad Audit
@@ -370,7 +370,7 @@ export default function LandingPage() {
             Get your free audit in 2 minutes. No credit card. No commitment.
           </p>
           <Link
-            href="/onboarding"
+            href="/audit"
             className="bg-white text-primary hover:bg-gray-100 px-8 py-3 rounded-lg font-medium text-lg transition inline-flex items-center gap-2"
           >
             Get Started Free

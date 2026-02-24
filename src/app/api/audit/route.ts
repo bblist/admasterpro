@@ -1,0 +1,184 @@
+import { NextResponse } from "next/server";
+import crypto from "crypto";
+
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
+
+interface AuditSection {
+    title: string;
+    score: number;
+    maxScore: number;
+    status: "excellent" | "good" | "needs-work" | "critical";
+    findings: string[];
+    recommendations: string[];
+}
+
+export async function POST(req: Request) {
+    try {
+        const { websiteUrl, businessName, industry, email, monthlySpend } = await req.json();
+
+        if (!websiteUrl || !businessName || !email) {
+            return NextResponse.json({ error: "Website URL, business name, and email are required." }, { status: 400 });
+        }
+
+        // Normalize URL
+        let url = websiteUrl.trim();
+        if (!url.startsWith("http")) url = "https://" + url;
+
+        // Fetch the website content
+        let pageContent = "";
+        let pageTitle = "";
+        let fetchError = false;
+        try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 15000);
+            const pageRes = await fetch(url, {
+                signal: controller.signal,
+                headers: {
+                    "User-Agent": "AdMasterPro-AuditBot/1.0 (https://admasterai.nobleblocks.com)",
+                },
+            });
+            clearTimeout(timeout);
+            const html = await pageRes.text();
+
+            // Extract basic info from HTML
+            const titleMatch = html.match(/<title[^>]*>(.*?)<\/title>/i);
+            pageTitle = titleMatch ? titleMatch[1].trim() : "";
+
+            // Strip HTML tags, keep text content (first 8000 chars)
+            pageContent = html
+                .replace(/<script[\s\S]*?<\/script>/gi, "")
+                .replace(/<style[\s\S]*?<\/style>/gi, "")
+                .replace(/<[^>]+>/g, " ")
+                .replace(/\s+/g, " ")
+                .trim()
+                .slice(0, 8000);
+        } catch {
+            fetchError = true;
+            pageContent = "Could not fetch website content. Analyze based on URL structure and general best practices.";
+        }
+
+        // AI Analysis prompt
+        const prompt = `You are an expert digital marketing and Google Ads analyst. Analyze this website for ad-readiness and provide a comprehensive audit report.
+
+WEBSITE: ${url}
+BUSINESS NAME: ${businessName}
+INDUSTRY: ${industry || "Not specified"}
+PAGE TITLE: ${pageTitle}
+MONTHLY AD SPEND: ${monthlySpend || "Not specified"}
+${fetchError ? "NOTE: Could not fetch the website directly. Base analysis on URL patterns and industry best practices." : ""}
+
+PAGE CONTENT (extracted text):
+${pageContent}
+
+Provide a detailed audit with these sections. For each section, give:
+- A score (0-100)
+- Status: "excellent" (80-100), "good" (60-79), "needs-work" (40-59), "critical" (0-39)
+- 2-4 specific findings about this website
+- 2-4 actionable recommendations
+
+SECTIONS TO ANALYZE:
+1. Landing Page Quality — Is the page well-structured? Clear value proposition? Professional design signals?
+2. Call-to-Action Effectiveness — Are CTAs visible, compelling, properly placed? Forms easy to find?
+3. Mobile Optimization — Mobile-friendly signals, responsive design indicators, page speed hints
+4. Trust Signals — Reviews, testimonials, certifications, security badges, contact info visible?
+5. Ad-Readiness — Would paid traffic convert well? Landing page quality for Google Ads?
+6. SEO Foundation — Meta tags, heading structure, keyword relevancy, content quality
+7. Competitive Positioning — How does this position vs typical competitors in ${industry || "their"} industry?
+8. Content Quality — Is content compelling, clear, and conversion-oriented?
+
+Also provide:
+- An overall summary paragraph (3-4 sentences) about the website's strengths and weaknesses
+- An overall score (0-100 weighted average)
+- Top 3 quick wins (highest impact, easiest to implement)
+- Estimated monthly savings/improvement if recommendations are followed (give a dollar range)
+
+Return as JSON:
+{
+  "overallScore": number,
+  "overallSummary": "string",
+  "sections": [
+    {
+      "title": "string",
+      "score": number,
+      "maxScore": 100,
+      "status": "excellent|good|needs-work|critical",
+      "findings": ["string"],
+      "recommendations": ["string"]
+    }
+  ],
+  "quickWins": ["string", "string", "string"],
+  "estimatedSavings": "string",
+  "competitorInsight": "string"
+}`;
+
+        const res = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${OPENAI_API_KEY}`,
+            },
+            body: JSON.stringify({
+                model: "gpt-4o",
+                messages: [
+                    { role: "system", content: "You are an expert digital marketing analyst. Always respond with valid JSON only, no markdown." },
+                    { role: "user", content: prompt },
+                ],
+                temperature: 0.7,
+                max_tokens: 3000,
+            }),
+        });
+
+        if (!res.ok) {
+            console.error("[Audit OpenAI] Error:", res.status, await res.text());
+            return NextResponse.json({ error: "AI analysis failed. Please try again." }, { status: 500 });
+        }
+
+        const data = await res.json();
+        const rawResponse = data.choices?.[0]?.message?.content || "{}";
+        const promptTokens = data.usage?.prompt_tokens || 0;
+        const completionTokens = data.usage?.completion_tokens || 0;
+        const tokensUsed = data.usage?.total_tokens || 0;
+
+        // Parse AI response
+        let auditResult;
+        try {
+            // Strip potential markdown code fences
+            const cleaned = rawResponse.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+            auditResult = JSON.parse(cleaned);
+        } catch {
+            auditResult = {
+                overallScore: 65,
+                overallSummary: "We were unable to fully parse the AI analysis. Please try again or contact support.",
+                sections: [],
+                quickWins: ["Retry the audit for a full analysis"],
+                estimatedSavings: "N/A",
+                competitorInsight: "N/A",
+            };
+        }
+
+        const costEstimate = promptTokens * 0.0000025 + completionTokens * 0.00001;
+
+        // Generate a unique audit ID (no DB storage — results are returned inline)
+        const auditId = crypto.randomUUID();
+
+        return NextResponse.json({
+            auditId,
+            result: auditResult,
+            websiteUrl: url,
+            businessName,
+            industry,
+            email,
+            monthlySpend,
+            pageTitle,
+            tokensUsed,
+            costEstimate,
+            createdAt: new Date().toISOString(),
+        });
+    } catch (error: any) {
+        console.error("Audit error:", error);
+        return NextResponse.json(
+            { error: "Failed to generate audit. Please try again." },
+            { status: 500 }
+        );
+    }
+}

@@ -1,18 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionDual } from "@/lib/session";
 
 // Admin API — returns real data from DB when available, demo fallback otherwise
 
 async function isAdmin(req: NextRequest): Promise<boolean> {
-    const cookieHeader = req.headers.get("cookie");
-    if (!cookieHeader) return false;
-    const match = cookieHeader.match(/session=([^;]+)/);
-    if (!match) return false;
-    try {
-        const session = JSON.parse(decodeURIComponent(match[1]));
-        return session.email === process.env.ADMIN_EMAIL || session.email === "admin@nobleblocks.com";
-    } catch {
-        return false;
-    }
+    const session = await getSessionDual(req);
+    if (!session?.email) return false;
+    return session.email === process.env.ADMIN_EMAIL || session.email === "admin@nobleblocks.com";
 }
 
 export async function GET(req: NextRequest) {

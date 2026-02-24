@@ -3,8 +3,8 @@
 **Live URL:** https://admasterai.nobleblocks.com  
 **Repository:** https://github.com/bblist/admasterpro  
 **Stack:** Next.js 14 · TypeScript · Prisma 5 · PostgreSQL · Stripe · OpenAI/Claude · AWS Lightsail  
-**Last Updated:** January 2025  
-**Latest Commit:** `fdd2343` (Phase 11: Full site audit + 18 bug fixes)
+**Last Updated:** June 2025  
+**Latest Commit:** Phase 13 (Admin real data + Free audit feature)
 
 ---
 
@@ -189,6 +189,8 @@ The system prompt (~10K characters) covers the complete Google Ads ecosystem:
 | 9 | `a556ddd` | Prisma + PostgreSQL schema, Stripe integration, billing UI |
 | 10 | (infra) | PostgreSQL server setup, Stripe products/prices/webhook creation |
 | 11 | `fdd2343` | Full site audit: 18 fixes (auth, billing, UI, content, security) |
+| 12 | `a24f88b` | Dual JWT auth (cookies + localStorage token, 30-day expiry) |
+| 13 | (current) | Admin dashboard with real DB data + Free audit tool |
 
 ---
 
@@ -217,6 +219,55 @@ The system prompt (~10K characters) covers the complete Google Ads ecosystem:
 
 ---
 
+## Phase 12 — Dual JWT Auth
+
+- ✅ JWT tokens via `jose` library (cookies + localStorage)
+- ✅ `getSessionDual()` helper: checks cookie first, falls back to Bearer token
+- ✅ All API routes use dual auth
+- ✅ `authFetch()` utility for client-side requests with token header
+- ✅ 30-day token expiry
+- ✅ Commit: `a24f88b`
+
+---
+
+## Phase 13 — Admin Dashboard + Free Audit (Latest)
+
+### Admin Dashboard — Real PostgreSQL Data
+All admin pages previously used hardcoded demo data. Now they query the live database.
+
+**New API Routes:**
+- `src/app/api/admin/users/route.ts` — All users with subscription + usage data, per-user margin
+- `src/app/api/admin/costs/route.ts` — AI costs per client, model breakdown, daily cost trends
+- `src/app/api/admin/revenue/route.ts` — MRR/ARR, plan breakdown, top clients by LTV, recent transactions
+- `src/app/api/admin/analytics/route.ts` — Query stats, model usage, feature usage, top user queries
+
+**Updated API Routes:**
+- `src/app/api/admin/stats/route.ts` — Switched from cookie-only to `getSessionDual()` for admin auth
+
+**Admin Auth Pattern:** Email-based check (`ADMIN_EMAIL` env var or `admin@nobleblocks.com`)
+
+**Rewritten Admin Pages:**
+- `/admin/users` — Sortable user table, expandable rows (auth method, messages, all-time stats), CSV export, plan distribution bar, search/filter
+- `/admin/ai-costs` — Summary cards, model breakdown grid, daily cost chart, unprofitable client warnings, expandable client rows
+- `/admin/revenue` — MRR/ARR/ARPU cards, plan breakdown bars, top clients by LTV, recent transactions
+- `/admin/analytics` — Today/week metrics, model usage bars, feature usage bars, top user queries
+
+### Free Audit Tool — Lead Generation
+New public-facing AI-powered website audit feature.
+
+**New Pages:**
+- `/audit` — Landing page with form (website URL, business name, industry, email, monthly spend), "What's In Your Report" section, trust badges
+- `/audit/report/[id]` — Beautiful branded report: animated ScoreRing SVG, StatusBadge, SectionScoreBar, expandable sections with findings/recommendations, quick wins, competitive insight, print-ready CSS for PDF export
+
+**New API Route:**
+- `src/app/api/audit/route.ts` — Fetches website HTML, extracts text, sends to GPT-4o for 8-section analysis (Landing Page Quality, CTA Effectiveness, Mobile, Trust Signals, Ad-Readiness, SEO, Competitive Positioning, Content Quality), returns scored audit with recommendations
+
+**Audit Storage:** Results stored in localStorage (no DB dependency for anonymous users). Shareable via URL within browser session.
+
+**Homepage Updates:** Two audit CTA buttons changed from `/onboarding` to `/audit`
+
+---
+
 ## TODO (Priority Order)
 
 ### Immediate (Before Wider Testing)
@@ -230,14 +281,15 @@ The system prompt (~10K characters) covers the complete Google Ads ecosystem:
 - [ ] Real-time campaign data on dashboard overview
 
 ### Future Enhancements
-- [ ] Admin pages: query real DB data instead of demo data
+- [x] Admin pages: query real DB data instead of demo data ✅ Phase 13
 - [ ] Onboarding flow: persist business profile to DB
 - [ ] Password authentication (currently email is passwordless)
 - [ ] Stripe webhook for cancel/upgrade events
 - [ ] Email notifications (currently UI-only toggles)
-- [ ] PDF report export
+- [x] PDF report export ✅ Phase 13 (audit reports via window.print)
 - [ ] Rate limiting on API routes
 - [ ] Mobile responsive polish pass
+- [ ] Persist audit results to DB (currently localStorage only)
 
 ---
 
@@ -252,6 +304,14 @@ The system prompt (~10K characters) covers the complete Google Ads ecosystem:
 | `src/app/api/auth/signout/route.ts` | Session cleanup |
 | `src/app/api/stripe/route.ts` | Stripe checkout + webhook handler |
 | `src/app/api/subscription/route.ts` | User plan + usage info |
+| `src/app/api/admin/stats/route.ts` | Admin overview stats (real DB) |
+| `src/app/api/admin/users/route.ts` | Admin users + usage data |
+| `src/app/api/admin/costs/route.ts` | Admin AI cost tracking |
+| `src/app/api/admin/revenue/route.ts` | Admin revenue analytics |
+| `src/app/api/admin/analytics/route.ts` | Admin platform analytics |
+| `src/app/api/audit/route.ts` | Free audit AI analysis engine |
+| `src/app/audit/page.tsx` | Audit landing page |
+| `src/app/audit/report/[id]/page.tsx` | Branded audit report viewer |
 | `src/lib/db.ts` | Prisma client singleton |
 | `src/lib/session.ts` | Session parsing helpers |
 | `src/lib/plans.ts` | Plan definitions (Free/Starter/Pro) |
