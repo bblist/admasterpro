@@ -38,12 +38,15 @@ import {
     Copy,
     Edit3,
     Tag,
+    Mic,
+    X,
+    Check,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import Tooltip from "@/components/Tooltip";
 import { useBusiness } from "@/lib/business-context";
 
-// Types
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type AssetType = "image" | "document" | "ad" | "video" | "text";
 type TabId = "assets" | "text" | "urls" | "brand";
@@ -69,6 +72,7 @@ interface KBAsset {
         layoutNotes?: string;
         textContent?: string;
         videoNotes?: string;
+        transcript?: string;
     };
 }
 
@@ -93,9 +97,125 @@ interface CrawledURL {
     client: string;
 }
 
-// Demo Data
+// ─── Industries Master List ──────────────────────────────────────────────────
 
-const assets: KBAsset[] = [
+const INDUSTRIES = [
+    "Accounting / Tax Services",
+    "Advertising / Marketing",
+    "Agriculture / Farming",
+    "Airlines / Aviation",
+    "Apparel / Fashion",
+    "Architecture / Design",
+    "Arts / Entertainment",
+    "Automotive / Dealership",
+    "Automotive / Detailing",
+    "Automotive / Repair & Service",
+    "Banking / Financial Services",
+    "Beauty / Cosmetics",
+    "Biotechnology / Pharmaceuticals",
+    "Cannabis / Dispensary",
+    "Catering / Event Planning",
+    "Childcare / Daycare",
+    "Cleaning Services / Janitorial",
+    "Construction / Contracting",
+    "Consulting / Management",
+    "Cryptocurrency / Blockchain",
+    "Dating / Matchmaking",
+    "Dental / Orthodontics",
+    "E-commerce / Online Retail",
+    "Education / Tutoring",
+    "Electrical Services",
+    "Energy / Solar / Utilities",
+    "Engineering / Technical Services",
+    "Entertainment / Media / Film",
+    "Environmental Services",
+    "Event Management / Venues",
+    "Fitness / Gym / Personal Training",
+    "Food & Beverage / Restaurant",
+    "Funeral Services / Memorial",
+    "Furniture / Home Decor",
+    "Gaming / Esports",
+    "Government / Public Sector",
+    "Grocery / Supermarket",
+    "Health & Wellness / Spa",
+    "Healthcare / Chiropractic",
+    "Healthcare / Dermatology",
+    "Healthcare / General Practice",
+    "Healthcare / Mental Health",
+    "Healthcare / Ophthalmology",
+    "Healthcare / Pediatrics",
+    "Healthcare / Plastic Surgery",
+    "Healthcare / Veterinary",
+    "HVAC / Heating & Cooling",
+    "Home Services / General",
+    "Home Services / Landscaping",
+    "Home Services / Pest Control",
+    "Home Services / Plumbing",
+    "Home Services / Roofing",
+    "Hospitality / Hotels",
+    "Human Resources / Staffing",
+    "Import / Export / Trade",
+    "Information Technology / Software",
+    "Insurance / Brokerage",
+    "Interior Design / Staging",
+    "Investment / Wealth Management",
+    "Jewelry / Watches",
+    "Landscaping / Lawn Care",
+    "Legal / Law Firm",
+    "Logistics / Shipping / Freight",
+    "Manufacturing / Industrial",
+    "Marine / Boating",
+    "Medical Devices / Equipment",
+    "Mobile Apps / SaaS",
+    "Mortgage / Lending",
+    "Moving / Relocation Services",
+    "Music / Recording / Production",
+    "Nonprofit / Charity",
+    "Nutrition / Dietetics",
+    "Oil & Gas / Petroleum",
+    "Optical / Eyewear",
+    "Painting / Wall Covering",
+    "Pet Care / Grooming",
+    "Photography / Videography",
+    "Physical Therapy / Rehabilitation",
+    "Plumbing / Piping",
+    "Printing / Signage",
+    "Property Management",
+    "Real Estate / Commercial",
+    "Real Estate / Residential",
+    "Religion / Faith-Based",
+    "Restaurant / Bar / Nightlife",
+    "Restaurant / Cafe / Coffee",
+    "Restaurant / Fast Food",
+    "Restaurant / Fine Dining",
+    "Restaurant / Japanese Cuisine",
+    "Retail / Boutique",
+    "Retail / Electronics",
+    "Retail / Fashion",
+    "Retail / General",
+    "Security / Alarm Systems",
+    "Senior Care / Assisted Living",
+    "Social Media / Influencer",
+    "Sports / Recreation",
+    "Storage / Warehousing",
+    "Supplements / Vitamins",
+    "Tattoo / Body Art",
+    "Telecommunications",
+    "Tourism / Travel Agency",
+    "Transportation / Rideshare",
+    "Trucking / CDL",
+    "Tutoring / Test Prep",
+    "Waste Management / Recycling",
+    "Web Development / Digital Agency",
+    "Wedding / Bridal Services",
+    "Weight Loss / Diet Programs",
+    "Wholesale / Distribution",
+    "Other",
+];
+
+// ─── Demo Data ───────────────────────────────────────────────────────────────
+
+const initialAssets: KBAsset[] = [
     {
         id: 1,
         type: "image",
@@ -154,6 +274,7 @@ const assets: KBAsset[] = [
             dominantColors: ["#F59E0B", "#EF4444", "#1F2937"],
             videoNotes: "30 frames analyzed. Key scenes: 0:03 sushi prep, 0:12 plating close-up, 0:22 happy customer, 0:28 logo+CTA. Recommend keeping CTA visible for final 5 seconds.",
             textContent: "Detected at 0:28: \u2018Sakura Sushi - Order Now\u2019",
+            transcript: "Fresh fish. Hand-crafted rolls. An unforgettable dining experience. Visit Sakura Sushi Bar today.",
         },
     },
     {
@@ -206,6 +327,7 @@ const assets: KBAsset[] = [
             dominantColors: ["#14B8A6", "#3B82F6", "#FFFFFF"],
             videoNotes: "Single speaker, well-lit. Key quotes: 0:25 \u2018best decision I ever made\u2019, 0:48 \u2018I can see clearly now\u2019. Good for pull-quote ads.",
             textContent: "Full transcript extracted (187 words). Sentiment: Very positive.",
+            transcript: "Hi, I'm Maria. I had LASIK at ClearVision last April and it was the best decision I ever made. I was so nervous before the surgery but Dr. Martinez and the whole team made me feel completely comfortable. The procedure took maybe 15 minutes. The next morning I could see clearly \u2014 no glasses, no contacts. I can see clearly now and it's changed my life. I would recommend ClearVision to anyone considering LASIK.",
         },
     },
     {
@@ -249,7 +371,7 @@ const assets: KBAsset[] = [
     },
 ];
 
-const textEntries: TextEntry[] = [
+const initialTextEntries: TextEntry[] = [
     {
         id: 1,
         title: "About Us - Company Story",
@@ -357,7 +479,7 @@ const crawledURLs: CrawledURL[] = [
     },
 ];
 
-const brandProfile = {
+const initialBrandProfile = {
     businessName: "ClearVision Eye Clinic",
     industry: "Healthcare / Ophthalmology",
     brandVoice: "Professional, compassionate, reassuring. Avoid overly clinical jargon. Speak to patients\u2019 fears and aspirations.",
@@ -368,7 +490,7 @@ const brandProfile = {
     toneExamples: "Good: \u2018Imagine waking up and seeing clearly \u2014 no glasses, no contacts.\u2019 Bad: \u2018Our laser surgery procedure utilizes advanced excimer technology...\u2019",
 };
 
-// Helpers
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const typeIcon = (type: AssetType) => {
     switch (type) {
@@ -415,13 +537,92 @@ const statusBadge = (status: CrawlStatus) => {
     }
 };
 
-// Component
+// ─── Searchable Industry Dropdown ────────────────────────────────────────────
+
+function IndustryDropdown({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+    const [open, setOpen] = useState(false);
+    const [search, setSearch] = useState("");
+    const ref = useRef<HTMLDivElement>(null);
+
+    const filtered = INDUSTRIES.filter((ind) =>
+        ind.toLowerCase().includes(search.toLowerCase())
+    );
+
+    // Close on outside click
+    const handleBlur = useCallback(() => {
+        setTimeout(() => {
+            if (ref.current && !ref.current.contains(document.activeElement)) {
+                setOpen(false);
+            }
+        }, 150);
+    }, []);
+
+    return (
+        <div ref={ref} className="relative" onBlur={handleBlur}>
+            <button
+                type="button"
+                onClick={() => { setOpen(!open); setSearch(""); }}
+                className="w-full bg-sidebar border border-border rounded-lg px-3 py-2.5 text-sm text-left focus:outline-none focus:border-primary transition flex items-center justify-between"
+            >
+                <span className={value ? "text-foreground" : "text-muted"}>{value || "Select industry..."}</span>
+                <ChevronDown className={`w-4 h-4 text-muted transition-transform ${open ? "rotate-180" : ""}`} />
+            </button>
+            {open && (
+                <div className="absolute z-50 mt-1 w-full bg-card border border-border rounded-xl shadow-xl max-h-72 flex flex-col overflow-hidden">
+                    <div className="p-2 border-b border-border">
+                        <div className="relative">
+                            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted" />
+                            <input
+                                type="text"
+                                autoFocus
+                                placeholder="Search industries..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="w-full bg-sidebar border border-border rounded-lg pl-8 pr-3 py-2 text-sm focus:outline-none focus:border-primary transition"
+                            />
+                        </div>
+                    </div>
+                    <div className="overflow-y-auto flex-1">
+                        {filtered.length === 0 ? (
+                            <div className="p-3 text-xs text-muted text-center">No industries match &ldquo;{search}&rdquo;</div>
+                        ) : (
+                            filtered.map((ind) => (
+                                <button
+                                    key={ind}
+                                    onClick={() => { onChange(ind); setOpen(false); setSearch(""); }}
+                                    className={`w-full text-left px-3 py-2 text-sm hover:bg-primary/5 transition flex items-center justify-between ${
+                                        value === ind ? "bg-primary/10 text-primary font-medium" : "text-foreground"
+                                    }`}
+                                >
+                                    <span>{ind}</span>
+                                    {value === ind && <Check className="w-3.5 h-3.5 text-primary" />}
+                                </button>
+                            ))
+                        )}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ─── Quick Actions ──────────────────────────────────────────────────────────
+
+const quickActions = [
+    { label: "Show my stats", icon: null },
+];
+
+// ─── Component ──────────────────────────────────────────────────────────────
 
 export default function KnowledgeBasePage() {
     const { activeBusiness } = useBusiness();
     const [activeTab, setActiveTab] = useState<TabId>("assets");
     const [selectedAsset, setSelectedAsset] = useState<number | null>(null);
     const [selectedText, setSelectedText] = useState<number | null>(null);
+    const [editingTextId, setEditingTextId] = useState<number | null>(null);
+    const [editingTextContent, setEditingTextContent] = useState("");
+    const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
+    const [editingNoteContent, setEditingNoteContent] = useState("");
     const [noteInput, setNoteInput] = useState("");
     const [urlInput, setUrlInput] = useState("");
     const [textTitle, setTextTitle] = useState("");
@@ -430,6 +631,20 @@ export default function KnowledgeBasePage() {
     const [textClient, setTextClient] = useState("ClearVision Eye Clinic");
     const [searchQuery, setSearchQuery] = useState("");
     const [filterType, setFilterType] = useState<AssetType | "all">("all");
+    const [isDragging, setIsDragging] = useState(false);
+    const [uploadingFiles, setUploadingFiles] = useState<string[]>([]);
+    const [transcribingId, setTranscribingId] = useState<number | null>(null);
+    const [assets, setAssets] = useState<KBAsset[]>(initialAssets);
+    const [textEntries, setTextEntries] = useState<TextEntry[]>(initialTextEntries);
+    const [brandIndustry, setBrandIndustry] = useState(initialBrandProfile.industry);
+    const [brandName, setBrandName] = useState(initialBrandProfile.businessName);
+    const [brandVoice, setBrandVoice] = useState(initialBrandProfile.brandVoice);
+    const [brandAudience, setBrandAudience] = useState(initialBrandProfile.targetAudience);
+    const [brandCompetitors, setBrandCompetitors] = useState(initialBrandProfile.competitors);
+    const [brandUSPs, setBrandUSPs] = useState(initialBrandProfile.uniqueSellingPoints);
+    const [brandAvoid, setBrandAvoid] = useState(initialBrandProfile.avoidTopics);
+    const [brandTone, setBrandTone] = useState(initialBrandProfile.toneExamples);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const selected = assets.find((item) => item.id === selectedAsset);
     const selectedTextEntry = textEntries.find((item) => item.id === selectedText);
@@ -439,6 +654,139 @@ export default function KnowledgeBasePage() {
         if (searchQuery && !a.name.toLowerCase().includes(searchQuery.toLowerCase()) && !a.client.toLowerCase().includes(searchQuery.toLowerCase())) return false;
         return true;
     });
+
+    // ── File upload handler ──
+    const handleFileUpload = useCallback(async (files: FileList | null) => {
+        if (!files || files.length === 0) return;
+        const fileNames = Array.from(files).map(f => f.name);
+        setUploadingFiles(fileNames);
+
+        // Simulate upload delay
+        await new Promise(r => setTimeout(r, 1500));
+
+        const newAssets: KBAsset[] = Array.from(files).map((file, i) => {
+            const isVideo = file.type.startsWith("video/");
+            const isImage = file.type.startsWith("image/");
+            const isPdf = file.name.endsWith(".pdf");
+            const type: AssetType = isVideo ? "video" : isImage ? "image" : "document";
+
+            return {
+                id: Date.now() + i,
+                type,
+                name: file.name,
+                client: activeBusiness.name,
+                previewBg: isVideo ? "from-purple-500 to-indigo-600" : isImage ? "from-emerald-400 to-cyan-500" : "from-gray-400 to-gray-600",
+                previewText: file.name,
+                dimensions: isImage ? "Auto-detected" : undefined,
+                duration: isVideo ? "Analyzing..." : undefined,
+                fileSize: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+                uploadedAt: new Date().toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }),
+                notes: "",
+                aiAnalysis: {
+                    format: file.type.split("/")[1]?.toUpperCase() || "Unknown",
+                    faceDetected: false,
+                    textContent: isPdf ? "Extracting text..." : undefined,
+                    videoNotes: isVideo ? "Analyzing scenes..." : undefined,
+                    transcript: isVideo ? "Transcribing with Deepgram..." : undefined,
+                },
+            };
+        });
+
+        setAssets(prev => [...newAssets, ...prev]);
+        setUploadingFiles([]);
+
+        // Simulate Deepgram transcription for video files
+        const videoAssets = newAssets.filter(a => a.type === "video");
+        for (const va of videoAssets) {
+            setTranscribingId(va.id);
+            await new Promise(r => setTimeout(r, 3000));
+            setAssets(prev => prev.map(a => a.id === va.id ? {
+                ...a,
+                aiAnalysis: {
+                    ...a.aiAnalysis,
+                    transcript: "Transcription complete. Audio content has been extracted and indexed for AI training. The transcript is available for review and can be used in ad copy generation.",
+                    videoNotes: "Video analyzed. Key frames extracted. Scene transitions detected.",
+                },
+            } : a));
+            setTranscribingId(null);
+        }
+    }, [activeBusiness.name]);
+
+    // ── Drag and drop handlers ──
+    const handleDragOver = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(true);
+    }, []);
+    const handleDragLeave = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+    }, []);
+    const handleDrop = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+        handleFileUpload(e.dataTransfer.files);
+    }, [handleFileUpload]);
+
+    // ── Edit text entry ──
+    const startEditingText = (entry: TextEntry) => {
+        setEditingTextId(entry.id);
+        setEditingTextContent(entry.content);
+    };
+    const saveTextEdit = () => {
+        if (editingTextId === null) return;
+        setTextEntries(prev => prev.map(e => e.id === editingTextId ? {
+            ...e,
+            content: editingTextContent,
+            wordCount: editingTextContent.split(/\s+/).filter(Boolean).length
+        } : e));
+        setEditingTextId(null);
+        setEditingTextContent("");
+    };
+
+    // ── Edit asset note ──
+    const startEditingNote = (asset: KBAsset) => {
+        setEditingNoteId(asset.id);
+        setEditingNoteContent(asset.notes);
+    };
+    const saveNoteEdit = () => {
+        if (editingNoteId === null) return;
+        setAssets(prev => prev.map(a => a.id === editingNoteId ? { ...a, notes: editingNoteContent } : a));
+        setEditingNoteId(null);
+        setEditingNoteContent("");
+    };
+    const addNote = () => {
+        if (!noteInput.trim() || !selectedAsset) return;
+        setAssets(prev => prev.map(a => a.id === selectedAsset ? { ...a, notes: a.notes ? `${a.notes}\n${noteInput}` : noteInput } : a));
+        setNoteInput("");
+    };
+
+    // ── Delete asset ──
+    const deleteAsset = (id: number) => {
+        setAssets(prev => prev.filter(a => a.id !== id));
+        if (selectedAsset === id) setSelectedAsset(null);
+    };
+    const deleteTextEntry = (id: number) => {
+        setTextEntries(prev => prev.filter(e => e.id !== id));
+        if (selectedText === id) setSelectedText(null);
+    };
+
+    // ── Add text entry ──
+    const addTextEntry = () => {
+        if (!textTitle.trim() || !textContent.trim()) return;
+        const newEntry: TextEntry = {
+            id: Date.now(),
+            title: textTitle,
+            category: textCategory,
+            content: textContent,
+            client: textClient,
+            addedAt: new Date().toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }),
+            wordCount: textContent.split(/\s+/).filter(Boolean).length,
+            aiSummary: "Processing... AI summary will appear shortly.",
+        };
+        setTextEntries(prev => [newEntry, ...prev]);
+        setTextTitle("");
+        setTextContent("");
+    };
 
     const tabs: { id: TabId; label: string; icon: React.ReactNode; count: number }[] = [
         { id: "assets", label: "Files & Media", icon: <Upload className="w-4 h-4" />, count: assets.length },
@@ -522,23 +870,23 @@ export default function KnowledgeBasePage() {
                 </div>
             </div>
 
-            {/* Tab Navigation */}
-            <div className="flex gap-1 bg-sidebar border border-border rounded-xl p-1">
+            {/* Tab Navigation — Active tab stands out with primary bg + ring */}
+            <div className="flex gap-1 bg-sidebar border border-border rounded-xl p-1.5">
                 {tabs.map((tab) => (
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition ${
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
                             activeTab === tab.id
-                                ? "bg-card text-foreground shadow-sm"
-                                : "text-muted hover:text-foreground"
+                                ? "bg-primary text-white shadow-md shadow-primary/25 ring-1 ring-primary/30"
+                                : "text-muted hover:text-foreground hover:bg-card/50"
                         }`}
                     >
                         {tab.icon}
                         {tab.label}
                         {tab.count > 0 && (
                             <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                                activeTab === tab.id ? "bg-primary/10 text-primary" : "bg-border text-muted"
+                                activeTab === tab.id ? "bg-white/20 text-white" : "bg-border text-muted"
                             }`}>
                                 {tab.count}
                             </span>
@@ -550,20 +898,70 @@ export default function KnowledgeBasePage() {
             {/* TAB: FILES & MEDIA */}
             {activeTab === "assets" && (
                 <div className="space-y-5">
-                    {/* Upload Zone */}
-                    <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/50 transition cursor-pointer bg-card">
-                        <Upload className="w-8 h-8 text-muted mx-auto mb-3" />
-                        <div className="text-sm font-medium mb-1">Drag &amp; drop files here, or click to browse</div>
-                        <div className="text-xs text-muted mb-3">
-                            Images: JPG, PNG, GIF, WebP, SVG &bull; Videos: MP4, MOV, AVI, WebM &bull; Documents: PDF, DOCX, XLSX, PPTX, TXT &bull; Max 100MB per file
+                    {/* Enhanced Upload Zone */}
+                    <div
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        onClick={() => fileInputRef.current?.click()}
+                        className={`relative overflow-hidden border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all ${
+                            isDragging
+                                ? "border-primary bg-primary/5 scale-[1.01] shadow-lg shadow-primary/10"
+                                : "border-primary/30 bg-gradient-to-br from-primary/[0.03] via-blue-500/[0.03] to-purple-500/[0.03] hover:border-primary/50 hover:shadow-md"
+                        }`}
+                    >
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            multiple
+                            accept="image/*,video/*,.pdf,.docx,.xlsx,.pptx,.txt"
+                            className="hidden"
+                            onChange={(e) => handleFileUpload(e.target.files)}
+                        />
+
+                        {/* Background decoration */}
+                        <div className="absolute inset-0 pointer-events-none">
+                            <div className="absolute -top-6 -right-6 w-32 h-32 bg-primary/5 rounded-full blur-2xl" />
+                            <div className="absolute -bottom-4 -left-4 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl" />
                         </div>
-                        <div className="flex items-center justify-center gap-4 text-xs text-muted flex-wrap">
-                            <span className="flex items-center gap-1"><Scan className="w-3 h-3" /> AI auto-analyzes content</span>
-                            <span className="flex items-center gap-1"><User className="w-3 h-3" /> Face detection</span>
-                            <span className="flex items-center gap-1"><FileText className="w-3 h-3" /> Text extraction (OCR)</span>
-                            <span className="flex items-center gap-1"><Video className="w-3 h-3" /> Video scene analysis</span>
-                            <span className="flex items-center gap-1"><Maximize2 className="w-3 h-3" /> Auto-sizing</span>
-                        </div>
+
+                        {uploadingFiles.length > 0 ? (
+                            <div className="relative z-10">
+                                <Loader2 className="w-10 h-10 text-primary mx-auto mb-3 animate-spin" />
+                                <div className="text-sm font-semibold text-primary mb-1">Uploading {uploadingFiles.length} file{uploadingFiles.length > 1 ? "s" : ""}...</div>
+                                <div className="text-xs text-muted">{uploadingFiles.join(", ")}</div>
+                            </div>
+                        ) : (
+                            <div className="relative z-10">
+                                <div className="w-16 h-16 bg-gradient-to-br from-primary to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/20">
+                                    <Upload className="w-7 h-7 text-white" />
+                                </div>
+                                <div className="text-base font-semibold mb-1">Drag & drop files here, or click to browse</div>
+                                <div className="text-sm text-muted mb-5 max-w-lg mx-auto leading-relaxed">
+                                    <span className="font-medium text-foreground/70">Images:</span> JPG, PNG, GIF, WebP, SVG{" "}
+                                    <span className="text-border mx-1">&bull;</span>{" "}
+                                    <span className="font-medium text-foreground/70">Videos:</span> MP4, MOV, AVI, WebM{" "}
+                                    <span className="text-border mx-1">&bull;</span>{" "}
+                                    <span className="font-medium text-foreground/70">Documents:</span> PDF, DOCX, XLSX, PPTX, TXT{" "}
+                                    <span className="text-border mx-1">&bull;</span>{" "}
+                                    <span className="font-medium text-foreground/70">Max 100MB</span> per file
+                                </div>
+                                <div className="flex items-center justify-center gap-3 flex-wrap">
+                                    {[
+                                        { icon: <Scan className="w-3.5 h-3.5" />, label: "AI auto-analyzes", color: "bg-blue-50 text-blue-700 border-blue-200" },
+                                        { icon: <User className="w-3.5 h-3.5" />, label: "Face detection", color: "bg-purple-50 text-purple-700 border-purple-200" },
+                                        { icon: <FileText className="w-3.5 h-3.5" />, label: "Text extraction (OCR)", color: "bg-amber-50 text-amber-700 border-amber-200" },
+                                        { icon: <Mic className="w-3.5 h-3.5" />, label: "Video transcription", color: "bg-green-50 text-green-700 border-green-200" },
+                                        { icon: <Video className="w-3.5 h-3.5" />, label: "Scene analysis", color: "bg-rose-50 text-rose-700 border-rose-200" },
+                                        { icon: <Maximize2 className="w-3.5 h-3.5" />, label: "Auto-sizing", color: "bg-teal-50 text-teal-700 border-teal-200" },
+                                    ].map((feat, i) => (
+                                        <span key={i} className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border ${feat.color}`}>
+                                            {feat.icon} {feat.label}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Search & Filter */}
@@ -600,7 +998,14 @@ export default function KnowledgeBasePage() {
                                                     <div className="font-medium text-sm">{item.name}</div>
                                                     <div className="text-xs text-muted mt-0.5">{item.client}</div>
                                                 </div>
-                                                {typeBadge(item.type)}
+                                                <div className="flex items-center gap-2">
+                                                    {typeBadge(item.type)}
+                                                    {transcribingId === item.id && (
+                                                        <span className="flex items-center gap-1 text-xs text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">
+                                                            <Loader2 className="w-3 h-3 animate-spin" /> Transcribing...
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                             <div className="flex items-center gap-3 mt-2 text-xs text-muted">
                                                 <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{item.uploadedAt}</span>
@@ -612,6 +1017,7 @@ export default function KnowledgeBasePage() {
                                                 {item.aiAnalysis.faceDetected && <span className="text-xs bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">&#128100; Face</span>}
                                                 {item.aiAnalysis.format && <span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">{item.aiAnalysis.format}</span>}
                                                 {item.aiAnalysis.videoNotes && <span className="text-xs bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded">&#127909; Scenes analyzed</span>}
+                                                {item.aiAnalysis.transcript && <span className="text-xs bg-green-50 text-green-600 px-1.5 py-0.5 rounded flex items-center gap-1"><Mic className="w-3 h-3" />Transcribed</span>}
                                                 {item.aiAnalysis.dominantColors && (
                                                     <div className="flex items-center gap-0.5">
                                                         {item.aiAnalysis.dominantColors.slice(0, 3).map((color, i) => (
@@ -659,6 +1065,12 @@ export default function KnowledgeBasePage() {
                                                 <p className="text-xs text-muted leading-relaxed">{selected.aiAnalysis.videoNotes || selected.aiAnalysis.layoutNotes}</p>
                                             </div>
                                         )}
+                                        {selected.aiAnalysis.transcript && (
+                                            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                                                <div className="text-xs font-medium text-green-700 mb-1 flex items-center gap-1"><Mic className="w-3 h-3" />Deepgram Transcript</div>
+                                                <p className="text-xs text-green-900/70 leading-relaxed">{selected.aiAnalysis.transcript}</p>
+                                            </div>
+                                        )}
                                         {selected.aiAnalysis.textContent && (
                                             <div className="bg-gray-50 rounded-lg p-3">
                                                 <div className="text-xs font-medium mb-1">Detected Text (OCR)</div>
@@ -681,19 +1093,42 @@ export default function KnowledgeBasePage() {
                                         <div>
                                             <div className="text-xs font-medium mb-1.5 flex items-center gap-1">
                                                 <MessageSquare className="w-3 h-3" />
-                                                Notes &amp; Instructions for AI
+                                                Notes & Instructions for AI
                                                 <Tooltip text="Tell the AI how to use this asset: target audience, brand tone, context." position="bottom" />
                                             </div>
-                                            <div className="bg-sidebar border border-border rounded-lg p-3 text-xs leading-relaxed mb-2">{selected.notes}</div>
-                                            <div className="flex gap-2">
-                                                <input type="text" value={noteInput} onChange={(e) => setNoteInput(e.target.value)} placeholder="Add a note for the AI..." className="flex-1 bg-card border border-border rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary transition" />
-                                                <button className="bg-primary text-white text-xs px-3 py-2 rounded-lg hover:bg-primary-dark transition">Add</button>
-                                            </div>
+                                            {editingNoteId === selected.id ? (
+                                                <div className="space-y-2">
+                                                    <textarea
+                                                        value={editingNoteContent}
+                                                        onChange={(e) => setEditingNoteContent(e.target.value)}
+                                                        rows={4}
+                                                        className="w-full bg-sidebar border border-primary rounded-lg p-3 text-xs leading-relaxed focus:outline-none resize-y"
+                                                    />
+                                                    <div className="flex gap-2">
+                                                        <button onClick={saveNoteEdit} className="bg-primary text-white text-xs px-3 py-1.5 rounded-lg hover:bg-primary-dark transition flex items-center gap-1"><Check className="w-3 h-3" />Save</button>
+                                                        <button onClick={() => setEditingNoteId(null)} className="border border-border text-xs px-3 py-1.5 rounded-lg hover:border-primary transition">Cancel</button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <div
+                                                        onClick={(e) => { e.stopPropagation(); startEditingNote(selected); }}
+                                                        className="bg-sidebar border border-border rounded-lg p-3 text-xs leading-relaxed mb-2 cursor-pointer hover:border-primary/50 transition group"
+                                                    >
+                                                        {selected.notes || <span className="text-muted italic">Click to add notes...</span>}
+                                                        <Edit3 className="w-3 h-3 text-muted opacity-0 group-hover:opacity-100 inline ml-2 transition" />
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <input type="text" value={noteInput} onChange={(e) => setNoteInput(e.target.value)} placeholder="Add a note for the AI..." className="flex-1 bg-card border border-border rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary transition" onKeyDown={(e) => e.key === "Enter" && addNote()} />
+                                                        <button onClick={addNote} className="bg-primary text-white text-xs px-3 py-2 rounded-lg hover:bg-primary-dark transition">Add</button>
+                                                    </div>
+                                                </>
+                                            )}
                                         </div>
                                         <div className="flex gap-2 pt-2 border-t border-border">
                                             <button className="flex-1 text-xs border border-border rounded-lg px-3 py-2 hover:border-primary transition flex items-center justify-center gap-1.5"><Eye className="w-3 h-3" /> Preview</button>
                                             <button className="flex-1 text-xs border border-border rounded-lg px-3 py-2 hover:border-primary transition flex items-center justify-center gap-1.5"><Download className="w-3 h-3" /> Download</button>
-                                            <button className="text-xs border border-border rounded-lg px-3 py-2 hover:border-danger text-muted hover:text-danger transition flex items-center justify-center gap-1.5"><Trash2 className="w-3 h-3" /></button>
+                                            <button onClick={() => deleteAsset(selected.id)} className="text-xs border border-border rounded-lg px-3 py-2 hover:border-danger text-muted hover:text-danger transition flex items-center justify-center gap-1.5"><Trash2 className="w-3 h-3" /></button>
                                         </div>
                                     </div>
                                 </div>
@@ -749,7 +1184,7 @@ export default function KnowledgeBasePage() {
                         <textarea placeholder="Paste your text content here... About your business, services, pricing, FAQs, testimonials, product info, anything the AI should know to create accurate ads." value={textContent} onChange={(e) => setTextContent(e.target.value)} rows={6} className="w-full bg-sidebar border border-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-primary transition resize-y leading-relaxed" />
                         <div className="flex items-center justify-between">
                             <div className="text-xs text-muted">{textContent.split(/\s+/).filter(Boolean).length} words</div>
-                            <button className="bg-primary text-white text-sm px-4 py-2 rounded-lg hover:bg-primary-dark transition flex items-center gap-2"><Plus className="w-4 h-4" />Add to Knowledge Base</button>
+                            <button onClick={addTextEntry} className="bg-primary text-white text-sm px-4 py-2 rounded-lg hover:bg-primary-dark transition flex items-center gap-2"><Plus className="w-4 h-4" />Add to Knowledge Base</button>
                         </div>
                     </div>
 
@@ -790,12 +1225,33 @@ export default function KnowledgeBasePage() {
                                     </div>
                                     <div>
                                         <div className="text-xs font-medium mb-1.5">Full Content</div>
-                                        <div className="bg-sidebar border border-border rounded-lg p-3 text-xs leading-relaxed max-h-48 overflow-y-auto">{selectedTextEntry.content}</div>
+                                        {editingTextId === selectedTextEntry.id ? (
+                                            <div className="space-y-2">
+                                                <textarea
+                                                    value={editingTextContent}
+                                                    onChange={(e) => setEditingTextContent(e.target.value)}
+                                                    rows={8}
+                                                    className="w-full bg-sidebar border border-primary rounded-lg p-3 text-xs leading-relaxed focus:outline-none resize-y"
+                                                />
+                                                <div className="flex gap-2">
+                                                    <button onClick={saveTextEdit} className="bg-primary text-white text-xs px-3 py-1.5 rounded-lg hover:bg-primary-dark transition flex items-center gap-1"><Check className="w-3 h-3" />Save</button>
+                                                    <button onClick={() => setEditingTextId(null)} className="border border-border text-xs px-3 py-1.5 rounded-lg hover:border-primary transition">Cancel</button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div
+                                                onClick={(e) => { e.stopPropagation(); startEditingText(selectedTextEntry); }}
+                                                className="bg-sidebar border border-border rounded-lg p-3 text-xs leading-relaxed max-h-48 overflow-y-auto cursor-pointer hover:border-primary/50 transition group"
+                                            >
+                                                {selectedTextEntry.content}
+                                                <Edit3 className="w-3 h-3 text-muted opacity-0 group-hover:opacity-100 inline ml-2 transition" />
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="flex gap-2 pt-2 border-t border-border">
-                                        <button className="flex-1 text-xs border border-border rounded-lg px-3 py-2 hover:border-primary transition flex items-center justify-center gap-1.5"><Edit3 className="w-3 h-3" /> Edit</button>
-                                        <button className="flex-1 text-xs border border-border rounded-lg px-3 py-2 hover:border-primary transition flex items-center justify-center gap-1.5"><Copy className="w-3 h-3" /> Copy</button>
-                                        <button className="text-xs border border-border rounded-lg px-3 py-2 hover:border-danger text-muted hover:text-danger transition flex items-center justify-center gap-1.5"><Trash2 className="w-3 h-3" /></button>
+                                        <button onClick={() => startEditingText(selectedTextEntry)} className="flex-1 text-xs border border-border rounded-lg px-3 py-2 hover:border-primary transition flex items-center justify-center gap-1.5"><Edit3 className="w-3 h-3" /> Edit</button>
+                                        <button onClick={() => navigator.clipboard.writeText(selectedTextEntry.content)} className="flex-1 text-xs border border-border rounded-lg px-3 py-2 hover:border-primary transition flex items-center justify-center gap-1.5"><Copy className="w-3 h-3" /> Copy</button>
+                                        <button onClick={() => deleteTextEntry(selectedTextEntry.id)} className="text-xs border border-border rounded-lg px-3 py-2 hover:border-danger text-muted hover:text-danger transition flex items-center justify-center gap-1.5"><Trash2 className="w-3 h-3" /></button>
                                     </div>
                                 </div>
                             ) : (
@@ -915,41 +1371,41 @@ export default function KnowledgeBasePage() {
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                             <div>
                                 <label className="text-xs font-medium mb-1.5 flex items-center gap-1"><Building2 className="w-3 h-3 text-muted" />Business Name</label>
-                                <input type="text" defaultValue={brandProfile.businessName} className="w-full bg-sidebar border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary transition" />
+                                <input type="text" value={brandName} onChange={(e) => setBrandName(e.target.value)} className="w-full bg-sidebar border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary transition" />
                             </div>
                             <div>
                                 <label className="text-xs font-medium mb-1.5 flex items-center gap-1"><Tag className="w-3 h-3 text-muted" />Industry</label>
-                                <input type="text" defaultValue={brandProfile.industry} className="w-full bg-sidebar border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary transition" />
+                                <IndustryDropdown value={brandIndustry} onChange={setBrandIndustry} />
                             </div>
                             <div className="lg:col-span-2">
                                 <label className="text-xs font-medium mb-1.5 flex items-center gap-1"><Target className="w-3 h-3 text-muted" />Target Audience <Tooltip text="Who are your ideal customers? Include age, location, interests, and pain points." position="right" /></label>
-                                <textarea defaultValue={brandProfile.targetAudience} rows={2} className="w-full bg-sidebar border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary transition resize-y leading-relaxed" />
+                                <textarea value={brandAudience} onChange={(e) => setBrandAudience(e.target.value)} rows={2} className="w-full bg-sidebar border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary transition resize-y leading-relaxed" />
                             </div>
                             <div className="lg:col-span-2">
-                                <label className="text-xs font-medium mb-1.5 flex items-center gap-1"><Megaphone className="w-3 h-3 text-muted" />Brand Voice &amp; Tone <Tooltip text="How should your brand sound? Professional, casual, luxury, friendly? The AI matches this." position="right" /></label>
-                                <textarea defaultValue={brandProfile.brandVoice} rows={3} className="w-full bg-sidebar border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary transition resize-y leading-relaxed" />
+                                <label className="text-xs font-medium mb-1.5 flex items-center gap-1"><Megaphone className="w-3 h-3 text-muted" />Brand Voice & Tone <Tooltip text="How should your brand sound? Professional, casual, luxury, friendly? The AI matches this." position="right" /></label>
+                                <textarea value={brandVoice} onChange={(e) => setBrandVoice(e.target.value)} rows={3} className="w-full bg-sidebar border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary transition resize-y leading-relaxed" />
                             </div>
                             <div className="lg:col-span-2">
                                 <label className="text-xs font-medium mb-1.5 flex items-center gap-1"><MessageSquare className="w-3 h-3 text-muted" />Tone Examples (Good vs Bad) <Tooltip text="Show the AI what good and bad copy looks like for your brand." position="right" /></label>
-                                <textarea defaultValue={brandProfile.toneExamples} rows={3} className="w-full bg-sidebar border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary transition resize-y leading-relaxed" />
+                                <textarea value={brandTone} onChange={(e) => setBrandTone(e.target.value)} rows={3} className="w-full bg-sidebar border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary transition resize-y leading-relaxed" />
                             </div>
                             <div className="lg:col-span-2">
                                 <label className="text-xs font-medium mb-1.5 flex items-center gap-1"><Star className="w-3 h-3 text-muted" />Unique Selling Points <Tooltip text="What makes you different from competitors? These get highlighted in AI-generated ads." position="right" /></label>
-                                <textarea defaultValue={brandProfile.uniqueSellingPoints} rows={2} className="w-full bg-sidebar border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary transition resize-y leading-relaxed" />
+                                <textarea value={brandUSPs} onChange={(e) => setBrandUSPs(e.target.value)} rows={2} className="w-full bg-sidebar border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary transition resize-y leading-relaxed" />
                             </div>
                             <div>
                                 <label className="text-xs font-medium mb-1.5 flex items-center gap-1"><Users className="w-3 h-3 text-muted" />Known Competitors</label>
-                                <input type="text" defaultValue={brandProfile.competitors} className="w-full bg-sidebar border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary transition" placeholder="Comma-separated names" />
+                                <input type="text" value={brandCompetitors} onChange={(e) => setBrandCompetitors(e.target.value)} className="w-full bg-sidebar border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary transition" placeholder="Comma-separated names" />
                             </div>
                             <div>
                                 <label className="text-xs font-medium mb-1.5 flex items-center gap-1"><Shield className="w-3 h-3 text-muted" />Topics to Avoid</label>
-                                <input type="text" defaultValue={brandProfile.avoidTopics} className="w-full bg-sidebar border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary transition" placeholder="Things the AI should never say" />
+                                <input type="text" value={brandAvoid} onChange={(e) => setBrandAvoid(e.target.value)} className="w-full bg-sidebar border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary transition" placeholder="Things the AI should never say" />
                             </div>
                         </div>
 
                         <div>
-                            <label className="text-xs font-medium mb-1.5 flex items-center gap-1"><Shield className="w-3 h-3 text-danger" />Detailed Guardrails &amp; Things AI Must Never Say <Tooltip text="Critical safety rules. List anything the AI should never claim, promise, or mention." position="right" /></label>
-                            <textarea defaultValue={brandProfile.avoidTopics} rows={3} className="w-full bg-red-50 border border-red-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-red-400 transition resize-y leading-relaxed" />
+                            <label className="text-xs font-medium mb-1.5 flex items-center gap-1"><Shield className="w-3 h-3 text-danger" />Detailed Guardrails & Things AI Must Never Say <Tooltip text="Critical safety rules. List anything the AI should never claim, promise, or mention." position="right" /></label>
+                            <textarea value={brandAvoid} onChange={(e) => setBrandAvoid(e.target.value)} rows={3} className="w-full bg-red-50 border border-red-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-red-400 transition resize-y leading-relaxed" />
                         </div>
                     </div>
 
