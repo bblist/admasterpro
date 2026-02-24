@@ -35,17 +35,21 @@ export async function POST(req: NextRequest) {
                 },
             });
 
-            // Ensure subscription record exists
+            // Ensure subscription record exists — new users get 7-day trial
+            const trialEndDate = new Date();
+            trialEndDate.setDate(trialEndDate.getDate() + 7);
+
             await prisma.subscription.upsert({
                 where: { userId: user.id },
                 update: {},
                 create: {
                     userId: user.id,
-                    plan: "free",
-                    status: "active",
-                    aiMessagesLimit: PLANS.free.aiMessages,
-                    campaignsLimit: PLANS.free.campaigns,
-                    adsAccountsLimit: PLANS.free.adsAccounts,
+                    plan: "trial",
+                    status: "trialing",
+                    aiMessagesLimit: PLANS.trial.aiMessages,
+                    campaignsLimit: PLANS.trial.campaigns,
+                    adsAccountsLimit: PLANS.trial.adsAccounts,
+                    currentPeriodEnd: trialEndDate,
                 },
             });
 

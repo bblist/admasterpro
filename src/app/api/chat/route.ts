@@ -653,6 +653,36 @@ export async function POST(req: NextRequest) {
                     messagesLimit = subscription.aiMessagesLimit;
                     bonusTokens = subscription.bonusTokens;
 
+                    // Check trial expiration
+                    if (userPlan === "trial" && subscription.currentPeriodEnd) {
+                        const trialEnd = new Date(subscription.currentPeriodEnd);
+                        if (trialEnd < new Date()) {
+                            // Trial expired — downgrade to free
+                            await prisma.subscription.update({
+                                where: { userId },
+                                data: {
+                                    plan: "free",
+                                    status: "active",
+                                    aiMessagesLimit: PLANS.free.aiMessages,
+                                    aiMessagesUsed: 0, // Reset usage
+                                    campaignsLimit: PLANS.free.campaigns,
+                                    adsAccountsLimit: PLANS.free.adsAccounts,
+                                },
+                            });
+                            userPlan = "free";
+                            messagesLimit = PLANS.free.aiMessages;
+                            messagesUsed = 0;
+                            
+                            return NextResponse.json({
+                                error: "trial_expired",
+                                content: `⏰ **Your 7-day free trial has ended!**\n\nYou've been moved to the Free plan (10 AI messages/month).\n\nTo continue with full access, upgrade to:\n\n- **Starter** ($49/mo) → 200 messages + all core features\n- **Pro** ($149/mo) → Unlimited messages + premium features\n\n[Upgrade Now](/pricing)`,
+                                model: "system",
+                                trialExpired: true,
+                                usage: { used: 0, limit: PLANS.free.aiMessages, plan: "free" },
+                            });
+                        }
+                    }
+
                     if (isAtMessageLimit(userPlan, messagesUsed, bonusTokens)) {
                         const plan = PLANS[userPlan];
                         return NextResponse.json({

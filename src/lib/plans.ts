@@ -76,6 +76,63 @@ export interface TopUpConfig {
 // ─── Plan Definitions ───────────────────────────────────────────────────────
 
 export const PLANS: Record<string, PlanConfig> = {
+    // TRIAL MODE: All new users get full Pro access for 7 days
+    trial: {
+        id: "trial",
+        name: "7-Day Trial",
+        price: 0,
+        priceLabel: "FREE",
+        period: "for 7 days",
+        description: "Full access to all features — no credit card required",
+        cta: "Start Free Trial",
+        ctaVariant: "primary",
+
+        // Full Pro-level access during trial
+        aiMessages: 500, // Generous but not unlimited to prevent abuse
+        campaigns: 0, // unlimited
+        adsAccounts: 10,
+        knowledgeBaseItems: 0, // unlimited
+        transcriptionMinutes: 60,
+
+        features: [
+            { text: "Full AI assistant access", included: true, highlight: true },
+            { text: "500 AI messages", included: true, highlight: true },
+            { text: "Unlimited campaign drafts", included: true },
+            { text: "All ad types (Search, Display, Shopping, Video)", included: true },
+            { text: "Performance Max campaigns", included: true },
+            { text: "Keyword research & ad copy generation", included: true },
+            { text: "Website scraping & analysis", included: true },
+            { text: "Image uploads for ads", included: true },
+            { text: "Video transcription (60 min)", included: true },
+            { text: "10 Google Ads accounts", included: true },
+            { text: "No credit card required", included: true, highlight: true },
+        ],
+        featureFlags: {
+            freeAudit: true,
+            aiChat: true,
+            campaignCreation: true,
+            keywordResearch: true,
+            adCopyGeneration: true,
+            policyCompliance: true,
+            autoPilot: true,
+            shoppingAds: true,
+            displayAds: true,
+            videoAds: true,
+            performanceMax: true,
+            competitorAnalysis: true,
+            bulkOperations: true,
+            customBrandVoice: true,
+            advancedReporting: true,
+            prioritySupport: true,
+            dedicatedManager: false,
+            apiAccess: true,
+            whiteLabel: false,
+            videoTranscription: true,
+            dailyReports: true,
+            weeklyReports: true,
+        },
+    },
+
     free: {
         id: "free",
         name: "Free",

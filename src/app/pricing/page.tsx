@@ -157,6 +157,28 @@ function PricingContent() {
 
             {/* Hero */}
             <section className="pt-28 pb-12 px-4 text-center">
+                {/* Trial Banner */}
+                <div className="max-w-3xl mx-auto mb-8 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-2xl p-6 shadow-lg">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div className="text-left">
+                            <div className="flex items-center gap-2 mb-1">
+                                <Sparkles className="w-5 h-5" />
+                                <span className="font-bold text-lg">7-Day Free Trial</span>
+                            </div>
+                            <p className="text-sm text-white/90">
+                                Full access to all features — no credit card required. We&apos;re still in beta, so everything is free!
+                            </p>
+                        </div>
+                        <Link
+                            href="/login"
+                            className="shrink-0 bg-white text-green-600 hover:bg-green-50 px-6 py-3 rounded-xl font-bold text-sm transition flex items-center gap-2"
+                        >
+                            Start Free Trial
+                            <ArrowRight className="w-4 h-4" />
+                        </Link>
+                    </div>
+                </div>
+
                 <div className="inline-flex items-center gap-2 bg-primary-light text-primary px-3 py-1 rounded-full text-sm font-medium mb-4">
                     <Crown className="w-4 h-4" />
                     Simple, Transparent Pricing
@@ -165,7 +187,7 @@ function PricingContent() {
                     Choose the plan that fits your business
                 </h1>
                 <p className="text-lg text-muted max-w-2xl mx-auto mb-6">
-                    Start free with a Google Ads audit. Upgrade when you&apos;re ready for AI-powered campaign management.
+                    Start with a 7-day free trial — full access, no credit card. Upgrade when you&apos;re ready.
                 </p>
 
                 {cancelled && (

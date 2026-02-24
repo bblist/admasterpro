@@ -51,9 +51,9 @@ export async function GET(req: NextRequest) {
         ]);
 
         // Calculate MRR
-        const planPrices: Record<string, number> = { free: 0, starter: 49, pro: 149 };
+        const planPrices: Record<string, number> = { free: 0, trial: 0, starter: 49, pro: 149 };
         const mrr = subscriptions
-            .filter((s: any) => s.status === "active" && s.plan !== "free")
+            .filter((s: any) => s.status === "active" && s.plan !== "free" && s.plan !== "trial")
             .reduce((sum: number, s: any) => sum + (planPrices[s.plan] || 0), 0);
 
         // AI costs this month
@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
         const totalTokens = usageThisMonth.reduce((sum: number, u: any) => sum + u.totalTokens, 0);
 
         // Plan distribution
-        const planCounts = { free: 0, starter: 0, pro: 0 };
+        const planCounts = { free: 0, trial: 0, starter: 0, pro: 0 };
         subscriptions.forEach((s: any) => {
             if (s.plan in planCounts) planCounts[s.plan as keyof typeof planCounts]++;
         });
@@ -127,7 +127,7 @@ export async function GET(req: NextRequest) {
                 totalAICost: 0, totalQueries: 0, totalTokens: 0,
                 avgCostPerQuery: 0, margin: 0,
             },
-            planDistribution: { free: 0, starter: 0, pro: 0 },
+            planDistribution: { free: 0, trial: 0, starter: 0, pro: 0 },
             recentSignups: [],
             topSpenders: [],
             dbError: true,
