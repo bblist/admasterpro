@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionFromRequest } from "@/lib/session";
+import { getSessionDual } from "@/lib/session";
 
 export async function GET(req: NextRequest) {
-    const session = getSessionFromRequest(req.headers.get("cookie"));
+    const session = await getSessionDual(req);
 
     if (!session?.id) {
         return NextResponse.json({ error: "Not authenticated" }, { status: 401 });

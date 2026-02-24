@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { PLANS } from "@/lib/plans";
+import { signToken } from "@/lib/jwt";
 
 export async function POST(req: NextRequest) {
     try {
@@ -49,16 +50,23 @@ export async function POST(req: NextRequest) {
             console.warn("[Auth/Email] Database not available:", dbError);
         }
 
-        const response = NextResponse.json({ success: true });
-
-        response.cookies.set("session", JSON.stringify({
+        // Generate JWT token for localStorage-based auth (cookie fallback)
+        const sessionData = {
             id: userId,
             email,
             name: email.split("@")[0],
             picture: null,
-            authenticated: true,
-            method: "email",
+            method: "email" as const,
             hasAdsAccess: false,
+        };
+        const jwt = await signToken(sessionData);
+
+        const response = NextResponse.json({ success: true, token: jwt });
+
+        // Also set session cookie (dual auth — cookie + token)
+        response.cookies.set("session", JSON.stringify({
+            ...sessionData,
+            authenticated: true,
         }), {
             httpOnly: true,
             secure: true,

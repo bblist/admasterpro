@@ -18,6 +18,7 @@ import {
     Sparkles,
 } from "lucide-react";
 import { PLANS, TOP_UPS } from "@/lib/plans";
+import { getAuthUser, authFetch } from "@/lib/auth-client";
 
 function PricingContent() {
     const searchParams = useSearchParams();
@@ -29,8 +30,13 @@ function PricingContent() {
     const planOrder = ["free", "starter", "pro"];
     const plans = planOrder.map((id) => PLANS[id]);
 
-    // Read real user session from cookie
+    // Read user session from localStorage token (with cookie fallback)
     const getUserSession = () => {
+        // Try localStorage token first (works when cookies are blocked)
+        const user = getAuthUser();
+        if (user) return { ...user, authenticated: true };
+
+        // Fallback: try cookie (may work in some browsers)
         try {
             const match = document.cookie.match(/session=([^;]+)/);
             if (!match) return null;
@@ -47,13 +53,12 @@ function PricingContent() {
 
         const session = getUserSession();
         if (!session) {
-            // Not logged in — redirect to login, then come back
             window.location.href = `/login?next=/pricing`;
             return;
         }
 
         try {
-            const res = await fetch("/api/stripe", {
+            const res = await authFetch("/api/stripe", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -81,7 +86,7 @@ function PricingContent() {
         }
 
         try {
-            const res = await fetch("/api/stripe", {
+            const res = await authFetch("/api/stripe", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({

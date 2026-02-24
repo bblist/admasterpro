@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense, useState } from "react";
 import { Zap, Mail, Lock, ArrowRight, Shield, Eye, EyeOff } from "lucide-react";
+import { setAuth, decodeTokenPayload, clearAuth } from "@/lib/auth-client";
 
 function LoginForm() {
     const searchParams = useSearchParams();
@@ -44,6 +45,12 @@ function LoginForm() {
                 body: JSON.stringify({ email }),
             });
             if (res.ok) {
+                const data = await res.json();
+                // Store JWT token in localStorage (works when cookies fail)
+                if (data.token) {
+                    const user = decodeTokenPayload(data.token);
+                    setAuth(data.token, user || undefined);
+                }
                 router.push(redirectTo);
             } else {
                 setEmailError("Sign-in failed. Please try again.");

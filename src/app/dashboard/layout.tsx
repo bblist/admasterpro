@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { BusinessProvider, useBusiness } from "@/lib/business-context";
+import { captureTokenFromHash, authFetch, clearAuth } from "@/lib/auth-client";
 
 // ─── Notification System ────────────────────────────────────────────────────
 
@@ -236,17 +237,14 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
     const [userPicture, setUserPicture] = useState<string | null>(null);
 
     useEffect(() => {
-        // Fetch subscription info
-        fetch("/api/subscription")
-            .then((r) => r.ok ? r.json() : null)
-            .then((data) => { if (data?.plan) setUserPlan(data.plan); })
-            .catch(() => {});
+        // Capture JWT token from URL hash (after Google OAuth redirect)
+        captureTokenFromHash();
 
-        // Parse session cookie for name/picture (cookie is httpOnly, so fall back to API)
-        // We'll use a simple /api/me endpoint or parse from response
-        fetch("/api/subscription")
+        // Fetch subscription info (authFetch adds JWT Authorization header)
+        authFetch("/api/subscription")
             .then((r) => r.ok ? r.json() : null)
             .then((data) => {
+                if (data?.plan) setUserPlan(data.plan);
                 if (data?.userName) setUserName(data.userName);
                 if (data?.userPicture) setUserPicture(data.userPicture);
             })
@@ -365,6 +363,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                         </div>
                         <button
                             onClick={async () => {
+                                clearAuth(); // Clear localStorage token
                                 await fetch("/api/auth/signout", { method: "POST" });
                                 window.location.href = "/login";
                             }}

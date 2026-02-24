@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { authFetch } from "@/lib/auth-client";
 
 interface SubscriptionInfo {
   plan: string;
@@ -45,7 +46,7 @@ export default function SettingsPage() {
   const [billingAction, setBillingAction] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/subscription")
+    authFetch("/api/subscription")
       .then((r) => r.ok ? r.json() : null)
       .then((data) => { if (data) setSub(data); })
       .catch(() => {})
@@ -55,7 +56,7 @@ export default function SettingsPage() {
   const handleBillingAction = async (action: string) => {
     setBillingAction(action);
     try {
-      const res = await fetch("/api/stripe", {
+      const res = await authFetch("/api/stripe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(

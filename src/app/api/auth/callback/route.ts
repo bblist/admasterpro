@@ -16,6 +16,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { PLANS } from "@/lib/plans";
+import { signToken } from "@/lib/jwt";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -140,18 +141,27 @@ export async function GET(req: NextRequest) {
             console.warn("[Auth] Database not available, using cookie-only auth:", dbError);
         }
 
-        const response = NextResponse.redirect(new URL("/dashboard/chat", req.url));
-
-        // Session cookie with user info
-        response.cookies.set("session", JSON.stringify({
+        // Generate JWT token for localStorage-based auth (cookie fallback)
+        const sessionData = {
             id: user?.id || userInfo.id,
             email: userInfo.email,
             name: userInfo.name,
             picture: userInfo.picture,
-            authenticated: true,
-            method: "google",
+            method: "google" as const,
             hasAdsAccess,
             adsTokenPresent: !!tokens.refresh_token,
+        };
+        const jwt = await signToken(sessionData);
+
+        // Redirect with JWT in URL fragment (not sent to server, client reads it)
+        const redirectUrl = new URL("/dashboard/chat", req.url);
+        redirectUrl.hash = `token=${jwt}`;
+        const response = NextResponse.redirect(redirectUrl);
+
+        // Also set session cookie (dual auth — cookie + token)
+        response.cookies.set("session", JSON.stringify({
+            ...sessionData,
+            authenticated: true,
         }), {
             httpOnly: true,
             secure: true,

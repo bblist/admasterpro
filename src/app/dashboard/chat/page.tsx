@@ -40,6 +40,7 @@ import {
     ShieldAlert,
 } from "lucide-react";
 import { useBusiness, type BusinessProfile } from "@/lib/business-context";
+import { authFetch } from "@/lib/auth-client";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -1528,7 +1529,7 @@ export default function ChatPage() {
 
     const callAI = useCallback(async (message: string, chatHistory: Message[]) => {
         try {
-            const res = await fetch("/api/chat", {
+            const res = await authFetch("/api/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({

@@ -550,6 +550,7 @@ export async function POST(req: NextRequest) {
         let messagesLimit = 10;
         let bonusTokens = 0;
 
+        // Dual auth: try cookie first, then JWT token
         const cookieHeader = req.headers.get("cookie");
         if (cookieHeader) {
             const match = cookieHeader.match(/session=([^;]+)/);
@@ -557,6 +558,18 @@ export async function POST(req: NextRequest) {
                 try {
                     const session = JSON.parse(decodeURIComponent(match[1]));
                     userId = session.id || null;
+                } catch { /* ignore */ }
+            }
+        }
+
+        // Fallback: check Authorization header for JWT
+        if (!userId) {
+            const authHeader = req.headers.get("authorization");
+            if (authHeader?.startsWith("Bearer ")) {
+                try {
+                    const { verifyToken } = await import("@/lib/jwt");
+                    const payload = await verifyToken(authHeader.slice(7).trim());
+                    if (payload) userId = payload.id;
                 } catch { /* ignore */ }
             }
         }
