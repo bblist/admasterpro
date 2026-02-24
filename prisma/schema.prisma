@@ -36,6 +36,7 @@ model User {
   businesses      Business[]
   tokenPurchases  TokenPurchase[]
   knowledgeBase   KnowledgeBaseItem[]
+  adImages        AdImage[]
 
   @@index([email])
   @@index([googleId])
@@ -200,4 +201,29 @@ model TokenPurchase {
   createdAt             DateTime  @default(now())
 
   @@index([userId])
+}
+
+// ─── Ad Images ──────────────────────────────────────────────────────────────
+
+model AdImage {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessId      String?
+
+  filename        String    // stored filename
+  originalName    String    // original uploaded name
+  mimeType        String    // image/jpeg, image/png, etc
+  size            Int       // file size in bytes
+  url             String    // public URL path
+  
+  // Image dimensions (useful for Google Ads requirements)
+  width           Int?
+  height          Int?
+  aspectRatio     String?   // "1:1", "1.91:1", "4:5" etc
+
+  createdAt       DateTime  @default(now())
+
+  @@index([userId])
+  @@index([userId, businessId])
 }

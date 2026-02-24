@@ -50,10 +50,10 @@ interface EmailResult {
 async function sendEmailViaSES(to: string, subject: string, html: string): Promise<EmailResult> {
     try {
         const ses = getSES();
-        const fromAddress = FROM_EMAIL.includes("<") 
-            ? FROM_EMAIL.match(/<(.+)>/)?.[1] || FROM_EMAIL 
+        const fromAddress = FROM_EMAIL.includes("<")
+            ? FROM_EMAIL.match(/<(.+)>/)?.[1] || FROM_EMAIL
             : FROM_EMAIL;
-        
+
         const command = new SendEmailCommand({
             Source: FROM_EMAIL,
             Destination: { ToAddresses: [to] },
