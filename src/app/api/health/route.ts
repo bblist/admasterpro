@@ -31,14 +31,15 @@ export async function GET() {
         status: isGoogleAdsConfigured() ? "configured" : "not_configured",
     };
 
-    // Email (Resend)
+    // Email (AWS SES or Resend)
+    const hasEmail = !!(process.env.USE_AWS_SES || process.env.AWS_EXECUTION_ENV || process.env.RESEND_API_KEY);
     checks.email = {
-        status: process.env.RESEND_API_KEY ? "configured" : "not_configured",
+        status: hasEmail ? "configured" : "not_configured",
     };
 
     // Sentry
     checks.sentry = {
-        status: process.env.SENTRY_DSN ? "configured" : "not_configured",
+        status: process.env.NEXT_PUBLIC_SENTRY_DSN ? "configured" : "not_configured",
     };
 
     // OpenAI
@@ -59,14 +60,16 @@ export async function GET() {
         subscriptionCount = await prisma.subscription.count({ where: { status: "active" } });
     } catch { /* ignore */ }
 
-    const allHealthy = Object.values(checks).every(
-        (c) => c.status === "healthy" || c.status === "configured"
+    // Core services must be healthy; sentry is optional
+    const coreChecks = ["database", "stripe", "googleAds", "email", "openai"];
+    const allHealthy = coreChecks.every(
+        (key) => checks[key]?.status === "healthy" || checks[key]?.status === "configured"
     );
 
     return NextResponse.json({
         status: allHealthy ? "healthy" : "degraded",
         timestamp: new Date().toISOString(),
-        version: process.env.npm_package_version || "1.0.0",
+        version: process.env.npm_package_version || "0.1.0",
         uptime: process.uptime(),
         checks,
         stats: {

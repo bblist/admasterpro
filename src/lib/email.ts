@@ -1,24 +1,38 @@
 /**
- * Email Service using Resend
+ * Email Service — AWS SES (primary) or Resend (fallback)
  *
  * Handles all transactional & notification emails.
- * Requires RESEND_API_KEY in environment.
+ * Uses AWS SES when configured (default on Lightsail), falls back to Resend.
  *
- * Falls back gracefully if RESEND_API_KEY is not set
- * (just logs the message and returns success).
+ * Environment variables:
+ *   AWS_REGION (default: us-east-1) - AWS region for SES
+ *   RESEND_API_KEY (optional) - Resend API key as fallback
+ *   FROM_EMAIL - Sender email address
  */
 
+import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 import { Resend } from "resend";
 
+const AWS_REGION = process.env.AWS_REGION || "us-east-1";
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = process.env.FROM_EMAIL || "AdMaster Pro <noreply@admasterai.nobleblocks.com>";
 const APP_URL = process.env.NEXTAUTH_URL || "https://admasterai.nobleblocks.com";
 
+// Use SES if running on AWS (has credentials), otherwise Resend
+const USE_SES = process.env.AWS_EXECUTION_ENV || process.env.USE_AWS_SES === "true";
+
+let sesClient: SESClient | null = null;
 let resend: Resend | null = null;
+
+function getSES(): SESClient {
+    if (!sesClient) {
+        sesClient = new SESClient({ region: AWS_REGION });
+    }
+    return sesClient;
+}
 
 function getResend(): Resend | null {
     if (!RESEND_API_KEY) {
-        console.log("[Email] RESEND_API_KEY not set — emails will be logged only");
         return null;
     }
     if (!resend) {
@@ -33,7 +47,32 @@ interface EmailResult {
     error?: string;
 }
 
-async function sendEmail(to: string, subject: string, html: string): Promise<EmailResult> {
+async function sendEmailViaSES(to: string, subject: string, html: string): Promise<EmailResult> {
+    try {
+        const ses = getSES();
+        const fromAddress = FROM_EMAIL.includes("<") 
+            ? FROM_EMAIL.match(/<(.+)>/)?.[1] || FROM_EMAIL 
+            : FROM_EMAIL;
+        
+        const command = new SendEmailCommand({
+            Source: FROM_EMAIL,
+            Destination: { ToAddresses: [to] },
+            Message: {
+                Subject: { Data: subject, Charset: "UTF-8" },
+                Body: { Html: { Data: html, Charset: "UTF-8" } },
+            },
+        });
+
+        const response = await ses.send(command);
+        console.log(`[Email/SES] Sent to ${to}: ${subject}`);
+        return { success: true, id: response.MessageId };
+    } catch (err) {
+        console.error("[Email/SES] Error:", err);
+        return { success: false, error: String(err) };
+    }
+}
+
+async function sendEmailViaResend(to: string, subject: string, html: string): Promise<EmailResult> {
     const r = getResend();
     if (!r) {
         console.log(`[Email] Would send to ${to}: ${subject}`);
@@ -49,15 +88,23 @@ async function sendEmail(to: string, subject: string, html: string): Promise<Ema
         });
 
         if (error) {
-            console.error("[Email] Send failed:", error);
+            console.error("[Email/Resend] Send failed:", error);
             return { success: false, error: error.message };
         }
 
         return { success: true, id: data?.id };
     } catch (err) {
-        console.error("[Email] Exception:", err);
+        console.error("[Email/Resend] Exception:", err);
         return { success: false, error: String(err) };
     }
+}
+
+async function sendEmail(to: string, subject: string, html: string): Promise<EmailResult> {
+    // Try SES first (on AWS), then Resend
+    if (USE_SES) {
+        return sendEmailViaSES(to, subject, html);
+    }
+    return sendEmailViaResend(to, subject, html);
 }
 
 // ─── Email Templates ────────────────────────────────────────────────────────
