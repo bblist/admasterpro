@@ -17,8 +17,13 @@ import {
     BookOpen,
     HelpCircle,
     Lightbulb,
+    ChevronDown,
+    Check,
+    Plus,
+    Brain,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { BusinessProvider, useBusiness } from "@/lib/business-context";
 
 const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -33,11 +38,110 @@ const navItems = [
     { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
-export default function DashboardLayout({
-    children,
-}: {
-    children: React.ReactNode;
-}) {
+// ─── Business Switcher ──────────────────────────────────────────────────────
+
+function BusinessSwitcher() {
+    const { businesses, activeBusiness, setActiveBusiness } = useBusiness();
+    const [open, setOpen] = useState(false);
+    const ref = useRef<HTMLDivElement>(null);
+
+    // Close on outside click
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, []);
+
+    const kbColor = activeBusiness.kbStatus === "trained"
+        ? "bg-green-500"
+        : activeBusiness.kbStatus === "training"
+            ? "bg-amber-500 animate-pulse"
+            : "bg-gray-400";
+
+    return (
+        <div ref={ref} className="relative">
+            <button
+                onClick={() => setOpen(!open)}
+                className="w-full flex items-center gap-2.5 px-4 py-3 border-b border-border hover:bg-border/30 transition text-left group"
+            >
+                <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${activeBusiness.color} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
+                    {activeBusiness.initials}
+                </div>
+                <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate flex items-center gap-1.5">
+                        {activeBusiness.name}
+                        <div className={`w-1.5 h-1.5 rounded-full ${kbColor} shrink-0`} title={`KB: ${activeBusiness.kbStatus}`} />
+                    </div>
+                    <div className="text-[11px] text-muted truncate">{activeBusiness.industry}</div>
+                </div>
+                <ChevronDown className={`w-4 h-4 text-muted shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+            </button>
+
+            {open && (
+                <div className="absolute left-2 right-2 top-full mt-1 bg-card border border-border rounded-xl shadow-xl z-50 py-1 max-h-80 overflow-y-auto">
+                    <div className="px-3 py-1.5 text-[10px] font-semibold text-muted uppercase tracking-wider">
+                        Your Businesses
+                    </div>
+                    {businesses.map((biz) => {
+                        const isActive = biz.id === activeBusiness.id;
+                        const statusColor = biz.kbStatus === "trained"
+                            ? "text-green-600"
+                            : biz.kbStatus === "training"
+                                ? "text-amber-600"
+                                : "text-gray-400";
+                        const statusLabel = biz.kbStatus === "trained"
+                            ? "KB Trained"
+                            : biz.kbStatus === "training"
+                                ? "Training..."
+                                : "No KB";
+                        return (
+                            <button
+                                key={biz.id}
+                                onClick={() => {
+                                    setActiveBusiness(biz.id);
+                                    setOpen(false);
+                                }}
+                                className={`w-full flex items-center gap-2.5 px-3 py-2 text-left transition rounded-lg mx-1 ${isActive
+                                    ? "bg-primary/10"
+                                    : "hover:bg-border/50"
+                                    }`}
+                                style={{ width: "calc(100% - 0.5rem)" }}
+                            >
+                                <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${biz.color} flex items-center justify-center text-white text-[10px] font-bold shrink-0`}>
+                                    {biz.initials}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="text-xs font-medium truncate">{biz.name}</div>
+                                    <div className={`text-[10px] ${statusColor} flex items-center gap-1`}>
+                                        <Brain className="w-2.5 h-2.5" />
+                                        {statusLabel}
+                                    </div>
+                                </div>
+                                {isActive && <Check className="w-4 h-4 text-primary shrink-0" />}
+                            </button>
+                        );
+                    })}
+                    <div className="border-t border-border mt-1 pt-1 px-1">
+                        <Link
+                            href="/dashboard/knowledge-base"
+                            onClick={() => setOpen(false)}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-xs text-primary hover:bg-primary/5 transition rounded-lg"
+                        >
+                            <Plus className="w-3.5 h-3.5" />
+                            Add New Business
+                        </Link>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ─── Dashboard Layout ───────────────────────────────────────────────────────
+
+function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -73,11 +177,8 @@ export default function DashboardLayout({
                         </button>
                     </div>
 
-                    {/* Business info */}
-                    <div className="px-4 py-3 border-b border-border">
-                        <div className="text-sm font-medium">StyleVision Agency</div>
-                        <div className="text-xs text-muted">Multi-client • Auto-Pilot: ON</div>
-                    </div>
+                    {/* Business switcher */}
+                    <BusinessSwitcher />
 
                     {/* Nav */}
                     <nav className="flex-1 p-3 space-y-1">
@@ -149,5 +250,13 @@ export default function DashboardLayout({
                 <main className="flex-1 overflow-auto p-4 md:p-6">{children}</main>
             </div>
         </div>
+    );
+}
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+    return (
+        <BusinessProvider>
+            <DashboardLayoutInner>{children}</DashboardLayoutInner>
+        </BusinessProvider>
     );
 }

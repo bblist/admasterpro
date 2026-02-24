@@ -37,7 +37,9 @@ import {
     X,
     Smartphone,
     Volume2,
+    ShieldAlert,
 } from "lucide-react";
+import { useBusiness, type BusinessProfile } from "@/lib/business-context";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -112,6 +114,7 @@ type Intent =
     | "go_live"
     | "show_drafts"
     | "help"
+    | "off_topic"
     | "unknown";
 
 interface IntentMatch {
@@ -197,12 +200,12 @@ const matchIntent = (text: string): IntentMatch => {
 
 // ─── Response Generator ────────────────────────────────────────────────────
 
-const generateResponse = (intent: IntentMatch, rawText: string): Omit<Message, "id"> => {
+const generateResponse = (intent: IntentMatch, rawText: string, biz: BusinessProfile): Omit<Message, "id"> => {
     const time = timeNow();
 
     switch (intent.intent) {
         case "create_text_ads": {
-            const topic = intent.params.topic || "your top service";
+            const topic = intent.params.topic || biz.services[0] || "your top service";
             return {
                 role: "ai",
                 model: "gpt-4o",
@@ -211,31 +214,31 @@ const generateResponse = (intent: IntentMatch, rawText: string): Omit<Message, "
                 ads: [
                     {
                         type: "text",
-                        headline1: `${topic.charAt(0).toUpperCase() + topic.slice(1)} \u2014 Miami`,
+                        headline1: `${topic.charAt(0).toUpperCase() + topic.slice(1)} \u2014 ${biz.location}`,
                         headline2: "Fast Service \u2022 Free Estimates",
-                        description: `Looking for ${topic}? We're Miami's top-rated provider. Same-day service, no hidden fees. 500+ 5-star reviews. Call now for a free estimate!`,
-                        displayUrl: "www.mikesplumbing.com",
+                        description: `Looking for ${topic}? ${biz.name} is ${biz.location}'s top-rated provider. Same-day service, no hidden fees. 500+ 5-star reviews. Call now for a free estimate!`,
+                        displayUrl: `www.${biz.url}`,
                     },
                     {
                         type: "text",
                         headline1: `Need ${topic.charAt(0).toUpperCase() + topic.slice(1)}? Call Now`,
-                        headline2: "$49 Special \u2022 Licensed & Insured",
-                        description: `Professional ${topic} starting at $49. We respond in 30 minutes or less. Miami-Dade's most trusted since 2011. Book online in 60 seconds.`,
-                        displayUrl: "www.mikesplumbing.com",
+                        headline2: "Licensed & Insured \u2022 Top Rated",
+                        description: `Professional ${topic} from ${biz.name}. We respond fast. ${biz.location}'s most trusted. Book online in 60 seconds.`,
+                        displayUrl: `www.${biz.url}`,
                     },
                     {
                         type: "text",
                         headline1: `Don't Overpay for ${topic.charAt(0).toUpperCase() + topic.slice(1)}`,
-                        headline2: "500+ Reviews \u2022 30-Min Response",
-                        description: `Why pay more? Honest pricing, expert service. ${topic.charAt(0).toUpperCase() + topic.slice(1)} done right the first time. Family-owned, Miami-based. Free estimates on jobs over $200.`,
-                        displayUrl: "www.mikesplumbing.com",
+                        headline2: "500+ Reviews \u2022 Fast Response",
+                        description: `Why pay more? Honest pricing, expert service from ${biz.name}. ${topic.charAt(0).toUpperCase() + topic.slice(1)} done right the first time. Free estimates available.`,
+                        displayUrl: `www.${biz.url}`,
                     },
                 ],
                 taskSummary: {
                     done: [
                         `Created 3 text ad variations for "${topic}"`,
                         "Saved all drafts to your Drafts page",
-                        "Used your Knowledge Base for pricing & USPs",
+                        `Used ${biz.name}'s Knowledge Base for pricing & USPs`,
                     ],
                 },
                 actions: [
@@ -415,10 +418,10 @@ const generateResponse = (intent: IntentMatch, rawText: string): Omit<Message, "
             return {
                 role: "ai",
                 model: "gpt-4o",
-                content: "I scanned your account for the last 30 days. Here\u2019s where money is leaking:\n\n" +
+                content: `I scanned **${biz.name}**'s account for the last 30 days. Here\u2019s where money is leaking:\n\n` +
                     "\ud83d\udea8 **Critical Leaks** (fix these first)\n\n" +
                     "**1.** 3 junk keywords \u2014 **$45.50/week** wasted\n" +
-                    "\u2003\u2022 \"free plumbing tips\", \"plumber salary\", \"fix a leaky faucet\"\n\n" +
+                    `\u2003\u2022 "free ${biz.services[0] || "service"} tips", "${biz.services[0] || "service"} salary", "how to ${biz.services[1] || "DIY"}"\n\n` +
                     "**2.** Ads running 3am\u20136am \u2014 **$28/week** wasted\n" +
                     "\u2003\u2022 Clicks at 3am but nobody calls then\n\n" +
                     "**3.** Mobile bid too high \u2014 **~$35/week** overspent\n" +
@@ -444,41 +447,43 @@ const generateResponse = (intent: IntentMatch, rawText: string): Omit<Message, "
         }
 
         case "check_competitors": {
+            const c = biz.competitors;
             return {
                 role: "ai",
                 model: "claude-4.6",
-                content: "I analyzed your competitors in the **Miami plumbing** market:\n\n" +
-                    "\ud83c\udfc6 **1. Roto-Rooter Miami** \u2014 Avg pos: 1.2, 12 ads, \"$50 Off\"\n" +
-                    "\ud83e\udd48 **2. Mr. Rooter Plumbing** \u2014 Avg pos: 2.1, 8 ads, \"Neighborly Promise\"\n" +
-                    "\ud83e\udd49 **3. Art Plumbing & AC** \u2014 Avg pos: 2.8, 15 ads, \"40 Years Exp\"\n\n" +
-                    "\ud83d\udca1 **Your edge:** You\u2019re the only one mentioning **30-minute response time** and **free estimates**.\n\n" +
-                    "\ud83d\udcb0 Estimated competitor spend: **$800\u2013$1,200/week** each",
+                content: `I analyzed your competitors in the **${biz.location} ${biz.industry.split("/")[0].trim().toLowerCase()}** market:\n\n` +
+                    `\ud83c\udfc6 **1. ${c[0] || "Competitor A"}** \u2014 Avg pos: 1.2, 12 ads active\n` +
+                    `\ud83e\udd48 **2. ${c[1] || "Competitor B"}** \u2014 Avg pos: 2.1, 8 ads active\n` +
+                    `\ud83e\udd49 **3. ${c[2] || "Competitor C"}** \u2014 Avg pos: 2.8, 15 ads active\n\n` +
+                    `\ud83d\udca1 **Your edge:** ${biz.name} has unique positioning in the market.\n\n` +
+                    `\ud83d\udcb0 Estimated competitor spend: **$800\u2013$1,200/week** each`,
                 timestamp: time,
                 stats: [
-                    { label: "Roto-Rooter", value: "Pos 1.2", change: "12 ads", trend: "neutral" },
-                    { label: "Mr. Rooter", value: "Pos 2.1", change: "8 ads", trend: "neutral" },
-                    { label: "Art Plumbing", value: "Pos 2.8", change: "15 ads", trend: "neutral" },
+                    { label: c[0]?.split(" ")[0] || "Comp A", value: "Pos 1.2", change: "12 ads", trend: "neutral" },
+                    { label: c[1]?.split(" ")[0] || "Comp B", value: "Pos 2.1", change: "8 ads", trend: "neutral" },
+                    { label: c[2]?.split(" ")[0] || "Comp C", value: "Pos 2.8", change: "15 ads", trend: "neutral" },
                     { label: "Your Position", value: "Pos 1.8", change: "Strong", trend: "up" },
                 ],
                 actions: [
                     { label: "Write counter-ads", type: "primary" },
-                    { label: "How to beat Roto-Rooter?", type: "secondary" },
+                    { label: `How to beat ${c[0]?.split(" ")[0] || "them"}?`, type: "secondary" },
                     { label: "Their keywords?", type: "secondary" },
                 ],
             };
         }
 
         case "pause_keywords": {
+            const svc = biz.services[0] || "service";
             return {
                 role: "ai",
                 model: "gpt-4o",
-                content: "Done! Here\u2019s what I paused:",
+                content: `Done! Here\u2019s what I paused for **${biz.name}**:`,
                 timestamp: time,
                 taskSummary: {
                     done: [
-                        "Paused \"free plumbing tips\" \u2014 saving ~$22/week",
-                        "Added \"salary\" as negative keyword \u2014 saving ~$8.50/week",
-                        "Paused \"how to fix a leaky faucet\" \u2014 saving ~$15/week",
+                        `Paused "free ${svc} tips" \u2014 saving ~$22/week`,
+                        `Added unrelated terms as negative keywords \u2014 saving ~$8.50/week`,
+                        `Paused low-intent queries \u2014 saving ~$15/week`,
                     ],
                 },
                 stats: [
@@ -525,11 +530,11 @@ const generateResponse = (intent: IntentMatch, rawText: string): Omit<Message, "
             return {
                 role: "ai",
                 model: "gpt-4o",
-                content: "Here are your current drafts \u2014 **6 text ads** and **4 display ads**:",
+                content: `Here are your current drafts for **${biz.name}** \u2014 **6 text ads** and **4 display ads**:`,
                 timestamp: time,
                 ads: [
-                    { type: "text", headline1: "24/7 Emergency Plumber Miami", headline2: "Fast Response \u2022 Licensed", description: "Burst pipe? We\u2019re there in 30 minutes. Call now for emergency plumbing.", displayUrl: "www.mikesplumbing.com" },
-                    { type: "text", headline1: "LASIK Surgery \u2014 See Clearly", headline2: "Free Consultation \u2022 Board Certified", description: "Blade-free LASIK with 20/20 results. Financing available.", displayUrl: "www.clearvisionclinic.com" },
+                    { type: "text", headline1: `${biz.services[0] ? biz.services[0].charAt(0).toUpperCase() + biz.services[0].slice(1) : "Service"} \u2014 ${biz.location}`, headline2: "Fast Response \u2022 Top Rated", description: `Need ${biz.services[0] || "help"}? ${biz.name} is here for you. Call now!`, displayUrl: `www.${biz.url}` },
+                    { type: "text", headline1: `${biz.name} \u2014 Book Today`, headline2: "Free Consultation \u2022 Trusted", description: `${biz.shortDesc}. Get started today.`, displayUrl: `www.${biz.url}` },
                     { type: "display", title: "Summer Collection Banner", dimensions: "728\u00d790", format: "Leaderboard", imageUrl: "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=400&h=300&fit=crop", overlayText: "SUMMER SALE 40% OFF", ctaText: "Shop Now", previewBg: "from-pink-400 to-purple-500" },
                     { type: "display", title: "Sushi Lunch Special", dimensions: "300\u00d7250", format: "Medium Rectangle", imageUrl: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=400&h=300&fit=crop", overlayText: "LUNCH SPECIAL $12.99", ctaText: "Order Now", previewBg: "from-amber-400 to-red-500" },
                 ],
@@ -566,12 +571,30 @@ const generateResponse = (intent: IntentMatch, rawText: string): Omit<Message, "
             };
         }
 
+        case "off_topic": {
+            const offBizName = intent.params.offTopicBusiness || "another business";
+            return {
+                role: "ai",
+                model: "gpt-4o",
+                content: `I\u2019m currently managing ads for **${biz.name}** (${biz.industry}).\n\n` +
+                    `I can\u2019t create ads for **${offBizName}** in this context \u2014 ` +
+                    `each business has its own Knowledge Base, brand voice, and campaign data that I use to generate accurate ads.\n\n` +
+                    `\ud83d\udc49 **To manage ${offBizName}**, switch to it from the business menu in the sidebar.\n\n` +
+                    `Would you like me to help with something for **${biz.name}** instead?`,
+                timestamp: time,
+                actions: [
+                    { label: `Create ads for ${biz.name.split(" ")[0]}`, type: "primary" },
+                    { label: "Show my stats", type: "secondary" },
+                    { label: "What can you do?", type: "secondary" },
+                ],
+            };
+        }
+
         default: {
-            // Try exact match bank first, then true fallback
             return {
                 role: "ai",
                 model: Math.random() > 0.4 ? "gpt-4o" : "claude-4.6",
-                content: "Got it! Let me work on that for you.\n\n" +
+                content: `Got it! Let me work on that for **${biz.name}**.\n\n` +
                     "Based on your account data:\n\n" +
                     "\u2022 Your account is healthy with a **7.99% CTR**\n" +
                     "\u2022 **18 calls** this week from Google Ads\n" +
@@ -596,28 +619,28 @@ const generateResponse = (intent: IntentMatch, rawText: string): Omit<Message, "
 
 // ─── Exact Match Bank (for action buttons) ──────────────────────────────────
 
-const exactMatchBank: Record<string, () => Omit<Message, "id">> = {
-    "Yes, pause them all": () => generateResponse({ intent: "pause_keywords", params: {} }, ""),
-    "Fix all leaks now": () => generateResponse({ intent: "pause_keywords", params: {} }, ""),
-    "Go Live with all 3": () => generateResponse({ intent: "go_live", params: {} }, ""),
-    "Go live with all": () => generateResponse({ intent: "go_live", params: {} }, ""),
-    "Go Live": () => generateResponse({ intent: "go_live", params: {} }, ""),
-    "Show my stats": () => generateResponse({ intent: "show_stats", params: {} }, ""),
-    "Monitor performance": () => generateResponse({ intent: "show_stats", params: {} }, ""),
-    "Find money leaks": () => generateResponse({ intent: "find_leaks", params: {} }, ""),
-    "Check my competitors": () => generateResponse({ intent: "check_competitors", params: {} }, ""),
-    "What can you do?": () => generateResponse({ intent: "help", params: {} }, ""),
+const getExactMatchBank = (biz: BusinessProfile): Record<string, () => Omit<Message, "id">> => ({
+    "Yes, pause them all": () => generateResponse({ intent: "pause_keywords", params: {} }, "", biz),
+    "Fix all leaks now": () => generateResponse({ intent: "pause_keywords", params: {} }, "", biz),
+    "Go Live with all 3": () => generateResponse({ intent: "go_live", params: {} }, "", biz),
+    "Go live with all": () => generateResponse({ intent: "go_live", params: {} }, "", biz),
+    "Go Live": () => generateResponse({ intent: "go_live", params: {} }, "", biz),
+    "Show my stats": () => generateResponse({ intent: "show_stats", params: {} }, "", biz),
+    "Monitor performance": () => generateResponse({ intent: "show_stats", params: {} }, "", biz),
+    "Find money leaks": () => generateResponse({ intent: "find_leaks", params: {} }, "", biz),
+    "Check my competitors": () => generateResponse({ intent: "check_competitors", params: {} }, "", biz),
+    "What can you do?": () => generateResponse({ intent: "help", params: {} }, "", biz),
     "Show call details": () => ({
         role: "ai",
         model: "claude-4.6",
-        content: "Here are your **18 calls** from the last 7 days:\n\n" +
+        content: `Here are your **18 calls** for **${biz.name}** from the last 7 days:\n\n` +
             "| # | Date | Duration | Keyword | Result |\n" +
             "|---|------|----------|---------|--------|\n" +
-            "| 1 | Feb 24 | 4:32 | emergency plumber | \u2705 Booked |\n" +
-            "| 2 | Feb 24 | 2:18 | burst pipe repair | \u2705 Booked |\n" +
-            "| 3 | Feb 24 | 0:45 | plumber miami | \u274c Hangup |\n" +
-            "| 4 | Feb 23 | 6:12 | water heater | \u2705 Booked |\n" +
-            "| 5 | Feb 23 | 3:45 | emergency plumber | \u2705 Booked |\n\n" +
+            `| 1 | Feb 24 | 4:32 | ${biz.services[0] || "service"} | \u2705 Booked |\n` +
+            `| 2 | Feb 24 | 2:18 | ${biz.services[1] || "repair"} | \u2705 Booked |\n` +
+            `| 3 | Feb 24 | 0:45 | ${biz.services[0] || "service"} ${biz.location.split(" ")[0].toLowerCase()} | \u274c Hangup |\n` +
+            `| 4 | Feb 23 | 6:12 | ${biz.services[2] || "service"} | \u2705 Booked |\n` +
+            `| 5 | Feb 23 | 3:45 | ${biz.services[0] || "service"} | \u2705 Booked |\n\n` +
             "\u2022 \u2705 **12 booked** (67%)\n\u2022 \ud83d\udccb 3 estimates\n\u2022 \u274c 2 hangups, 1 wrong number\n\n" +
             "Booking rate **67%** vs industry avg 45% \ud83c\udf89",
         timestamp: timeNow(),
@@ -634,7 +657,7 @@ const exactMatchBank: Record<string, () => Omit<Message, "id">> = {
     "Compare to last month": () => ({
         role: "ai",
         model: "gpt-4o",
-        content: "**Month-over-month comparison:**\n\n" +
+        content: `**Month-over-month comparison for ${biz.name}:**\n\n` +
             "| Metric | Jan | Feb (so far) | Change |\n" +
             "|--------|-----|-------------|--------|\n" +
             "| Calls | 52 | 48 | \ud83d\udfe2 +15% pace |\n" +
@@ -653,15 +676,15 @@ const exactMatchBank: Record<string, () => Omit<Message, "id">> = {
             { label: "Predict next month", type: "secondary" },
         ],
     }),
-    "Create display ads too": () => generateResponse({ intent: "create_display_ads", params: { topic: "your top service" } }, ""),
-    "Create more ads": () => generateResponse({ intent: "help", params: {} }, ""),
+    "Create display ads too": () => generateResponse({ intent: "create_display_ads", params: { topic: biz.services[0] || "your top service" } }, "", biz),
+    "Create more ads": () => generateResponse({ intent: "help", params: {} }, "", biz),
     "Edit images & layout": () => ({
         role: "ai",
         model: "gpt-4o",
         content: "Sure! You can edit your display ads in two ways:\n\n" +
             "**1. Tell me what to do** (easiest)\n" +
             "\u2022 \"Move the image to the top\"\n" +
-            "\u2022 \"Add a food image to the sushi ad\"\n" +
+            "\u2022 \"Add an image to the ad\"\n" +
             "\u2022 \"Change the headline to 50% OFF\"\n\n" +
             "**2. Manual editor**\n" +
             "\u2022 Go to your **Drafts** page and click **Edit Display** on any display ad\n" +
@@ -674,7 +697,7 @@ const exactMatchBank: Record<string, () => Omit<Message, "id">> = {
             { label: "Open Drafts page", type: "secondary" },
         ],
     }),
-    "Move image to top": () => generateResponse({ intent: "move_image", params: { position: "top center" } }, ""),
+    "Move image to top": () => generateResponse({ intent: "move_image", params: { position: "top center" } }, "", biz),
     "Change the text": () => ({
         role: "ai",
         model: "gpt-4o",
@@ -689,19 +712,19 @@ const exactMatchBank: Record<string, () => Omit<Message, "id">> = {
             { label: "Limited Time Offer", type: "secondary" },
         ],
     }),
-    "Write counter-ads": () => generateResponse({ intent: "create_text_ads", params: { topic: "counter-competitor messaging" } }, ""),
+    "Write counter-ads": () => generateResponse({ intent: "create_text_ads", params: { topic: "counter-competitor messaging" } }, "", biz),
     "Regenerate Ad #2": () => ({
         role: "ai",
         model: "claude-4.6",
-        content: "Done! I regenerated Ad #2 with a fresh angle. Here\u2019s the new version:",
+        content: `Done! I regenerated Ad #2 for **${biz.name}** with a fresh angle. Here\u2019s the new version:`,
         timestamp: timeNow(),
         ads: [
             {
                 type: "text",
-                headline1: "Why Wait? We\u2019re There in 30 Minutes",
-                headline2: "$49 Service \u2022 No Hidden Fees",
-                description: "Skip the wait. Mike\u2019s Plumbing arrives in 30 minutes or your service call is free. Professional, licensed, and Miami\u2019s highest rated. Book now!",
-                displayUrl: "www.mikesplumbing.com",
+                headline1: `${biz.name} \u2014 Top Rated in ${biz.location}`,
+                headline2: "Professional \u2022 No Hidden Fees",
+                description: `Choose ${biz.name} for expert ${biz.services[0] || "service"}. Professional, licensed, and ${biz.location}'s highest rated. Book now!`,
+                displayUrl: `www.${biz.url}`,
             },
         ],
         taskSummary: { done: ["Regenerated Ad #2 using Claude 4.6", "New version saved to Drafts (v2)", "Previous version kept in version history"] },
@@ -711,11 +734,11 @@ const exactMatchBank: Record<string, () => Omit<Message, "id">> = {
             { label: "Go Live with all", type: "secondary" },
         ],
     }),
-    "Fix keywords only": () => generateResponse({ intent: "pause_keywords", params: {} }, ""),
+    "Fix keywords only": () => generateResponse({ intent: "pause_keywords", params: {} }, "", biz),
     "I'm good": () => ({
         role: "ai",
         model: "gpt-4o",
-        content: "\ud83d\udc4d I\u2019ll keep watching your account 24/7. I\u2019ll alert you if:\n\n" +
+        content: `\ud83d\udc4d I\u2019ll keep watching **${biz.name}**'s account 24/7. I\u2019ll alert you if:\n\n` +
             "\u2022 \ud83d\udea8 Any keyword spikes in cost\n\u2022 \ud83d\udcc9 CTR drops below 5%\n\u2022 \ud83d\udcb0 Spend exceeds budget by 20%+\n\u2022 \ud83c\udfc6 A competitor changes strategy\n\n" +
             "Weekly summary every Monday at 9 AM. Come back anytime!",
         timestamp: timeNow(),
@@ -756,7 +779,7 @@ const exactMatchBank: Record<string, () => Omit<Message, "id">> = {
             { label: "Show all my drafts", type: "secondary" },
         ],
     }),
-    "Show all my drafts": () => generateResponse({ intent: "show_drafts", params: {} }, ""),
+    "Show all my drafts": () => generateResponse({ intent: "show_drafts", params: {} }, "", biz),
     "Open Drafts page": () => ({
         role: "ai",
         model: "gpt-4o",
@@ -767,37 +790,24 @@ const exactMatchBank: Record<string, () => Omit<Message, "id">> = {
             { label: "Create new ads", type: "secondary" },
         ],
     }),
-    "Show my drafts here instead": () => generateResponse({ intent: "show_drafts", params: {} }, ""),
-    "50% OFF Today Only": () => generateResponse({ intent: "change_text", params: { newText: "50% OFF Today Only" } }, ""),
-    "Free Shipping": () => generateResponse({ intent: "change_text", params: { newText: "Free Shipping \u2014 Order Now" } }, ""),
-    "Limited Time Offer": () => generateResponse({ intent: "change_text", params: { newText: "Limited Time Offer \u2014 Don\u2019t Miss Out" } }, ""),
-    "Add more sizes": () => generateResponse({ intent: "create_display_ads", params: { topic: "additional sizes" } }, ""),
-    "How to beat Roto-Rooter?": () => ({
-        role: "ai",
-        model: "claude-4.6",
-        content: "**Battle plan to beat Roto-Rooter:**\n\n" +
-            "**1. Speed** \u2014 They don\u2019t mention response time. You guarantee 30 min.\n\u2003Ad: \"Why Wait 2 Hours? We\u2019re There in 30 Minutes.\"\n\n" +
-            "**2. Price match + one-up**\n\u2003They: $50 off. You: $49 drain cleaning + free estimates.\n\n" +
-            "**3. Local trust**\n\u2003They\u2019re a franchise. You\u2019re family-owned.\n\u2003Ad: \"Skip the Franchise, Call a Real Miami Plumber\"\n\n" +
-            "**4. Bid on their brand** (bold)\n\u2003\"Looking for Roto-Rooter? Try Mike\u2019s \u2014 30-Min, No Franchise Fees\"\n\n" +
-            "Want me to write any of these?",
-        timestamp: timeNow(),
-        actions: [
-            { label: "Write the speed ad", type: "primary" },
-            { label: "Write the competitor ad", type: "secondary" },
-            { label: "Cost of competitor bidding?", type: "secondary" },
-        ],
-    }),
-    "Write the speed ad": () => generateResponse({ intent: "create_text_ads", params: { topic: "speed & 30-minute response" } }, ""),
-    "Write the competitor ad": () => generateResponse({ intent: "create_text_ads", params: { topic: "competitor comparison" } }, ""),
+    "Show my drafts here instead": () => generateResponse({ intent: "show_drafts", params: {} }, "", biz),
+    "50% OFF Today Only": () => generateResponse({ intent: "change_text", params: { newText: "50% OFF Today Only" } }, "", biz),
+    "Free Shipping": () => generateResponse({ intent: "change_text", params: { newText: "Free Shipping \u2014 Order Now" } }, "", biz),
+    "Limited Time Offer": () => generateResponse({ intent: "change_text", params: { newText: "Limited Time Offer \u2014 Don\u2019t Miss Out" } }, "", biz),
+    "Add more sizes": () => generateResponse({ intent: "create_display_ads", params: { topic: "additional sizes" } }, "", biz),
+    "Write the speed ad": () => generateResponse({ intent: "create_text_ads", params: { topic: "speed & fast response" } }, "", biz),
+    "Write the competitor ad": () => generateResponse({ intent: "create_text_ads", params: { topic: "competitor comparison" } }, "", biz),
     "I'm done for now": () => ({
         role: "ai",
         model: "gpt-4o",
-        content: "\ud83d\udc4d All good! Your ads and changes are saved. I\u2019m always here \u2014 just speak or type when you need me.\n\nI\u2019ll keep monitoring your account 24/7. \ud83d\ude0a",
+        content: `\ud83d\udc4d All good! Your ads and changes for **${biz.name}** are saved. I\u2019m always here \u2014 just speak or type when you need me.\n\nI\u2019ll keep monitoring your account 24/7. \ud83d\ude0a`,
         timestamp: timeNow(),
         actions: [],
     }),
-};
+    [`Create ads for ${biz.name.split(" ")[0]}`]: () => generateResponse({ intent: "create_text_ads", params: { topic: biz.services[0] || "your top service" } }, "", biz),
+    "Create new ads": () => generateResponse({ intent: "help", params: {} }, "", biz),
+    "Create ads for me": () => generateResponse({ intent: "create_text_ads", params: { topic: biz.services[0] || "your top service" } }, "", biz),
+});
 
 // ─── Quick Actions ──────────────────────────────────────────────────────────
 
@@ -810,11 +820,11 @@ const quickActions = [
 
 // ─── Initial Messages ───────────────────────────────────────────────────────
 
-const initialMessages: Message[] = [
+const getInitialMessages = (biz: BusinessProfile): Message[] => [
     {
         id: 1,
         role: "system",
-        content: "AI Assistant connected \u2022 Models: GPT-4o + Claude 4.6 \u2022 Voice enabled \ud83c\udf99\ufe0f",
+        content: `AI Assistant connected \u2022 Managing: ${biz.name} \u2022 Models: GPT-4o + Claude 4.6 \u2022 Voice enabled \ud83c\udf99\ufe0f`,
         timestamp: "Session started",
     },
     {
@@ -822,17 +832,17 @@ const initialMessages: Message[] = [
         role: "ai",
         model: "gpt-4o",
         content:
-            "Hey! \ud83d\udc4b I\u2019m your AI ad assistant. Just **speak or type** what you need \u2014 I\u2019ll handle everything.\n\n" +
-            "I just scanned your account for the last 7 days:\n\n" +
-            "**Good news:** 18 phone calls this week \u2014 5 more than last week! \ud83c\udf89\n\n" +
-            "**Needs attention:** I found 3 keywords wasting **$45.50/week**:\n" +
-            "\u2022 \"free plumbing tips\" \u2014 $22, 0 calls\n" +
-            "\u2022 \"plumber salary miami\" \u2014 $8.50, 0 calls\n" +
-            "\u2022 \"how to fix a leaky faucet\" \u2014 $15, 0 calls\n\n" +
+            `Hey! \ud83d\udc4b I\u2019m your AI ad assistant for **${biz.name}**. Just **speak or type** what you need \u2014 I\u2019ll handle everything.\n\n` +
+            `I just scanned your **${biz.name}** account for the last 7 days:\n\n` +
+            "**Good news:** 18 conversions this week \u2014 5 more than last week! \ud83c\udf89\n\n" +
+            `**Needs attention:** I found 3 keywords wasting **$45.50/week**:\n` +
+            `\u2022 "free ${biz.services[0] || "service"} tips" \u2014 $22, 0 conversions\n` +
+            `\u2022 "${biz.services[0] || "service"} salary" \u2014 $8.50, 0 conversions\n` +
+            `\u2022 "how to ${biz.services[1] || "DIY"}" \u2014 $15, 0 conversions\n\n` +
             "Want me to pause these? Just say the word.",
         timestamp: timeNow(),
         stats: [
-            { label: "Calls", value: "18", change: "+38%", trend: "up" },
+            { label: "Conversions", value: "18", change: "+38%", trend: "up" },
             { label: "Wasted", value: "$45.50", change: "This week", trend: "down" },
             { label: "CTR", value: "7.99%", change: "Above avg", trend: "up" },
         ],
@@ -935,7 +945,8 @@ const getMicInstructions = (browser: string, platform: Platform): { steps: strin
 };
 
 export default function ChatPage() {
-    const [messages, setMessages] = useState<Message[]>(initialMessages);
+    const { activeBusiness, getOffTopicBusiness } = useBusiness();
+    const [messages, setMessages] = useState<Message[]>(() => getInitialMessages(activeBusiness));
     const [input, setInput] = useState("");
     const [isTyping, setIsTyping] = useState(false);
     const [copiedId, setCopiedId] = useState<number | null>(null);
@@ -963,6 +974,7 @@ export default function ChatPage() {
     const recordingStartRef = useRef<number>(0);
     const silenceStartRef = useRef<number>(0);
     const hasAnalyserRef = useRef(false);
+    const prevBusinessRef = useRef(activeBusiness.id);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -971,6 +983,16 @@ export default function ChatPage() {
     useEffect(() => {
         inputRef.current?.focus();
     }, []);
+
+    // Reset chat when business changes
+    useEffect(() => {
+        if (prevBusinessRef.current !== activeBusiness.id) {
+            prevBusinessRef.current = activeBusiness.id;
+            setMessages(getInitialMessages(activeBusiness));
+            setInput("");
+            setIsTyping(false);
+        }
+    }, [activeBusiness]);
 
     // Cleanup voice timers + audio context on unmount
     useEffect(() => {
@@ -1297,15 +1319,28 @@ export default function ChatPage() {
         setInput("");
         setIsTyping(true);
 
-        // Check exact match bank first, then NLP intent
-        const exactMatch = exactMatchBank[text];
+        // ── Off-topic business guard ────────────────────────────
+        const offTopicBiz = getOffTopicBusiness(text);
         let response: Omit<Message, "id">;
 
-        if (exactMatch) {
-            response = exactMatch();
+        if (offTopicBiz) {
+            // User is trying to create ads for a different business
+            response = generateResponse(
+                { intent: "off_topic", params: { offTopicBusiness: offTopicBiz.name } },
+                text,
+                activeBusiness,
+            );
         } else {
-            const intent = matchIntent(text);
-            response = generateResponse(intent, text);
+            // Check exact match bank first, then NLP intent
+            const exactMatchBank = getExactMatchBank(activeBusiness);
+            const exactMatch = exactMatchBank[text];
+
+            if (exactMatch) {
+                response = exactMatch();
+            } else {
+                const intent = matchIntent(text);
+                response = generateResponse(intent, text, activeBusiness);
+            }
         }
 
         // Simulate AI processing (multi-step for agentic feel) 
@@ -1330,7 +1365,7 @@ export default function ChatPage() {
             setMessages((prev) => [...prev, divider, aiMsg]);
             setIsTyping(false);
         }, delay);
-    }, [isTyping]);
+    }, [isTyping, activeBusiness, getOffTopicBusiness]);
 
     // Keep ref in sync so startListening can call sendMessage via ref
     useEffect(() => {
@@ -1344,7 +1379,7 @@ export default function ChatPage() {
     };
 
     const handleClear = () => {
-        setMessages(initialMessages);
+        setMessages(getInitialMessages(activeBusiness));
     };
 
     // ─── Render Helpers ─────────────────────────────────────────────────────
