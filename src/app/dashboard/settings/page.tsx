@@ -55,7 +55,7 @@ export default function SettingsPage() {
     authFetch("/api/subscription")
       .then((r) => r.ok ? r.json() : null)
       .then((data) => { if (data) setSub(data); })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoadingSub(false));
 
     authFetch("/api/settings")
@@ -73,7 +73,7 @@ export default function SettingsPage() {
           if (s.notifications?.summaryTime) setSummaryTime(s.notifications.summaryTime);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const handleBillingAction = async (action: string) => {
@@ -221,13 +221,12 @@ export default function SettingsPage() {
               {sub.plan !== "pro" && (
                 <div className="w-full h-2.5 bg-border rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all duration-500 ${
-                      usagePercent >= 90
+                    className={`h-full rounded-full transition-all duration-500 ${usagePercent >= 90
                         ? "bg-danger"
                         : usagePercent >= 70
                           ? "bg-warning"
                           : "bg-primary"
-                    }`}
+                      }`}
                     style={{ width: `${usagePercent}%` }}
                   />
                 </div>
@@ -581,7 +580,7 @@ function ConnectedAccountSection() {
           setConnected(data.connected === true);
         }
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
   }, []);
 

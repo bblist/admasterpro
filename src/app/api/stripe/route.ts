@@ -17,6 +17,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { stripeLimiter, checkRateLimit } from "@/lib/rate-limit";
 import {
     isStripeConfigured,
     createSubscriptionCheckout,
@@ -36,10 +37,14 @@ import {
 // ─── POST: Checkout or Webhook ──────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
-    // Stripe webhook (identified by stripe-signature header)
+    // Stripe webhook — skip rate limiting (Stripe handles its own)
     if (req.headers.get("stripe-signature")) {
         return handleWebhook(req);
     }
+
+    // Rate limit checkout requests
+    const rateLimited = checkRateLimit(req, stripeLimiter);
+    if (rateLimited) return rateLimited;
 
     // Checkout session creation
     return handleCheckout(req);

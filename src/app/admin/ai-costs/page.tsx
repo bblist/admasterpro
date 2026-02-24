@@ -49,14 +49,14 @@ interface Totals {
 }
 
 export default function AdminAICostsPage() {
-    const [clients      , setClients] = useState<ClientCost[]>([]);
-    const [daily        , setDaily] = useState<DailyCost[]>([]);
-    const [totals       , setTotals] = useState<Totals | null>(null);
+    const [clients, setClients] = useState<ClientCost[]>([]);
+    const [daily, setDaily] = useState<DailyCost[]>([]);
+    const [totals, setTotals] = useState<Totals | null>(null);
     const [modelBreakdown, setModelBreakdown] = useState<Record<string, { queries: number; tokens: number; cost: number }>>({});
     const [unprofitableCount, setUnprofitableCount] = useState(0);
-    const [loading      , setLoading] = useState(true);
-    const [search       , setSearch] = useState("");
-    const [sortBy       , setSortBy] = useState("totalCost");
+    const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState("");
+    const [sortBy, setSortBy] = useState("totalCost");
     const [expandedClient, setExpandedClient] = useState<string | null>(null);
 
     const fetchData = useCallback(async () => {
@@ -247,11 +247,10 @@ export default function AdminAICostsPage() {
                                                 <div className="text-gray-500 text-xs">{client.email}</div>
                                             </td>
                                             <td className="px-4 py-3">
-                                                <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${
-                                                    client.plan === "pro" ? "bg-purple-600/20 text-purple-400" :
-                                                    client.plan === "starter" ? "bg-blue-600/20 text-blue-400" :
-                                                    "bg-gray-700/30 text-gray-400"
-                                                }`}>
+                                                <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${client.plan === "pro" ? "bg-purple-600/20 text-purple-400" :
+                                                        client.plan === "starter" ? "bg-blue-600/20 text-blue-400" :
+                                                            "bg-gray-700/30 text-gray-400"
+                                                    }`}>
                                                     {client.plan.charAt(0).toUpperCase() + client.plan.slice(1)}
                                                 </span>
                                             </td>

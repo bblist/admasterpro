@@ -133,19 +133,37 @@ export function captureTokenFromHash(): boolean {
 }
 
 /**
- * Fetch wrapper that adds Authorization header with stored token.
+ * Get CSRF token from cookie.
+ * The token is set by middleware and readable by JavaScript.
+ */
+function getCSRFToken(): string | null {
+    if (typeof document === "undefined") return null;
+    const match = document.cookie.match(/csrf_token=([^;]+)/);
+    return match ? decodeURIComponent(match[1]) : null;
+}
+
+/**
+ * Fetch wrapper that adds Authorization header with stored token
+ * and CSRF token for state-changing requests.
  * Falls back to regular fetch if no token is stored (cookies will be used).
  */
 export async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
     const token = getToken();
+    const headers = new Headers(options.headers || {});
 
-    if (token) {
-        const headers = new Headers(options.headers || {});
-        if (!headers.has("Authorization")) {
-            headers.set("Authorization", `Bearer ${token}`);
-        }
-        options = { ...options, headers };
+    // Add JWT token for API authentication
+    if (token && !headers.has("Authorization")) {
+        headers.set("Authorization", `Bearer ${token}`);
     }
 
-    return fetch(url, options);
+    // Add CSRF token for state-changing requests (POST, PUT, DELETE, PATCH)
+    const method = (options.method || "GET").toUpperCase();
+    if (["POST", "PUT", "DELETE", "PATCH"].includes(method)) {
+        const csrfToken = getCSRFToken();
+        if (csrfToken && !headers.has("X-CSRF-Token")) {
+            headers.set("X-CSRF-Token", csrfToken);
+        }
+    }
+
+    return fetch(url, { ...options, headers });
 }

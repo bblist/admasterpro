@@ -217,9 +217,8 @@ export default function AnalyticsPage() {
                             <div className="flex items-center gap-1 bg-muted/30 rounded-lg p-1">
                                 {(Object.keys(chartConfigs) as Array<keyof typeof chartConfigs>).map((key) => (
                                     <button key={key} onClick={() => setActiveChart(key)}
-                                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${
-                                            activeChart === key ? "bg-white shadow text-foreground" : "text-muted hover:text-foreground"
-                                        }`}>
+                                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${activeChart === key ? "bg-white shadow text-foreground" : "text-muted hover:text-foreground"
+                                            }`}>
                                         {chartConfigs[key].label.split(" ")[0]}
                                     </button>
                                 ))}
@@ -267,8 +266,8 @@ export default function AnalyticsPage() {
                                     <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} stroke="#9ca3af" />
                                     <Tooltip contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb" }} />
                                     <Legend />
-                                    <Bar yAxisId="left" dataKey="cost" fill="#6366f1" radius={[4,4,0,0]} name="Spend ($)" />
-                                    <Bar yAxisId="right" dataKey="clicks" fill="#22c55e" radius={[4,4,0,0]} name="Clicks" />
+                                    <Bar yAxisId="left" dataKey="cost" fill="#6366f1" radius={[4, 4, 0, 0]} name="Spend ($)" />
+                                    <Bar yAxisId="right" dataKey="clicks" fill="#22c55e" radius={[4, 4, 0, 0]} name="Clicks" />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>

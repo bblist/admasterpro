@@ -109,11 +109,10 @@ export default function DashboardPage() {
                 <div className="bg-card border border-border rounded-xl p-5">
                     <div className="flex items-center justify-between mb-3">
                         <span className="text-sm text-muted">Current Plan</span>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                            plan === "pro" ? "bg-purple-100 text-purple-700"
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${plan === "pro" ? "bg-purple-100 text-purple-700"
                                 : plan === "starter" ? "bg-blue-100 text-blue-700"
                                     : "bg-gray-100 text-gray-700"
-                        }`}>
+                            }`}>
                             {plan.charAt(0).toUpperCase() + plan.slice(1)}
                         </span>
                     </div>
@@ -140,9 +139,8 @@ export default function DashboardPage() {
                     <div className="mt-2">
                         <div className="h-2 bg-muted/30 rounded-full overflow-hidden">
                             <div
-                                className={`h-full rounded-full transition-all ${
-                                    usagePct > 80 ? "bg-red-500" : usagePct > 50 ? "bg-yellow-500" : "bg-primary"
-                                }`}
+                                className={`h-full rounded-full transition-all ${usagePct > 80 ? "bg-red-500" : usagePct > 50 ? "bg-yellow-500" : "bg-primary"
+                                    }`}
                                 style={{ width: `${usagePct}%` }}
                             />
                         </div>

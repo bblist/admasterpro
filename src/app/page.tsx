@@ -309,8 +309,8 @@ export default function LandingPage() {
                 <Link
                   href={plan.href}
                   className={`block text-center py-2.5 rounded-lg font-medium text-sm transition ${plan.popular
-                      ? "bg-primary hover:bg-primary-dark text-white"
-                      : "border border-border hover:border-primary text-foreground"
+                    ? "bg-primary hover:bg-primary-dark text-white"
+                    : "border border-border hover:border-primary text-foreground"
                     }`}
                 >
                   {plan.cta}

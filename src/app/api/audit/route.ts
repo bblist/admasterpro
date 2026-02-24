@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
+import { auditLimiter, checkRateLimit } from "@/lib/rate-limit";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
 
@@ -13,6 +14,9 @@ interface AuditSection {
 }
 
 export async function POST(req: Request) {
+    const rateLimited = checkRateLimit(req, auditLimiter);
+    if (rateLimited) return rateLimited;
+
     try {
         const { websiteUrl, businessName, industry, email, monthlySpend } = await req.json();
 

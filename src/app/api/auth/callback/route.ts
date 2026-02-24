@@ -17,6 +17,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { PLANS } from "@/lib/plans";
 import { signToken } from "@/lib/jwt";
+import { authLimiter, checkRateLimit } from "@/lib/rate-limit";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -32,6 +33,12 @@ const SCOPES = [
 export async function GET(req: NextRequest) {
     const code = req.nextUrl.searchParams.get("code");
     const errorParam = req.nextUrl.searchParams.get("error");
+
+    // Rate limit the token exchange (when code is present), not the initial redirect
+    if (code) {
+        const rateLimited = checkRateLimit(req, authLimiter);
+        if (rateLimited) return rateLimited;
+    }
 
     if (errorParam) {
         console.error("[Auth] User denied consent:", errorParam);

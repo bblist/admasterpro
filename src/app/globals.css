@@ -116,6 +116,7 @@ select {
 }
 
 @media (min-width: 768px) {
+
   input,
   textarea,
   select {
@@ -140,7 +141,8 @@ a:not(.btn),
 
 /* Dynamic viewport height for mobile address bar */
 .h-dvh {
-  height: 100vh; /* fallback */
+  height: 100vh;
+  /* fallback */
   height: 100dvh;
 }
 

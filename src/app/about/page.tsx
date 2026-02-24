@@ -119,7 +119,7 @@ export default function AboutPage() {
                         </p>
                         <p>
                             So we built something different. <strong className="text-foreground">AdMaster Pro is an AI assistant
-                            that speaks your language.</strong> Instead of learning Google Ads, you just tell the AI
+                                that speaks your language.</strong> Instead of learning Google Ads, you just tell the AI
                             what you need: &quot;Create 3 ads for drain cleaning,&quot; &quot;Where am I wasting money?&quot;
                             or &quot;Show me my stats.&quot; The AI handles everything — keyword research, ad copy,
                             bid optimization, competitor analysis — and nothing goes live without your explicit approval.

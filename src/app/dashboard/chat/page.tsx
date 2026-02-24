@@ -999,38 +999,38 @@ const getInitialMessages = (bizIn: BusinessProfile | null): Message[] => {
     };
     const name = biz.name;
     return [
-    {
-        id: 1,
-        role: "system",
-        content: `AI Assistant connected \u2022 Managing: ${name} \u2022 Voice enabled \ud83c\udf99\ufe0f`,
-        timestamp: "Session started",
-    },
-    {
-        id: 2,
-        role: "ai",
-        model: "gpt-4o",
-        content:
-            `Hey! \ud83d\udc4b I\u2019m your AI ad assistant for **${name}**. Just **speak or type** what you need \u2014 I\u2019ll handle everything.\n\n` +
-            `I just scanned your **${biz.name}** account for the last 7 days:\n\n` +
-            "**Good news:** 18 conversions this week \u2014 5 more than last week! \ud83c\udf89\n\n" +
-            `**Needs attention:** I found 3 keywords wasting **$45.50/week**:\n` +
-            `\u2022 "free ${biz.services[0] || "service"} tips" \u2014 $22, 0 conversions\n` +
-            `\u2022 "${biz.services[0] || "service"} salary" \u2014 $8.50, 0 conversions\n` +
-            `\u2022 "how to ${biz.services[1] || "DIY"}" \u2014 $15, 0 conversions\n\n` +
-            "Want me to pause these? Just say the word.",
-        timestamp: timeNow(),
-        stats: [
-            { label: "Conversions", value: "18", change: "+38%", trend: "up" },
-            { label: "Wasted", value: "$45.50", change: "This week", trend: "down" },
-            { label: "CTR", value: "7.99%", change: "Above avg", trend: "up" },
-        ],
-        actions: [
-            { label: "Yes, pause them all", type: "primary" },
-            { label: "Let me review first", type: "secondary" },
-            { label: "What else can you do?", type: "secondary" },
-        ],
-    },
-];
+        {
+            id: 1,
+            role: "system",
+            content: `AI Assistant connected \u2022 Managing: ${name} \u2022 Voice enabled \ud83c\udf99\ufe0f`,
+            timestamp: "Session started",
+        },
+        {
+            id: 2,
+            role: "ai",
+            model: "gpt-4o",
+            content:
+                `Hey! \ud83d\udc4b I\u2019m your AI ad assistant for **${name}**. Just **speak or type** what you need \u2014 I\u2019ll handle everything.\n\n` +
+                `I just scanned your **${biz.name}** account for the last 7 days:\n\n` +
+                "**Good news:** 18 conversions this week \u2014 5 more than last week! \ud83c\udf89\n\n" +
+                `**Needs attention:** I found 3 keywords wasting **$45.50/week**:\n` +
+                `\u2022 "free ${biz.services[0] || "service"} tips" \u2014 $22, 0 conversions\n` +
+                `\u2022 "${biz.services[0] || "service"} salary" \u2014 $8.50, 0 conversions\n` +
+                `\u2022 "how to ${biz.services[1] || "DIY"}" \u2014 $15, 0 conversions\n\n` +
+                "Want me to pause these? Just say the word.",
+            timestamp: timeNow(),
+            stats: [
+                { label: "Conversions", value: "18", change: "+38%", trend: "up" },
+                { label: "Wasted", value: "$45.50", change: "This week", trend: "down" },
+                { label: "CTR", value: "7.99%", change: "Above avg", trend: "up" },
+            ],
+            actions: [
+                { label: "Yes, pause them all", type: "primary" },
+                { label: "Let me review first", type: "secondary" },
+                { label: "What else can you do?", type: "secondary" },
+            ],
+        },
+    ];
 };
 
 // ─── Component ──────────────────────────────────────────────────────────────
@@ -1142,7 +1142,7 @@ export default function ChatPage() {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const recognitionRef = useRef<any>(null);
-    const sendMessageRef = useRef<(text: string) => void>(() => {});
+    const sendMessageRef = useRef<(text: string) => void>(() => { });
     const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const voiceTranscriptRef = useRef("");
@@ -1183,7 +1183,7 @@ export default function ChatPage() {
             setInput("");
             setIsTyping(false);
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeBusiness]);
 
     // Cleanup voice timers + audio context on unmount
@@ -1631,7 +1631,7 @@ export default function ChatPage() {
             if (!matchedBiz && target) {
                 matchedBiz = businesses.find((b) => {
                     return b.services.some((s) => target.includes(s.toLowerCase())) ||
-                           b.industry.toLowerCase().split(/\s|\//).some((w) => w.length > 2 && target.includes(w));
+                        b.industry.toLowerCase().split(/\s|\//).some((w) => w.length > 2 && target.includes(w));
                 });
             }
 
@@ -1959,8 +1959,8 @@ export default function ChatPage() {
                     <div className="text-lg font-bold mt-0.5">{stat.value}</div>
                     {stat.change && (
                         <div className={`text-[10px] font-medium mt-0.5 ${stat.trend === "up" ? "text-emerald-600" :
-                                stat.trend === "down" ? "text-red-500" :
-                                    "text-gray-400"
+                            stat.trend === "down" ? "text-red-500" :
+                                "text-gray-400"
                             }`}>
                             {stat.trend === "up" ? "\u25b2 " : stat.trend === "down" ? "\u25bc " : ""}{stat.change}
                         </div>
@@ -2231,10 +2231,10 @@ export default function ChatPage() {
                                                 onClick={() => sendMessage(action.label)}
                                                 disabled={isTyping}
                                                 className={`text-xs px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${action.type === "primary"
-                                                        ? "bg-primary text-white hover:bg-primary-dark disabled:opacity-50"
-                                                        : action.type === "danger"
-                                                            ? "bg-danger/10 text-danger hover:bg-danger/20 disabled:opacity-50"
-                                                            : "border border-border hover:border-primary text-foreground disabled:opacity-50"
+                                                    ? "bg-primary text-white hover:bg-primary-dark disabled:opacity-50"
+                                                    : action.type === "danger"
+                                                        ? "bg-danger/10 text-danger hover:bg-danger/20 disabled:opacity-50"
+                                                        : "border border-border hover:border-primary text-foreground disabled:opacity-50"
                                                     }`}
                                             >
                                                 {action.type === "primary" && <ArrowRight className="w-3 h-3" />}
@@ -2339,10 +2339,10 @@ export default function ChatPage() {
                         onClick={isListening ? stopListening : startListening}
                         disabled={isTyping}
                         className={`p-3 rounded-xl transition flex items-center justify-center shrink-0 ${isListening
-                                ? "bg-danger text-white animate-pulse"
-                                : micPermission === "denied" || micPermission === "unsupported" || micPermission === "not-found"
-                                    ? "bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-500"
-                                    : "bg-gradient-to-br from-primary to-blue-600 text-white hover:shadow-lg hover:shadow-primary/30 disabled:opacity-50"
+                            ? "bg-danger text-white animate-pulse"
+                            : micPermission === "denied" || micPermission === "unsupported" || micPermission === "not-found"
+                                ? "bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-500"
+                                : "bg-gradient-to-br from-primary to-blue-600 text-white hover:shadow-lg hover:shadow-primary/30 disabled:opacity-50"
                             }`}
                         title={
                             isListening ? "Stop listening"

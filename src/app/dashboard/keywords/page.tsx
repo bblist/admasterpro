@@ -193,9 +193,8 @@ export default function KeywordsPage() {
                 <Filter className="w-4 h-4 text-muted" />
                 {["all", "EXACT", "PHRASE", "BROAD"].map((m) => (
                     <button key={m} onClick={() => setMatchFilter(m)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-                            matchFilter === m ? "bg-primary text-white" : "bg-card border border-border hover:border-primary"
-                        }`}>
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${matchFilter === m ? "bg-primary text-white" : "bg-card border border-border hover:border-primary"
+                            }`}>
                         {m === "all" ? "All" : matchTypeLabels[m] || m}
                     </button>
                 ))}
@@ -248,9 +247,8 @@ export default function KeywordsPage() {
                                         <td className="p-3 text-muted text-xs max-w-[140px] truncate">{kw.campaignName}</td>
                                         <td className="p-3 text-center">
                                             {kw.qualityScore > 0 ? (
-                                                <span className={`inline-flex items-center gap-0.5 font-medium ${
-                                                    kw.qualityScore >= 7 ? "text-green-600" : kw.qualityScore >= 5 ? "text-yellow-600" : "text-red-600"
-                                                }`}>
+                                                <span className={`inline-flex items-center gap-0.5 font-medium ${kw.qualityScore >= 7 ? "text-green-600" : kw.qualityScore >= 5 ? "text-yellow-600" : "text-red-600"
+                                                    }`}>
                                                     <Star className="w-3 h-3" /> {kw.qualityScore}
                                                 </span>
                                             ) : "-"}
@@ -270,9 +268,8 @@ export default function KeywordsPage() {
                                             <div className="flex items-center justify-center gap-1">
                                                 <button onClick={() => mutateKeyword(kw, kw.status === "ENABLED" ? "pause" : "enable")}
                                                     disabled={mutating === kw.id}
-                                                    className={`p-1 rounded transition ${
-                                                        kw.status === "ENABLED" ? "hover:bg-yellow-100 text-yellow-600" : "hover:bg-green-100 text-green-600"
-                                                    } disabled:opacity-50`}
+                                                    className={`p-1 rounded transition ${kw.status === "ENABLED" ? "hover:bg-yellow-100 text-yellow-600" : "hover:bg-green-100 text-green-600"
+                                                        } disabled:opacity-50`}
                                                     title={kw.status === "ENABLED" ? "Pause" : "Enable"}>
                                                     {mutating === kw.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> :
                                                         kw.status === "ENABLED" ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}

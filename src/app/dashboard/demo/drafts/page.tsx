@@ -681,8 +681,8 @@ export default function DraftsPage() {
         const hasImage = !!content.imageUrl;
         const heightClass = content.dimensions === "728\u00d790" ? (compact ? "h-16" : "h-20")
             : content.dimensions === "160\u00d7600" ? (compact ? "h-48" : "h-56")
-            : content.dimensions === "300\u00d7600" ? (compact ? "h-48" : "h-56")
-            : compact ? "h-28" : "h-36";
+                : content.dimensions === "300\u00d7600" ? (compact ? "h-48" : "h-56")
+                    : compact ? "h-28" : "h-36";
 
         return (
             <div className="bg-sidebar border border-border rounded-lg p-4">
@@ -721,24 +721,24 @@ export default function DraftsPage() {
                     )}
                     {/* Overlay */}
                     {!content.hideText && (
-                    <div
-                        className="absolute inset-0 flex flex-col items-center justify-center p-4"
-                        style={{
-                            backgroundColor: hasImage ? `rgba(0,0,0,${(content.overlayOpacity || 40) / 100})` : "transparent",
-                        }}
-                    >
                         <div
-                            className="font-bold text-sm drop-shadow-lg text-center leading-tight"
-                            style={{ color: content.textColor || "#ffffff" }}
+                            className="absolute inset-0 flex flex-col items-center justify-center p-4"
+                            style={{
+                                backgroundColor: hasImage ? `rgba(0,0,0,${(content.overlayOpacity || 40) / 100})` : "transparent",
+                            }}
                         >
-                            {content.overlayText || content.previewText}
-                        </div>
-                        {content.ctaText && !content.hideCta && (
-                            <div className="mt-2 px-4 py-1 bg-white/90 text-gray-900 text-xs font-semibold rounded-full">
-                                {content.ctaText}
+                            <div
+                                className="font-bold text-sm drop-shadow-lg text-center leading-tight"
+                                style={{ color: content.textColor || "#ffffff" }}
+                            >
+                                {content.overlayText || content.previewText}
                             </div>
-                        )}
-                    </div>
+                            {content.ctaText && !content.hideCta && (
+                                <div className="mt-2 px-4 py-1 bg-white/90 text-gray-900 text-xs font-semibold rounded-full">
+                                    {content.ctaText}
+                                </div>
+                            )}
+                        </div>
                     )}
                 </div>
 
@@ -792,11 +792,10 @@ export default function DraftsPage() {
                                     <button
                                         key={tab.key}
                                         onClick={() => setEditorTab(tab.key)}
-                                        className={`flex-1 py-2.5 text-xs font-medium flex items-center justify-center gap-1.5 border-b-2 transition ${
-                                            editorTab === tab.key
+                                        className={`flex-1 py-2.5 text-xs font-medium flex items-center justify-center gap-1.5 border-b-2 transition ${editorTab === tab.key
                                                 ? "border-primary text-primary bg-card"
                                                 : "border-transparent text-muted hover:text-foreground"
-                                        }`}
+                                            }`}
                                     >
                                         <tab.icon className="w-3.5 h-3.5" />
                                         {tab.label}
@@ -829,11 +828,10 @@ export default function DraftsPage() {
                                                             updateDisplayField(draft.id, "imageUrl", img.url);
                                                             setSelectedImageId(img.id);
                                                         }}
-                                                        className={`relative rounded-lg overflow-hidden border-2 transition group ${
-                                                            dc.imageUrl === img.url
+                                                        className={`relative rounded-lg overflow-hidden border-2 transition group ${dc.imageUrl === img.url
                                                                 ? "border-primary ring-2 ring-primary/20"
                                                                 : "border-border hover:border-primary/50"
-                                                        }`}
+                                                            }`}
                                                     >
                                                         <img
                                                             src={img.url}
@@ -934,11 +932,10 @@ export default function DraftsPage() {
                                                     <button
                                                         key={cta}
                                                         onClick={() => updateDisplayField(draft.id, "ctaText", cta)}
-                                                        className={`text-[10px] px-2 py-0.5 rounded-full border transition ${
-                                                            dc.ctaText === cta
+                                                        className={`text-[10px] px-2 py-0.5 rounded-full border transition ${dc.ctaText === cta
                                                                 ? "border-primary bg-primary/10 text-primary"
                                                                 : "border-border text-muted hover:border-primary/50"
-                                                        }`}
+                                                            }`}
                                                     >
                                                         {cta}
                                                     </button>
@@ -966,9 +963,8 @@ export default function DraftsPage() {
                                                         <button
                                                             key={c}
                                                             onClick={() => updateDisplayField(draft.id, "textColor", c)}
-                                                            className={`w-6 h-6 rounded-full border-2 transition ${
-                                                                dc.textColor === c ? "border-primary scale-110" : "border-border"
-                                                            }`}
+                                                            className={`w-6 h-6 rounded-full border-2 transition ${dc.textColor === c ? "border-primary scale-110" : "border-border"
+                                                                }`}
                                                             style={{ backgroundColor: c }}
                                                         />
                                                     ))}
@@ -1020,11 +1016,10 @@ export default function DraftsPage() {
                                                         <button
                                                             key={pos}
                                                             onClick={() => updateDisplayField(draft.id, "imagePosition", pos)}
-                                                            className={`h-12 rounded-lg border-2 text-[10px] font-medium transition flex items-center justify-center ${
-                                                                dc.imagePosition === pos
+                                                            className={`h-12 rounded-lg border-2 text-[10px] font-medium transition flex items-center justify-center ${dc.imagePosition === pos
                                                                     ? "border-primary bg-primary/10 text-primary"
                                                                     : "border-border text-muted hover:border-primary/50 hover:text-foreground"
-                                                            }`}
+                                                                }`}
                                                         >
                                                             {positionLabels[pos].split(" ").map((w, i) => (
                                                                 <span key={i}>{i > 0 ? " " : ""}{w}</span>
@@ -1063,11 +1058,10 @@ export default function DraftsPage() {
                                                             updateDisplayField(draft.id, "dimensions", size.dim);
                                                             updateDisplayField(draft.id, "format", size.label);
                                                         }}
-                                                        className={`text-left rounded-lg border-2 p-2.5 transition ${
-                                                            dc.dimensions === size.dim
+                                                        className={`text-left rounded-lg border-2 p-2.5 transition ${dc.dimensions === size.dim
                                                                 ? "border-primary bg-primary/5"
                                                                 : "border-border hover:border-primary/50"
-                                                        }`}
+                                                            }`}
                                                     >
                                                         <div className="text-xs font-medium">{size.dim}</div>
                                                         <div className="text-[10px] text-muted">{size.label}</div>
@@ -1092,9 +1086,8 @@ export default function DraftsPage() {
                                                     <button
                                                         key={g.bg}
                                                         onClick={() => updateDisplayField(draft.id, "previewBg", g.bg)}
-                                                        className={`rounded-lg border-2 p-1 transition ${
-                                                            dc.previewBg === g.bg ? "border-primary" : "border-border hover:border-primary/50"
-                                                        }`}
+                                                        className={`rounded-lg border-2 p-1 transition ${dc.previewBg === g.bg ? "border-primary" : "border-border hover:border-primary/50"
+                                                            }`}
                                                     >
                                                         <div className={`bg-gradient-to-r ${g.bg} rounded h-6`} />
                                                         <div className="text-[9px] text-muted text-center mt-0.5">{g.label}</div>
@@ -1148,12 +1141,11 @@ export default function DraftsPage() {
                                         </div>
 
                                         <div
-                                            className={`relative rounded-lg overflow-hidden ${
-                                                dc.dimensions === "728\u00d790" ? "h-20"
-                                                : dc.dimensions === "160\u00d7600" ? "h-56"
-                                                : dc.dimensions === "300\u00d7600" ? "h-56"
-                                                : "h-36"
-                                            } ${!dc.imageUrl ? `bg-gradient-to-r ${dc.previewBg}` : ""}`}
+                                            className={`relative rounded-lg overflow-hidden ${dc.dimensions === "728\u00d790" ? "h-20"
+                                                    : dc.dimensions === "160\u00d7600" ? "h-56"
+                                                        : dc.dimensions === "300\u00d7600" ? "h-56"
+                                                            : "h-36"
+                                                } ${!dc.imageUrl ? `bg-gradient-to-r ${dc.previewBg}` : ""}`}
                                             style={{ cursor: dc.imageUrl ? "grab" : undefined, touchAction: "none" }}
                                             onPointerDown={(e) => { if (dc.imageUrl) handleDragStart(e, draft.id, dc); }}
                                             onPointerMove={(e) => { if (dc.imageUrl) handleDragMove(e, draft.id); }}
@@ -1294,17 +1286,15 @@ export default function DraftsPage() {
                             <button
                                 key={f.key}
                                 onClick={() => setFilter(f.key)}
-                                className={`text-xs px-3 py-1.5 rounded-md transition flex items-center gap-1.5 font-medium ${
-                                    filter === f.key
+                                className={`text-xs px-3 py-1.5 rounded-md transition flex items-center gap-1.5 font-medium ${filter === f.key
                                         ? "bg-primary text-white shadow-sm"
                                         : "text-muted hover:text-foreground"
-                                }`}
+                                    }`}
                             >
                                 {f.icon && <f.icon className="w-3 h-3" />}
                                 {f.label}
-                                <span className={`text-[10px] px-1 py-0.5 rounded ${
-                                    filter === f.key ? "bg-white/20" : "bg-muted/10"
-                                }`}>
+                                <span className={`text-[10px] px-1 py-0.5 rounded ${filter === f.key ? "bg-white/20" : "bg-muted/10"
+                                    }`}>
                                     {f.count}
                                 </span>
                             </button>
@@ -1363,17 +1353,15 @@ export default function DraftsPage() {
                                 <div className="flex items-start justify-between gap-4 mb-3">
                                     <div className="flex items-center gap-2 flex-wrap">
                                         <span
-                                            className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                                                draft.status === "ready"
+                                            className={`text-xs font-medium px-2 py-0.5 rounded-full ${draft.status === "ready"
                                                     ? "bg-success/10 text-success"
                                                     : "bg-muted/10 text-muted"
-                                            }`}
+                                                }`}
                                         >
                                             {draft.status === "ready" ? "Ready to go live" : "Draft"}
                                         </span>
-                                        <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${
-                                            draft.type === "text" ? "bg-blue-100 text-blue-700" : "bg-orange-100 text-orange-700"
-                                        }`}>
+                                        <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${draft.type === "text" ? "bg-blue-100 text-blue-700" : "bg-orange-100 text-orange-700"
+                                            }`}>
                                             {draft.type === "text" ? (
                                                 <><FileText className="w-3 h-3" /> Text Ad</>
                                             ) : (
@@ -1424,11 +1412,10 @@ export default function DraftsPage() {
                                                 {draft.versions.map((version) => (
                                                     <div
                                                         key={version.versionId}
-                                                        className={`rounded-lg border p-3 transition ${
-                                                            version.isActive
+                                                        className={`rounded-lg border p-3 transition ${version.isActive
                                                                 ? "border-primary bg-primary/5"
                                                                 : "border-border bg-sidebar hover:border-primary/30"
-                                                        }`}
+                                                            }`}
                                                     >
                                                         <div className="flex items-center justify-between mb-2">
                                                             <div className="flex items-center gap-2">
@@ -1507,11 +1494,10 @@ export default function DraftsPage() {
                                     <button
                                         onClick={() => handleRegenerate(draft.id)}
                                         disabled={isRegenerating}
-                                        className={`text-xs border rounded-lg px-3 py-1.5 transition flex items-center gap-1.5 font-medium ${
-                                            isRegenerating
+                                        className={`text-xs border rounded-lg px-3 py-1.5 transition flex items-center gap-1.5 font-medium ${isRegenerating
                                                 ? "border-primary/30 text-primary/50 cursor-wait"
                                                 : "border-primary/50 text-primary hover:bg-primary/5 hover:border-primary"
-                                        }`}
+                                            }`}
                                     >
                                         <RefreshCw className={`w-3 h-3 ${isRegenerating ? "animate-spin" : ""}`} />
                                         {isRegenerating ? "Generating..." : "Regenerate"}

@@ -80,10 +80,10 @@ export default function OnboardingPage() {
                             <div className="flex items-center gap-2">
                                 <div
                                     className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep > step.id
-                                            ? "bg-success text-white"
-                                            : currentStep === step.id
-                                                ? "bg-primary text-white"
-                                                : "bg-border text-muted"
+                                        ? "bg-success text-white"
+                                        : currentStep === step.id
+                                            ? "bg-primary text-white"
+                                            : "bg-border text-muted"
                                         }`}
                                 >
                                     {currentStep > step.id ? (
@@ -288,8 +288,8 @@ export default function OnboardingPage() {
                             {/* Upload zone */}
                             <div
                                 className={`border-2 border-dashed rounded-xl p-8 text-center transition cursor-pointer ${uploaded
-                                        ? "border-success bg-success/5"
-                                        : "border-border hover:border-primary"
+                                    ? "border-success bg-success/5"
+                                    : "border-border hover:border-primary"
                                     }`}
                                 onClick={!uploaded ? handleUpload : undefined}
                             >

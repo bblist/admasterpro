@@ -590,9 +590,8 @@ function IndustryDropdown({ value, onChange }: { value: string; onChange: (v: st
                                 <button
                                     key={ind}
                                     onClick={() => { onChange(ind); setOpen(false); setSearch(""); }}
-                                    className={`w-full text-left px-3 py-2 text-sm hover:bg-primary/5 transition flex items-center justify-between ${
-                                        value === ind ? "bg-primary/10 text-primary font-medium" : "text-foreground"
-                                    }`}
+                                    className={`w-full text-left px-3 py-2 text-sm hover:bg-primary/5 transition flex items-center justify-between ${value === ind ? "bg-primary/10 text-primary font-medium" : "text-foreground"
+                                        }`}
                                 >
                                     <span>{ind}</span>
                                     {value === ind && <Check className="w-3.5 h-3.5 text-primary" />}
@@ -891,18 +890,16 @@ export default function KnowledgeBasePage() {
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                            activeTab === tab.id
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === tab.id
                                 ? "bg-primary text-white shadow-md shadow-primary/25 ring-1 ring-primary/30"
                                 : "text-muted hover:text-foreground hover:bg-card/50"
-                        }`}
+                            }`}
                     >
                         {tab.icon}
                         {tab.label}
                         {tab.count > 0 && (
-                            <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                                activeTab === tab.id ? "bg-white/20 text-white" : "bg-border text-muted"
-                            }`}>
+                            <span className={`text-xs px-1.5 py-0.5 rounded-full ${activeTab === tab.id ? "bg-white/20 text-white" : "bg-border text-muted"
+                                }`}>
                                 {tab.count}
                             </span>
                         )}
@@ -919,11 +916,10 @@ export default function KnowledgeBasePage() {
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
                         onClick={() => fileInputRef.current?.click()}
-                        className={`relative overflow-hidden border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all ${
-                            isDragging
+                        className={`relative overflow-hidden border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all ${isDragging
                                 ? "border-primary bg-primary/5 scale-[1.01] shadow-lg shadow-primary/10"
                                 : "border-primary/30 bg-gradient-to-br from-primary/[0.03] via-blue-500/[0.03] to-purple-500/[0.03] hover:border-primary/50 hover:shadow-md"
-                        }`}
+                            }`}
                     >
                         <input
                             ref={fileInputRef}

@@ -10,6 +10,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { chatLimiter, checkRateLimit } from "@/lib/rate-limit";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
@@ -536,6 +537,9 @@ async function callAnthropic(body: ChatRequest) {
 }
 
 export async function POST(req: NextRequest) {
+    const rateLimited = checkRateLimit(req, chatLimiter);
+    if (rateLimited) return rateLimited;
+
     try {
         const body: ChatRequest = await req.json();
 
@@ -636,7 +640,7 @@ export async function POST(req: NextRequest) {
                 const costConfig = AI_COSTS[modelKey];
                 const costUsd = costConfig
                     ? (result.tokens.prompt / 1000) * costConfig.inputPer1kTokens +
-                      (result.tokens.completion / 1000) * costConfig.outputPer1kTokens
+                    (result.tokens.completion / 1000) * costConfig.outputPer1kTokens
                     : 0;
 
                 await Promise.all([

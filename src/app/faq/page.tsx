@@ -348,11 +348,10 @@ export default function PublicFAQPage() {
                     <div className="flex gap-2 flex-wrap mb-8">
                         <button
                             onClick={() => setActiveCategory(null)}
-                            className={`text-xs px-3 py-1.5 rounded-full transition font-medium ${
-                                !activeCategory
+                            className={`text-xs px-3 py-1.5 rounded-full transition font-medium ${!activeCategory
                                     ? "bg-primary text-white"
                                     : "border border-border text-muted hover:border-primary hover:text-primary"
-                            }`}
+                                }`}
                         >
                             All ({totalQuestions})
                         </button>
@@ -360,11 +359,10 @@ export default function PublicFAQPage() {
                             <button
                                 key={cat.label}
                                 onClick={() => setActiveCategory(activeCategory === cat.label ? null : cat.label)}
-                                className={`text-xs px-3 py-1.5 rounded-full transition font-medium flex items-center gap-1.5 ${
-                                    activeCategory === cat.label
+                                className={`text-xs px-3 py-1.5 rounded-full transition font-medium flex items-center gap-1.5 ${activeCategory === cat.label
                                         ? "bg-primary text-white"
                                         : "border border-border text-muted hover:border-primary hover:text-primary"
-                                }`}
+                                    }`}
                             >
                                 <cat.icon className="w-3 h-3" />
                                 {cat.label} ({cat.items.length})

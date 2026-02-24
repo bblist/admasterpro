@@ -9,10 +9,14 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { transcribeLimiter, checkRateLimit } from "@/lib/rate-limit";
 
 const DEEPGRAM_API_KEY = process.env.DEEPGRAM_API_KEY;
 
 export async function POST(req: NextRequest) {
+    const rateLimited = checkRateLimit(req, transcribeLimiter);
+    if (rateLimited) return rateLimited;
+
     try {
         const formData = await req.formData();
         const file = formData.get("file") as File | null;

@@ -1,128 +1,314 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<title>AdMaster Pro — Design Documentation</title>
-<style>
-  @page { margin: 0.75in; }
-  body { font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; color: #1a1a1a; max-width: 750px; margin: 0 auto; padding: 40px; line-height: 1.6; font-size: 14px; }
-  .header { display: flex; align-items: center; gap: 16px; margin-bottom: 8px; }
-  .logo { width: 48px; height: 48px; background: #2563eb; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: bold; }
-  .header h1 { margin: 0; font-size: 28px; color: #111; }
-  .subtitle { color: #666; font-size: 14px; margin: 0 0 24px 0; }
-  .url { color: #2563eb; text-decoration: none; }
-  hr { border: none; border-top: 2px solid #e5e7eb; margin: 20px 0; }
-  h2 { font-size: 16px; color: #2563eb; margin: 24px 0 8px 0; text-transform: uppercase; letter-spacing: 0.5px; }
-  .section { margin-bottom: 16px; }
-  .flow { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 12px 0; }
-  .flow-steps { display: flex; align-items: center; flex-wrap: wrap; gap: 0; }
-  .step { background: #2563eb; color: white; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; }
-  .arrow { color: #94a3b8; font-size: 20px; margin: 0 6px; }
-  table { width: 100%; border-collapse: collapse; margin: 12px 0; }
-  th { background: #f1f5f9; text-align: left; padding: 8px 12px; font-size: 13px; color: #475569; border-bottom: 2px solid #e2e8f0; }
-  td { padding: 8px 12px; font-size: 13px; border-bottom: 1px solid #f1f5f9; }
-  .badge { display: inline-block; background: #dbeafe; color: #1d4ed8; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; margin: 2px; }
-  .ai-badge { background: #f0fdf4; color: #166534; }
-  .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #999; }
-  ul { margin: 4px 0; padding-left: 20px; }
-  li { margin: 4px 0; font-size: 13px; }
-</style>
+    <meta charset="UTF-8">
+    <title>AdMaster Pro — Design Documentation</title>
+    <style>
+        @page {
+            margin: 0.75in;
+        }
+
+        body {
+            font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+            color: #1a1a1a;
+            max-width: 750px;
+            margin: 0 auto;
+            padding: 40px;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 8px;
+        }
+
+        .logo {
+            width: 48px;
+            height: 48px;
+            background: #2563eb;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            color: #111;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+            margin: 0 0 24px 0;
+        }
+
+        .url {
+            color: #2563eb;
+            text-decoration: none;
+        }
+
+        hr {
+            border: none;
+            border-top: 2px solid #e5e7eb;
+            margin: 20px 0;
+        }
+
+        h2 {
+            font-size: 16px;
+            color: #2563eb;
+            margin: 24px 0 8px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .section {
+            margin-bottom: 16px;
+        }
+
+        .flow {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 12px 0;
+        }
+
+        .flow-steps {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0;
+        }
+
+        .step {
+            background: #2563eb;
+            color: white;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .arrow {
+            color: #94a3b8;
+            font-size: 20px;
+            margin: 0 6px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+        }
+
+        th {
+            background: #f1f5f9;
+            text-align: left;
+            padding: 8px 12px;
+            font-size: 13px;
+            color: #475569;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        td {
+            padding: 8px 12px;
+            font-size: 13px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #dbeafe;
+            color: #1d4ed8;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin: 2px;
+        }
+
+        .ai-badge {
+            background: #f0fdf4;
+            color: #166534;
+        }
+
+        .footer {
+            margin-top: 32px;
+            padding-top: 16px;
+            border-top: 1px solid #e5e7eb;
+            font-size: 11px;
+            color: #999;
+        }
+
+        ul {
+            margin: 4px 0;
+            padding-left: 20px;
+        }
+
+        li {
+            margin: 4px 0;
+            font-size: 13px;
+        }
+    </style>
 </head>
+
 <body>
 
-<div class="header">
-  <div class="logo">⚡</div>
-  <div>
-    <h1>AdMaster Pro</h1>
-  </div>
-</div>
-<p class="subtitle">AI-First Google Ads Management Platform &nbsp;|&nbsp; <a class="url" href="https://admasterai.nobleblocks.com">admasterai.nobleblocks.com</a></p>
+    <div class="header">
+        <div class="logo">⚡</div>
+        <div>
+            <h1>AdMaster Pro</h1>
+        </div>
+    </div>
+    <p class="subtitle">AI-First Google Ads Management Platform &nbsp;|&nbsp; <a class="url"
+            href="https://admasterai.nobleblocks.com">admasterai.nobleblocks.com</a></p>
 
-<hr>
+    <hr>
 
-<div class="section">
-<h2>What is AdMaster Pro?</h2>
-<p>AdMaster Pro is an AI-first platform that helps businesses manage their Google Ads through a conversational AI agent. Instead of navigating complex dashboards, users simply tell the AI what they need — "create a search campaign for my bakery" — and the AI handles campaign creation, keyword research, ad copy, bidding, and optimization. Everything is pushed directly to the user's Google Ads account via the API.</p>
-</div>
+    <div class="section">
+        <h2>What is AdMaster Pro?</h2>
+        <p>AdMaster Pro is an AI-first platform that helps businesses manage their Google Ads through a conversational
+            AI agent. Instead of navigating complex dashboards, users simply tell the AI what they need — "create a
+            search campaign for my bakery" — and the AI handles campaign creation, keyword research, ad copy, bidding,
+            and optimization. Everything is pushed directly to the user's Google Ads account via the API.</p>
+    </div>
 
-<div class="section">
-<h2>Core AI Capabilities</h2>
-<ul>
-  <li><strong>Conversational Campaign Builder</strong> — Users describe their goals in plain English; the AI creates full campaign structures</li>
-  <li><strong>AI Ad Copy Generation</strong> — Generates responsive search ads, display ads, and headlines that comply with Google Ads policies</li>
-  <li><strong>Smart Keyword Research</strong> — AI suggests keywords, match types, and negative keywords based on the user's business</li>
-  <li><strong>Performance Analysis</strong> — AI reads campaign data and provides optimization recommendations in plain language</li>
-  <li><strong>Budget & Bid Optimization</strong> — AI-driven recommendations for bid strategies and budget allocation</li>
-  <li><strong>Policy Compliance</strong> — All AI-generated content is checked against Google Ads policies before publishing</li>
-</ul>
-</div>
+    <div class="section">
+        <h2>Core AI Capabilities</h2>
+        <ul>
+            <li><strong>Conversational Campaign Builder</strong> — Users describe their goals in plain English; the AI
+                creates full campaign structures</li>
+            <li><strong>AI Ad Copy Generation</strong> — Generates responsive search ads, display ads, and headlines
+                that comply with Google Ads policies</li>
+            <li><strong>Smart Keyword Research</strong> — AI suggests keywords, match types, and negative keywords based
+                on the user's business</li>
+            <li><strong>Performance Analysis</strong> — AI reads campaign data and provides optimization recommendations
+                in plain language</li>
+            <li><strong>Budget & Bid Optimization</strong> — AI-driven recommendations for bid strategies and budget
+                allocation</li>
+            <li><strong>Policy Compliance</strong> — All AI-generated content is checked against Google Ads policies
+                before publishing</li>
+        </ul>
+    </div>
 
-<div class="section">
-<h2>User Flow</h2>
-<div class="flow">
-  <div class="flow-steps">
-    <div class="step">Sign in with Google</div>
-    <span class="arrow">→</span>
-    <div class="step">Connect Ads Account</div>
-    <span class="arrow">→</span>
-    <div class="step">Chat with AI Agent</div>
-    <span class="arrow">→</span>
-    <div class="step">AI Creates Campaigns</div>
-    <span class="arrow">→</span>
-    <div class="step">Published via API</div>
-  </div>
-</div>
-<p>Users authenticate via Google OAuth 2.0, which grants access to their Google Ads account. The AI agent reads their existing campaigns and account data, then helps them create new campaigns, optimize existing ones, and monitor performance — all through a chat interface. Changes are pushed to Google Ads in real time via the API.</p>
-</div>
+    <div class="section">
+        <h2>User Flow</h2>
+        <div class="flow">
+            <div class="flow-steps">
+                <div class="step">Sign in with Google</div>
+                <span class="arrow">→</span>
+                <div class="step">Connect Ads Account</div>
+                <span class="arrow">→</span>
+                <div class="step">Chat with AI Agent</div>
+                <span class="arrow">→</span>
+                <div class="step">AI Creates Campaigns</div>
+                <span class="arrow">→</span>
+                <div class="step">Published via API</div>
+            </div>
+        </div>
+        <p>Users authenticate via Google OAuth 2.0, which grants access to their Google Ads account. The AI agent reads
+            their existing campaigns and account data, then helps them create new campaigns, optimize existing ones, and
+            monitor performance — all through a chat interface. Changes are pushed to Google Ads in real time via the
+            API.</p>
+    </div>
 
-<div class="section">
-<h2>Google Ads API Usage</h2>
-<table>
-  <tr><th>API Resource</th><th>Operations</th><th>Purpose</th></tr>
-  <tr><td>Campaigns</td><td>Create, Read, Update, Remove</td><td>AI creates and manages campaigns based on user goals</td></tr>
-  <tr><td>Ad Groups</td><td>Create, Read, Update, Remove</td><td>Organize ads and keywords within campaigns</td></tr>
-  <tr><td>Ads</td><td>Create, Read, Update, Remove</td><td>AI generates ad copy (RSA, RDA) and publishes</td></tr>
-  <tr><td>Keywords</td><td>Create, Read, Update, Remove</td><td>AI suggests and manages keyword lists</td></tr>
-  <tr><td>Bidding</td><td>Read, Update</td><td>AI optimizes bid strategies and CPC</td></tr>
-  <tr><td>Reports</td><td>Read</td><td>Pull performance metrics for AI analysis</td></tr>
-  <tr><td>Extensions</td><td>Create, Read, Update</td><td>Sitelinks, callouts, structured snippets</td></tr>
-  <tr><td>Audiences</td><td>Read, Update</td><td>Targeting recommendations from AI</td></tr>
-</table>
-</div>
+    <div class="section">
+        <h2>Google Ads API Usage</h2>
+        <table>
+            <tr>
+                <th>API Resource</th>
+                <th>Operations</th>
+                <th>Purpose</th>
+            </tr>
+            <tr>
+                <td>Campaigns</td>
+                <td>Create, Read, Update, Remove</td>
+                <td>AI creates and manages campaigns based on user goals</td>
+            </tr>
+            <tr>
+                <td>Ad Groups</td>
+                <td>Create, Read, Update, Remove</td>
+                <td>Organize ads and keywords within campaigns</td>
+            </tr>
+            <tr>
+                <td>Ads</td>
+                <td>Create, Read, Update, Remove</td>
+                <td>AI generates ad copy (RSA, RDA) and publishes</td>
+            </tr>
+            <tr>
+                <td>Keywords</td>
+                <td>Create, Read, Update, Remove</td>
+                <td>AI suggests and manages keyword lists</td>
+            </tr>
+            <tr>
+                <td>Bidding</td>
+                <td>Read, Update</td>
+                <td>AI optimizes bid strategies and CPC</td>
+            </tr>
+            <tr>
+                <td>Reports</td>
+                <td>Read</td>
+                <td>Pull performance metrics for AI analysis</td>
+            </tr>
+            <tr>
+                <td>Extensions</td>
+                <td>Create, Read, Update</td>
+                <td>Sitelinks, callouts, structured snippets</td>
+            </tr>
+            <tr>
+                <td>Audiences</td>
+                <td>Read, Update</td>
+                <td>Targeting recommendations from AI</td>
+            </tr>
+        </table>
+    </div>
 
-<div class="section">
-<h2>Technology Stack</h2>
-<div>
-  <span class="badge ai-badge">GPT-4o</span>
-  <span class="badge ai-badge">Claude AI</span>
-  <span class="badge">Next.js 14</span>
-  <span class="badge">TypeScript</span>
-  <span class="badge">React 18</span>
-  <span class="badge">Google OAuth 2.0</span>
-  <span class="badge">Google Ads API</span>
-  <span class="badge">AWS Lightsail</span>
-</div>
-</div>
+    <div class="section">
+        <h2>Technology Stack</h2>
+        <div>
+            <span class="badge ai-badge">GPT-4o</span>
+            <span class="badge ai-badge">Claude AI</span>
+            <span class="badge">Next.js 14</span>
+            <span class="badge">TypeScript</span>
+            <span class="badge">React 18</span>
+            <span class="badge">Google OAuth 2.0</span>
+            <span class="badge">Google Ads API</span>
+            <span class="badge">AWS Lightsail</span>
+        </div>
+    </div>
 
-<div class="section">
-<h2>Authentication & Security</h2>
-<ul>
-  <li><strong>OAuth 2.0</strong> with offline access — refresh tokens stored securely for ongoing API access</li>
-  <li><strong>Scopes requested:</strong> openid, email, profile, https://www.googleapis.com/auth/adwords</li>
-  <li>All API calls are made on behalf of authenticated users — no shared or pooled access</li>
-  <li>HTTPS/TLS encryption on all endpoints</li>
-  <li>Each API call corresponds to a user-initiated action on the platform</li>
-</ul>
-</div>
+    <div class="section">
+        <h2>Authentication & Security</h2>
+        <ul>
+            <li><strong>OAuth 2.0</strong> with offline access — refresh tokens stored securely for ongoing API access
+            </li>
+            <li><strong>Scopes requested:</strong> openid, email, profile, https://www.googleapis.com/auth/adwords</li>
+            <li>All API calls are made on behalf of authenticated users — no shared or pooled access</li>
+            <li>HTTPS/TLS encryption on all endpoints</li>
+            <li>Each API call corresponds to a user-initiated action on the platform</li>
+        </ul>
+    </div>
 
-<div class="section">
-<h2>Business Model</h2>
-<p>Subscription-based SaaS. Users pay a monthly fee to access the platform. We do not take a percentage of ad spend. Each user manages their own Google Ads account — we are a tool, not an agency.</p>
-</div>
+    <div class="section">
+        <h2>Business Model</h2>
+        <p>Subscription-based SaaS. Users pay a monthly fee to access the platform. We do not take a percentage of ad
+            spend. Each user manages their own Google Ads account — we are a tool, not an agency.</p>
+    </div>
 
-<div class="footer">
-  AdMaster Pro &nbsp;|&nbsp; admasterai.nobleblocks.com &nbsp;|&nbsp; NobleBlocks LLC &nbsp;|&nbsp; Document Date: February 2026
-</div>
+    <div class="footer">
+        AdMaster Pro &nbsp;|&nbsp; admasterai.nobleblocks.com &nbsp;|&nbsp; NobleBlocks LLC &nbsp;|&nbsp; Document Date:
+        February 2026
+    </div>
 
 </body>
+
 </html>

@@ -144,7 +144,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
     const setActiveBusiness = useCallback((id: string) => {
         setActiveId(id);
         // Persist in localStorage
-        try { localStorage.setItem("admasterpro-active-business", id); } catch {}
+        try { localStorage.setItem("admasterpro-active-business", id); } catch { }
     }, []);
 
     const addBusiness = useCallback(async (name: string, website?: string, industry?: string): Promise<BusinessProfile | null> => {
@@ -183,7 +183,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
         try {
             const stored = localStorage.getItem("admasterpro-active-business");
             if (stored) setActiveId(stored);
-        } catch {}
+        } catch { }
     }, []);
 
     return (

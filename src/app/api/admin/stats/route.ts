@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
             ? await prisma.user.findMany({
                 where: { id: { in: userIds } },
                 include: { subscription: true },
-              })
+            })
             : [];
         const userMap = new Map<string, (typeof usersForCosts)[number]>();
         for (const u of usersForCosts) userMap.set(u.id, u);

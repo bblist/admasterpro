@@ -246,7 +246,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                 if (data?.userName) setUserName(data.userName);
                 if (data?.userPicture) setUserPicture(data.userPicture);
             })
-            .catch(() => {});
+            .catch(() => { });
     }, []);
 
     const unreadCount = notifications.filter((n) => !n.read).length;

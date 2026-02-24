@@ -20,14 +20,14 @@ export type WSStatus = "connecting" | "connected" | "disconnected" | "error";
 
 export interface WSMessage {
     type:
-        | "chat_response"
-        | "chat_stream"
-        | "chat_done"
-        | "campaign_update"
-        | "budget_alert"
-        | "competitor_alert"
-        | "error"
-        | "pong";
+    | "chat_response"
+    | "chat_stream"
+    | "chat_done"
+    | "campaign_update"
+    | "budget_alert"
+    | "competitor_alert"
+    | "error"
+    | "pong";
     payload: Record<string, unknown>;
     timestamp: string;
     model?: "gpt-4o" | "claude-4.6";
