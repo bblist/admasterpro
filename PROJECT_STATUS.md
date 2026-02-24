@@ -19,7 +19,7 @@
 | AI Models | GPT-4o (primary), Claude (fallback) |
 | Hosting | AWS Lightsail (2GB RAM, Static IP) |
 | Process Manager | PM2 |
-| Reverse Proxy | Caddy (auto SSL via Let's Encrypt) |
+| Reverse Proxy | Nginx + Certbot (Let's Encrypt SSL) |
 | Domain | admasterai.nobleblocks.com |
 
 ---
@@ -41,7 +41,7 @@
 | Notification Bell | ✅ Live | In-app dropdown with read/unread/dismiss |
 | Multi-Business Switching | ✅ Live | Context-isolated per business |
 | WebSocket Server | ✅ Live | Real-time notifications, campaign updates, budget alerts |
-| SSL/HTTPS | ✅ Live | Auto-renewing via Caddy |
+| SSL/HTTPS | ✅ Live | Auto-renewing via Certbot (Nginx) |
 
 ## Waiting On
 
@@ -62,7 +62,7 @@
 | `/api/auth/callback` | GET | Google OAuth flow (openid + email + profile + adwords scope) | ✅ Live |
 | `/api/stripe` | POST | Stripe webhook for billing | ✅ Route exists (needs Stripe keys) |
 | `/api/ws` | GET | WebSocket status/health check | ✅ Live |
-| `wss://.../ws` | WS | WebSocket real-time updates | ✅ Live (PM2 + Caddy) |
+| `wss://.../ws` | WS | WebSocket real-time updates | ✅ Live (PM2 + Nginx) |
 
 ---
 
@@ -240,6 +240,6 @@ db12b13 Go live: real AI integration, demo migration, humanized responses
 2. **API keys** are ONLY in `.env` / `.env.local` — never in code or docs.
 3. **The AI system prompt** is in `src/app/api/chat/route.ts` (~10K chars, full Google Ads ecosystem).
 4. **Demo pages** at `/dashboard/demo/*` contain sample data. Live pages show empty states until Google Ads API is connected.
-5. **Caddy** handles SSL + reverse proxy (not Nginx — some old docs reference Nginx but we switched to Caddy).
+5. **Nginx** handles SSL (via Certbot/Let's Encrypt) + reverse proxy. Config at `/etc/nginx/sites-enabled/admasterpro`.
 6. **Build takes ~2-3 min** on the 2GB Lightsail instance.
-7. **WebSocket server** runs as separate PM2 process on port 3001, Caddy proxies `/ws` to it.
+7. **WebSocket server** runs as separate PM2 process on port 3001, Nginx proxies `/ws` to it.
