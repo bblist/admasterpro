@@ -1,126 +1,165 @@
 # AdMaster Pro — Project Status
 
-**Last Updated:** February 24, 2026
-**Live URL:** https://admasterai.nobleblocks.com
-**Repository:** https://github.com/bblist/admasterpro
-**Company:** NobleBlocks LLC
-**Latest Commit:** `0c77285` (Multi-tenant SaaS auth)
+**Live URL:** https://admasterai.nobleblocks.com  
+**Repository:** https://github.com/bblist/admasterpro  
+**Stack:** Next.js 14 · TypeScript · Prisma 5 · PostgreSQL · Stripe · OpenAI/Claude · AWS Lightsail  
+**Last Updated:** January 2025  
+**Latest Commit:** `fdd2343` (Phase 11: Full site audit + 18 bug fixes)
 
 ---
 
-## Architecture Overview
+## Current State: Ready for User Testing
 
-| Component | Technology |
-|-----------|-----------|
-| Framework | Next.js 14 (App Router) |
-| Language | TypeScript |
-| UI | React 18, Tailwind CSS v3 |
-| Icons | lucide-react |
-| AI Models | GPT-4o (primary), Claude (fallback) |
-| Hosting | AWS Lightsail (2GB RAM, Static IP) |
-| Process Manager | PM2 |
-| Reverse Proxy | Nginx + Certbot (Let's Encrypt SSL) |
-| Domain | admasterai.nobleblocks.com |
+The platform is live and functional. Users can sign up (Google OAuth or email), explore the dashboard, chat with the AI assistant, and subscribe to paid plans via Stripe (live mode).
 
 ---
 
-## What's Working RIGHT NOW (Live in Production)
+## Infrastructure
 
-| Feature | Status | Details |
-|---------|--------|---------|
-| Google OAuth Sign-In | ✅ Live | Users sign in with Google, gets Ads API scope |
-| Email/Password Sign-In | ✅ Live | Demo mode (cookie-based, needs DB for production) |
-| AI Chat (GPT-4o) | ✅ Live | Full Google Ads expert agent, 10K system prompt |
-| AI Chat (Claude fallback) | ✅ Live | Auto-fallback when GPT-4o fails |
-| Knowledge Base | ✅ Live | Upload files, edit content, brand profile, industry dropdown |
-| Video Transcription | ✅ Live | Deepgram Nova-2 model, real API key configured |
-| Campaign Planning | ✅ Live | AI creates full campaign structures on request |
-| Keyword Research | ✅ Live | AI suggests keywords, match types, negatives |
-| Ad Copy Generation | ✅ Live | RSA, RDA, all extension types |
-| Policy Compliance | ✅ Live | Built into every AI response |
-| Notification Bell | ✅ Live | In-app dropdown with read/unread/dismiss |
-| Multi-Business Switching | ✅ Live | Context-isolated per business |
-| WebSocket Server | ✅ Live | Real-time notifications, campaign updates, budget alerts |
-| SSL/HTTPS | ✅ Live | Auto-renewing via Certbot (Nginx) |
+| Component | Status | Details |
+|-----------|--------|---------|
+| Domain & SSL | ✅ Live | admasterai.nobleblocks.com via Let's Encrypt |
+| Web Server | ✅ Running | PM2 → Next.js on port 3000 |
+| WebSocket | ✅ Running | PM2 → ws-server on port 3001 |
+| Nginx | ✅ Configured | Reverse proxy with SSL termination |
+| PostgreSQL | ✅ Running | localhost:5432, 8 tables deployed |
+| Stripe | ✅ Live Mode | Products, prices, webhook configured |
+| Google OAuth | ✅ Working | Sign-in + Google Ads scope |
+| Route Protection | ✅ Active | Middleware guards /dashboard/* and /admin/* |
 
-## Waiting On
+### Server Details
+| Item | Value |
+|------|-------|
+| Instance | AWS Lightsail `admasterpro-v2` |
+| Spec | 2GB RAM, 2 vCPU, 60GB SSD |
+| Static IP | `3.225.249.236` |
+| OS | Ubuntu 24.04 LTS |
+| SSH Key | `~/.ssh/lightsail-admasterpro.pem` |
+| SSH | `ssh -i ~/.ssh/lightsail-admasterpro.pem ubuntu@3.225.249.236` |
+| App Dir (server) | `/home/ubuntu/admasterpro` |
+| App Dir (local) | `/Users/bblist/admasterpro` |
 
-| Item | Status | ETA |
-|------|--------|-----|
-| Google Ads API Basic Access | ⏳ Applied | 2-5 business days |
-| Developer Token | ✅ Received | Test tier until Basic approved |
-| Direct Ads Account Read/Write | ⏳ Blocked by above | After approval |
+### Deploy Command
+```bash
+ssh -i ~/.ssh/lightsail-admasterpro.pem ubuntu@3.225.249.236 'cd /home/ubuntu/admasterpro && git pull origin main && npm run build 2>&1 | tail -20 && pm2 restart admasterpro'
+```
 
 ---
 
-## API Endpoints
+## Database (Prisma 5 + PostgreSQL)
 
+8 models deployed and active:
+
+| Model | Purpose |
+|-------|---------|
+| `User` | email, name, picture, googleId, authMethod, refreshToken |
+| `Subscription` | plan, status, limits, Stripe IDs, bonus tokens |
+| `Usage` | Monthly AI message counters |
+| `ChatMessage` | Conversation history per user |
+| `CampaignDraft` | AI-generated campaign drafts |
+| `Business` | Multi-business support |
+| `KnowledgeBaseItem` | Uploaded brand assets |
+| `TokenPurchase` | Top-up purchase records |
+
+---
+
+## Stripe Products (Live Mode)
+
+| Product | Price ID | Amount |
+|---------|----------|--------|
+| Starter Plan | `price_1T4KGUEBVDcwowWrxjY5BtgE` | $49/mo |
+| Pro Plan | `price_1T4KGlEBVDcwowWr4H1rrdh3` | $149/mo |
+| Top-up 50 msgs | `price_1T4KH6EBVDcwowWraEGE0LC7` | $30 |
+| Top-up 100 msgs | `price_1T4KH6EBVDcwowWrktI2ATKR` | $50 |
+| Top-up 250 msgs | `price_1T4KH7EBVDcwowWrK2jIAjfO` | $100 |
+
+Webhook endpoint active with signature verification.
+
+---
+
+## Pages (39 total)
+
+### Public Pages
+| Page | Status | Notes |
+|------|--------|-------|
+| `/` (Landing) | ✅ | Marketing page with features, pricing preview, testimonials |
+| `/login` | ✅ | Google OAuth + email sign-in (httpOnly cookies) |
+| `/pricing` | ✅ | 3 tiers + top-ups, Stripe checkout with real user session |
+| `/onboarding` | ⚠️ Demo | Guided flow — doesn't persist data yet |
+| `/privacy` | ✅ | Privacy policy |
+| `/terms` | ✅ | Terms of service |
+
+### Dashboard (Auth Required via Middleware)
+| Page | Status | Notes |
+|------|--------|-------|
+| `/dashboard` | ✅ | Welcome page with 3-step getting started guide |
+| `/dashboard/chat` | ✅ | AI assistant (GPT-4o primary, Claude fallback) |
+| `/dashboard/campaigns` | ⚠️ | Empty state — needs Google Ads connection |
+| `/dashboard/keywords` | ⚠️ | Empty state — needs Google Ads connection |
+| `/dashboard/drafts` | ⚠️ | Empty state — needs Google Ads connection |
+| `/dashboard/shopping` | ⚠️ | Empty state — retail businesses only |
+| `/dashboard/knowledge-base` | ✅ | Full UI with sample data, upload, editing |
+| `/dashboard/settings` | ✅ | Plan/billing from DB, auto-pilot, notifications |
+| `/dashboard/faq` | ✅ | 30+ questions, correct plan names (Free/Starter/Pro) |
+| `/dashboard/demo/examples` | ✅ | AI example showcases |
+| `/dashboard/demo/*` | ✅ | Demo campaigns, keywords, drafts, shopping |
+
+### Admin (Auth + ADMIN_EMAIL Required)
+| Page | Status | Notes |
+|------|--------|-------|
+| `/admin` | ✅ | Overview with real DB stats |
+| `/admin/users` | ⚠️ | Hardcoded demo data (will pull from DB later) |
+| `/admin/revenue` | ⚠️ | Hardcoded demo data |
+| `/admin/ai-costs` | ⚠️ | Hardcoded demo data |
+| `/admin/analytics` | ⚠️ | Hardcoded demo data |
+
+### API Routes
 | Route | Method | Purpose | Status |
 |-------|--------|---------|--------|
-| `/api/chat` | POST | AI chat — GPT-4o primary, Claude fallback | ✅ Live |
-| `/api/transcribe` | POST | Deepgram video/audio transcription | ✅ Live |
-| `/api/auth/callback` | GET | Google OAuth flow (openid + email + profile + adwords scope) | ✅ Live |
-| `/api/stripe` | POST | Stripe webhook for billing | ✅ Route exists (needs Stripe keys) |
-| `/api/ws` | GET | WebSocket status/health check | ✅ Live |
-| `wss://.../ws` | WS | WebSocket real-time updates | ✅ Live (PM2 + Nginx) |
+| `/api/auth/callback` | GET | Google OAuth flow + DB persistence | ✅ |
+| `/api/auth/email` | POST | Email sign-in with httpOnly cookie + DB | ✅ |
+| `/api/auth/signout` | POST | Clears session cookie | ✅ |
+| `/api/chat` | POST | GPT-4o / Claude AI chat with usage tracking | ✅ |
+| `/api/stripe` | POST | Checkout, portal, webhook handler | ✅ |
+| `/api/subscription` | GET | Current user plan, usage, name, picture | ✅ |
+| `/api/admin/stats` | GET | Real DB stats for admin overview | ✅ |
+| `/api/transcribe` | POST | Deepgram audio/video transcription | ✅ |
 
 ---
 
-## Environment Variables (ALL configured on server + local)
+## Security
+
+| Feature | Implementation |
+|---------|---------------|
+| Route Protection | Next.js middleware redirects unauthenticated users |
+| Admin Access | Restricted to `ADMIN_EMAIL` env var |
+| Session Cookies | httpOnly, secure, sameSite=lax (7-day expiry) |
+| OAuth | Google OAuth 2.0 with refresh token storage |
+| Stripe | Webhook signature verification |
+| SSL | Let's Encrypt auto-renewing certificates |
+
+---
+
+## Environment Variables
+
+All configured on both local (`.env.local`) and server (`.env`):
 
 | Variable | Status |
 |----------|--------|
 | `OPENAI_API_KEY` | ✅ Set |
 | `ANTHROPIC_API_KEY` | ✅ Set |
 | `DEEPGRAM_API_KEY` | ✅ Set |
-| `NEXTAUTH_SECRET` | ✅ Set |
-| `NEXTAUTH_URL` | ✅ Set |
 | `GOOGLE_CLIENT_ID` | ✅ Set |
 | `GOOGLE_CLIENT_SECRET` | ✅ Set |
 | `GOOGLE_ADS_DEVELOPER_TOKEN` | ✅ Set |
-| `STRIPE_SECRET_KEY` | ❌ Not set (needs Stripe account) |
-| `STRIPE_WEBHOOK_SECRET` | ❌ Not set (needs Stripe account) |
-
-> **Storage:** Server `.env` at `/home/ubuntu/admasterpro/.env` (chmod 600). Local at `/Users/bblist/admasterpro/.env.local`. Never committed to git.
-
----
-
-## Pages & Routes
-
-### Dashboard Pages
-| Page | Route | Status |
-|------|-------|--------|
-| Dashboard Home | `/dashboard` | ✅ Live |
-| AI Chat | `/dashboard/chat` | ✅ Live (real AI) |
-| Campaigns | `/dashboard/campaigns` | ✅ Empty state (shows after Ads API connected) |
-| Keywords | `/dashboard/keywords` | ✅ Empty state (shows after Ads API connected) |
-| Ad Drafts | `/dashboard/drafts` | ✅ Empty state (shows after Ads API connected) |
-| Shopping Ads | `/dashboard/shopping` | ✅ Empty state (shows after Ads API connected) |
-| Knowledge Base | `/dashboard/knowledge-base` | ✅ Full functionality |
-| AI Examples | `/dashboard/demo/examples` | ✅ Example prompts |
-| FAQ | `/dashboard/faq` | ✅ Live |
-| Settings | `/dashboard/settings` | ✅ Live |
-
-### Demo Pages (sample data — not in main nav)
-| Page | Route |
-|------|-------|
-| Demo Campaigns | `/dashboard/demo/campaigns` |
-| Demo Keywords | `/dashboard/demo/keywords` |
-| Demo Drafts | `/dashboard/demo/drafts` |
-| Demo Shopping | `/dashboard/demo/shopping` |
-| Demo Examples | `/dashboard/demo/examples` |
-
-### Other Pages
-| Page | Route |
-|------|-------|
-| Landing Page | `/` |
-| Login | `/login` |
-| Onboarding | `/onboarding` |
-| Admin Dashboard | `/admin` |
-| Admin AI Costs | `/admin/ai-costs` |
-| Admin Analytics | `/admin/analytics` |
-| Admin Revenue | `/admin/revenue` |
-| Admin Users | `/admin/users` |
+| `DATABASE_URL` | ✅ Set (PostgreSQL) |
+| `STRIPE_SECRET_KEY` | ✅ Set (Live) |
+| `STRIPE_WEBHOOK_SECRET` | ✅ Set |
+| `NEXT_PUBLIC_STRIPE_KEY` | ✅ Set |
+| `STRIPE_STARTER_PRICE_ID` | ✅ Set |
+| `STRIPE_PRO_PRICE_ID` | ✅ Set |
+| `STRIPE_TOPUP_*_PRICE_ID` | ✅ Set (3 prices) |
+| `ADMIN_EMAIL` | ❌ **Needs to be set** |
 
 ---
 
@@ -131,115 +170,91 @@ The system prompt (~10K characters) covers the complete Google Ads ecosystem:
 - **Campaign Types:** Search, Display, Shopping, Video, PMax, App, Demand Gen, Local
 - **Ad Formats:** RSA (15 headlines + 4 descriptions), RDA, Call-Only, Video
 - **Extensions:** Sitelinks, Callouts, Structured Snippets, Call, Location, Price, Promotion, Image, Lead Form, App
-- **Bidding:** tCPA, tROAS, Maximize Conversions, Maximize Clicks, Manual CPC, eCPC, Maximize Conv Value
+- **Bidding:** tCPA, tROAS, Maximize Conversions, Maximize Clicks, Manual CPC, eCPC
 - **Optimization:** Quality Score, budget reallocation, geo targeting, dayparting, audience segmentation, A/B testing, negative keywords, search term analysis
 - **Compliance:** Profanity filter, ALL CAPS blocking, sensitive industry handling
 - **Models:** GPT-4o primary (4096 max tokens, temp 0.75), Claude fallback
 
 ---
 
-## Key Files
+## Phase History
+
+| Phase | Commit | Summary |
+|-------|--------|---------|
+| 1-3 | Various | Initial build, landing page, 22+ dashboard pages |
+| 4-5 | Various | AI chat integration, knowledge base, demo pages |
+| 6 | `74170ec` | KB enhancements, Deepgram transcription, policy compliance |
+| 7 | `0c77285` | Multi-tenant SaaS auth, Google OAuth with Ads scope |
+| 8 | Various | WebSocket server, Nginx config, Google Ads API application |
+| 9 | `a556ddd` | Prisma + PostgreSQL schema, Stripe integration, billing UI |
+| 10 | (infra) | PostgreSQL server setup, Stripe products/prices/webhook creation |
+| 11 | `fdd2343` | Full site audit: 18 fixes (auth, billing, UI, content, security) |
+
+---
+
+## Phase 11 Fixes (Latest)
+
+### P0 Critical
+- ✅ Route protection middleware (redirects unauthenticated users)
+- ✅ Stripe checkout passes real user session (was `temp_user`)
+- ✅ Email auth uses httpOnly cookie via API route (was `document.cookie`)
+- ✅ Sign-out properly clears session cookie via API
+
+### P1 Important
+- ✅ Dashboard: welcome page instead of hardcoded fake metrics
+- ✅ Settings: "Connect Google Ads" instead of "Mike's Plumbing LLC"
+- ✅ Sidebar: shows actual plan from subscription API
+- ✅ Avatar: shows user initial/picture instead of hardcoded "S"
+- ✅ FAQ: correct plan names (Agency→Pro, limits, trial duration)
+- ✅ Admin pages: all "Agency" → "Pro"
+- ✅ Knowledge base: "Sample Data" banner
+- ✅ Subscription API: returns userName + userPicture
+
+### P2 Nice to Have
+- ✅ Created /privacy and /terms pages
+- ✅ Removed false "SOC 2 Compliant" claim
+- ✅ Footer: correct year, Next.js Link components
+
+---
+
+## TODO (Priority Order)
+
+### Immediate (Before Wider Testing)
+- [ ] Set `ADMIN_EMAIL` in server `.env` to owner's Google sign-in email
+- [ ] Test full Stripe checkout flow end-to-end (subscribe → webhook → DB update)
+
+### After Google Ads API Approval
+- [ ] Wire up Google Ads API (read campaigns, push ads)
+- [ ] Auto-discover user's Ads Customer IDs
+- [ ] Campaign sync — pull existing campaigns into dashboard
+- [ ] Real-time campaign data on dashboard overview
+
+### Future Enhancements
+- [ ] Admin pages: query real DB data instead of demo data
+- [ ] Onboarding flow: persist business profile to DB
+- [ ] Password authentication (currently email is passwordless)
+- [ ] Stripe webhook for cancel/upgrade events
+- [ ] Email notifications (currently UI-only toggles)
+- [ ] PDF report export
+- [ ] Rate limiting on API routes
+- [ ] Mobile responsive polish pass
+
+---
+
+## Key Files Reference
 
 | File | Purpose |
 |------|---------|
-| `src/app/api/chat/route.ts` | AI chat API with 10K system prompt |
-| `src/app/api/auth/callback/route.ts` | Google OAuth with Ads scope + refresh token storage |
-| `src/app/api/transcribe/route.ts` | Deepgram transcription API |
-| `src/app/login/page.tsx` | Login page with Google OAuth + email/password |
-| `src/app/dashboard/layout.tsx` | Sidebar nav, business switcher, notification bell |
-| `src/app/dashboard/chat/page.tsx` | AI chat interface |
-| `src/app/dashboard/knowledge-base/page.tsx` | KB with upload, editing, transcription |
-| `src/lib/business-context.tsx` | Multi-business state management |
-| `src/lib/ws.ts` | WebSocket client hook (reconnection, heartbeat) |
-| `src/components/Tooltip.tsx` | Shared tooltip component |
-| `ws-server.ts` | WebSocket server (runs as separate PM2 process) |
-
----
-
-## Infrastructure
-
-| Item | Value |
-|------|-------|
-| Instance | AWS Lightsail `admasterpro-v2` |
-| Spec | 2GB RAM, 2 vCPU, 60GB SSD |
-| Static IP | `3.225.249.236` |
-| OS | Ubuntu 24.04 LTS |
-| Node.js | v20 LTS |
-| SSH Key | `~/.ssh/lightsail-admasterpro.pem` |
-| SSH Command | `ssh -i ~/.ssh/lightsail-admasterpro.pem ubuntu@3.225.249.236` |
-| App Directory (server) | `/home/ubuntu/admasterpro` |
-| App Directory (local) | `/Users/bblist/admasterpro` |
-| GitHub | `https://github.com/bblist/admasterpro` |
-
-### Deploy Command (one-liner from Mac)
-```bash
-ssh -i ~/.ssh/lightsail-admasterpro.pem ubuntu@3.225.249.236 'cd /home/ubuntu/admasterpro && git pull origin main && npm run build 2>&1 | tail -20 && pm2 restart all'
-```
-
----
-
-## Google Ads API Setup (Multi-Tenant SaaS)
-
-### How It Works
-1. **Platform** has ONE Developer Token (from MCC account)
-2. **Each user** signs in with Google OAuth → grants `adwords` scope
-3. Platform stores user's `refresh_token` (currently in httpOnly cookie, needs DB)
-4. API calls use: Platform Developer Token + User's OAuth token
-5. This lets us manage ANY user's Google Ads account
-
-### OAuth Scopes Requested
-- `openid`, `email`, `profile` — identity
-- `https://www.googleapis.com/auth/adwords` — Google Ads API access
-
-### Google Cloud Console Setup (completed)
-- ✅ OAuth Client ID created
-- ✅ Redirect URI configured
-- ✅ Google Ads API enabled
-- ✅ Adwords scope added to consent screen
-- ✅ Identity scopes added
-
----
-
-## What's Next (Priority Order)
-
-### After API Approval (2-5 days)
-1. Wire up Google Ads API integration (read campaigns, push ads)
-2. Auto-discover user's Ads Customer IDs
-3. Campaign sync — pull existing campaigns into dashboard
-4. Push AI-generated campaigns directly to user's account
-
-### Soon
-5. Database layer (PostgreSQL/Supabase + Prisma) for user accounts, sessions, refresh tokens, chat history
-6. Stripe billing integration
-7. Protected route middleware (auth guard)
-
-### Later
-8. Automated rules engine (auto-pause, bid adjustments)
-9. PDF report export
-10. Multi-user agency support (roles: admin, editor, viewer)
-11. Google Analytics 4 linking
-12. White-label for agencies
-
----
-
-## Recent Commits
-
-```
-0c77285 Multi-tenant SaaS auth: Google OAuth with Ads scope + email sign-in
-dea793e Google Ads agent knowledge expansion + PROJECT_STATUS.md
-9478be2 Move all demo features to live pages - fully working
-74170ec KB enhancements, Deepgram transcription, Google Ads policy compliance, notification bell
-db12b13 Go live: real AI integration, demo migration, humanized responses
-```
-
----
-
-## Important Notes for Future Developers
-
-1. **NEVER write large files via SSH heredoc** — it corrupts content. Use Python scripts or `scp` instead.
-2. **API keys** are ONLY in `.env` / `.env.local` — never in code or docs.
-3. **The AI system prompt** is in `src/app/api/chat/route.ts` (~10K chars, full Google Ads ecosystem).
-4. **Demo pages** at `/dashboard/demo/*` contain sample data. Live pages show empty states until Google Ads API is connected.
-5. **Nginx** handles SSL (via Certbot/Let's Encrypt) + reverse proxy. Config at `/etc/nginx/sites-enabled/admasterpro`.
-6. **Build takes ~2-3 min** on the 2GB Lightsail instance.
-7. **WebSocket server** runs as separate PM2 process on port 3001, Nginx proxies `/ws` to it.
+| `src/middleware.ts` | Route protection (auth guard) |
+| `src/app/api/chat/route.ts` | AI chat with 10K system prompt |
+| `src/app/api/auth/callback/route.ts` | Google OAuth + DB persistence |
+| `src/app/api/auth/email/route.ts` | Email sign-in + httpOnly cookie |
+| `src/app/api/auth/signout/route.ts` | Session cleanup |
+| `src/app/api/stripe/route.ts` | Stripe checkout + webhook handler |
+| `src/app/api/subscription/route.ts` | User plan + usage info |
+| `src/lib/db.ts` | Prisma client singleton |
+| `src/lib/session.ts` | Session parsing helpers |
+| `src/lib/plans.ts` | Plan definitions (Free/Starter/Pro) |
+| `src/lib/stripe.ts` | Stripe helper functions |
+| `prisma/schema.prisma` | Database schema (8 models) |
+| `ws-server.ts` | WebSocket server (PM2 process) |
