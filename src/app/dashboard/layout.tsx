@@ -18,11 +18,9 @@ import {
     HelpCircle,
     Lightbulb,
     ChevronDown,
-    ChevronRight,
     Check,
     Plus,
     Brain,
-    Layers,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { BusinessProvider, useBusiness } from "@/lib/business-context";
@@ -101,7 +99,7 @@ const notificationIcons: Record<NotificationType, { bg: string; text: string; ic
     info: { bg: "bg-gray-100", text: "text-gray-600", icon: "ℹ️" },
 };
 
-// ─── Nav items (real sections + demo section) ─────────────────────────────
+// ─── Nav items ─────────────────────────────────────────────────────────────
 
 const mainNavItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -111,16 +109,9 @@ const mainNavItems = [
     { href: "/dashboard/drafts", label: "Ad Drafts", icon: FileText },
     { href: "/dashboard/shopping", label: "Shopping Ads", icon: ShoppingBag, shoppingOnly: true },
     { href: "/dashboard/knowledge-base", label: "Knowledge Base", icon: BookOpen },
+    { href: "/dashboard/demo/examples", label: "AI Examples", icon: Lightbulb },
     { href: "/dashboard/faq", label: "FAQ", icon: HelpCircle },
     { href: "/dashboard/settings", label: "Settings", icon: Settings },
-];
-
-const demoNavItems = [
-    { href: "/dashboard/demo/campaigns", label: "Campaigns", icon: FileText },
-    { href: "/dashboard/demo/keywords", label: "Keywords", icon: Search },
-    { href: "/dashboard/demo/drafts", label: "Ad Drafts", icon: FileText },
-    { href: "/dashboard/demo/shopping", label: "Shopping Ads", icon: ShoppingBag },
-    { href: "/dashboard/demo/examples", label: "AI Examples", icon: Lightbulb },
 ];
 
 // Industries that can use shopping ads
@@ -232,7 +223,6 @@ function BusinessSwitcher() {
 function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [demoOpen, setDemoOpen] = useState(() => pathname.startsWith("/dashboard/demo"));
     const { activeBusiness } = useBusiness();
 
     // Notification state
@@ -325,47 +315,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                                 );
                             })}
 
-                        {/* Demo Examples section */}
-                        <div className="pt-2 mt-2 border-t border-border">
-                            <button
-                                onClick={() => setDemoOpen(!demoOpen)}
-                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition ${
-                                    pathname.startsWith("/dashboard/demo")
-                                        ? "bg-primary/10 text-primary font-medium"
-                                        : "text-muted hover:bg-border/50 hover:text-foreground"
-                                }`}
-                            >
-                                <Layers className="w-4 h-4" />
-                                <span className="flex-1 text-left">Demo Examples</span>
-                                {demoOpen ? (
-                                    <ChevronDown className="w-3.5 h-3.5" />
-                                ) : (
-                                    <ChevronRight className="w-3.5 h-3.5" />
-                                )}
-                            </button>
 
-                            {demoOpen && (
-                                <div className="ml-4 mt-1 space-y-0.5 border-l-2 border-border pl-2">
-                                    {demoNavItems.map((item) => {
-                                        const isActive = pathname === item.href;
-                                        return (
-                                            <Link
-                                                key={item.href}
-                                                href={item.href}
-                                                onClick={() => setSidebarOpen(false)}
-                                                className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] transition ${isActive
-                                                    ? "bg-primary text-white"
-                                                    : "text-muted hover:bg-border/50 hover:text-foreground"
-                                                    }`}
-                                            >
-                                                <item.icon className="w-3.5 h-3.5" />
-                                                {item.label}
-                                            </Link>
-                                        );
-                                    })}
-                                </div>
-                            )}
-                        </div>
                     </nav>
 
                     {/* Bottom */}
