@@ -1,68 +1,34 @@
 /**
- * Stripe Webhook & Checkout API
+ * Stripe API Route
  *
- * Handles Stripe payment events for subscriptions.
+ * POST — Create checkout session (subscription or top-up) or handle webhook
+ * GET  — Check Stripe configuration status + plan info
  *
- * Environment variables needed:
- *   STRIPE_SECRET_KEY        - Stripe Secret Key (sk_live_... or sk_test_...)
- *   STRIPE_WEBHOOK_SECRET    - Stripe Webhook Signing Secret (whsec_...)
- *   NEXT_PUBLIC_STRIPE_KEY   - Stripe Publishable Key (pk_live_... or pk_test_...)
+ * Environment variables:
+ *   STRIPE_SECRET_KEY        - Stripe Secret Key
+ *   STRIPE_WEBHOOK_SECRET    - Stripe Webhook Signing Secret
+ *   NEXT_PUBLIC_STRIPE_KEY   - Stripe Publishable Key (client-side)
+ *   STRIPE_STARTER_PRICE_ID  - Price ID for $49/mo Starter plan
+ *   STRIPE_PRO_PRICE_ID      - Price ID for $149/mo Pro plan
+ *   STRIPE_TOPUP_30_PRICE_ID - Price ID for $30 top-up
+ *   STRIPE_TOPUP_50_PRICE_ID - Price ID for $50 top-up
+ *   STRIPE_TOPUP_100_PRICE_ID- Price ID for $100 top-up
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import crypto from "crypto";
+import { prisma } from "@/lib/db";
+import {
+    isStripeConfigured,
+    createSubscriptionCheckout,
+    createTopUpCheckout,
+    createCustomerPortalSession,
+    constructWebhookEvent,
+    TOP_UP_TOKENS,
+} from "@/lib/stripe";
+import { PLANS, TOP_UPS } from "@/lib/plans";
 
-const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+// ─── POST: Checkout or Webhook ──────────────────────────────────────────────
 
-/** Minimal Stripe event shape for webhook handling */
-interface StripeEvent {
-    type: string;
-    data: {
-        object: {
-            id?: string;
-            customer_email?: string;
-            status?: string;
-        };
-    };
-}
-
-/**
- * Verify Stripe webhook signature (HMAC-SHA256).
- * Mirrors stripe.webhooks.constructEvent() without requiring the stripe package.
- */
-async function verifyStripeWebhook(
-    payload: string,
-    sigHeader: string,
-    secret: string,
-    tolerance = 300 // 5 minutes
-): Promise<StripeEvent | null> {
-    const parts = Object.fromEntries(
-        sigHeader.split(",").map((p) => {
-            const [k, v] = p.split("=");
-            return [k, v];
-        })
-    );
-
-    const timestamp = parseInt(parts.t, 10);
-    if (isNaN(timestamp) || Math.abs(Date.now() / 1000 - timestamp) > tolerance) {
-        return null; // Timestamp out of tolerance
-    }
-
-    const signedPayload = `${timestamp}.${payload}`;
-    const expected = crypto.createHmac("sha256", secret).update(signedPayload).digest("hex");
-
-    if (!crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(parts.v1 || ""))) {
-        return null; // Signature mismatch
-    }
-
-    try {
-        return JSON.parse(payload);
-    } catch {
-        return null;
-    }
-}
-
-// POST — Create checkout session or handle webhook
 export async function POST(req: NextRequest) {
     // Stripe webhook (identified by stripe-signature header)
     if (req.headers.get("stripe-signature")) {
@@ -70,92 +36,241 @@ export async function POST(req: NextRequest) {
     }
 
     // Checkout session creation
-    return createCheckoutSession(req);
+    return handleCheckout(req);
 }
 
-async function createCheckoutSession(req: NextRequest) {
-    if (!STRIPE_SECRET_KEY) {
+async function handleCheckout(req: NextRequest) {
+    if (!isStripeConfigured()) {
         return NextResponse.json({
             error: "Stripe not configured",
-            message: "Set STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET environment variables.",
+            message: "Set STRIPE_SECRET_KEY environment variable.",
             demo: true,
-            checkoutUrl: "/dashboard/settings?upgrade=demo",
         }, { status: 503 });
     }
 
     try {
         const body = await req.json();
-        const plan = body.plan || "pro"; // "pro" or "agency"
+        const { action, plan, topUpId, userId, email } = body;
 
-        const prices: Record<string, string> = {
-            pro: process.env.STRIPE_PRO_PRICE_ID || "",
-            agency: process.env.STRIPE_AGENCY_PRICE_ID || "",
-        };
-
-        const priceId = prices[plan];
-        if (!priceId) {
-            return NextResponse.json({ error: "Invalid plan or price ID not configured" }, { status: 400 });
+        if (!userId || !email) {
+            return NextResponse.json({ error: "userId and email required" }, { status: 400 });
         }
 
-        const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${STRIPE_SECRET_KEY}`,
-                "Content-Type": "application/x-www-form-urlencoded",
-            },
-            body: new URLSearchParams({
-                "mode": "subscription",
-                "success_url": `${process.env.NEXTAUTH_URL || "https://admasterai.nobleblocks.com"}/dashboard/settings?upgraded=true`,
-                "cancel_url": `${process.env.NEXTAUTH_URL || "https://admasterai.nobleblocks.com"}/dashboard/settings?cancelled=true`,
-                "line_items[0][price]": priceId,
-                "line_items[0][quantity]": "1",
-            }),
+        // Get user's existing Stripe customer ID
+        const subscription = await prisma.subscription.findUnique({
+            where: { userId },
         });
 
-        const session = await res.json();
-        return NextResponse.json({ url: session.url });
+        if (action === "portal" && subscription?.stripeCustomerId) {
+            // Customer portal for managing existing subscription
+            const url = await createCustomerPortalSession(subscription.stripeCustomerId);
+            return NextResponse.json({ url });
+        }
+
+        if (action === "topup" && topUpId) {
+            // One-time token purchase
+            const url = await createTopUpCheckout({
+                topUpId,
+                userId,
+                email,
+                stripeCustomerId: subscription?.stripeCustomerId || undefined,
+            });
+
+            if (!url) {
+                return NextResponse.json({ error: "Invalid top-up package or price not configured" }, { status: 400 });
+            }
+            return NextResponse.json({ url });
+        }
+
+        // Subscription checkout
+        if (!plan || !["starter", "pro"].includes(plan)) {
+            return NextResponse.json({ error: "Invalid plan. Use 'starter' or 'pro'" }, { status: 400 });
+        }
+
+        const url = await createSubscriptionCheckout({
+            plan,
+            userId,
+            email,
+            stripeCustomerId: subscription?.stripeCustomerId || undefined,
+        });
+
+        if (!url) {
+            return NextResponse.json({ error: "Price not configured for this plan" }, { status: 400 });
+        }
+
+        return NextResponse.json({ url });
     } catch (error) {
         console.error("[Stripe] Checkout error:", error);
         return NextResponse.json({ error: "Checkout failed" }, { status: 500 });
     }
 }
 
-async function handleWebhook(req: NextRequest) {
-    const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
-    if (!WEBHOOK_SECRET || !STRIPE_SECRET_KEY) {
-        return NextResponse.json({ error: "Webhook not configured" }, { status: 503 });
-    }
+// ─── Webhook Handler ────────────────────────────────────────────────────────
 
+async function handleWebhook(req: NextRequest) {
     try {
         const body = await req.text();
         const sig = req.headers.get("stripe-signature") || "";
 
-        // Verify webhook signature (HMAC-SHA256)
-        const event = await verifyStripeWebhook(body, sig, WEBHOOK_SECRET);
+        const event = constructWebhookEvent(body, sig);
         if (!event) {
             return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
         }
 
+        console.log("[Stripe] Webhook event:", event.type);
+
         switch (event.type) {
-            case "checkout.session.completed":
-                console.log("[Stripe] Checkout completed:", event.data.object.customer_email);
-                // TODO: Update user plan in database
-                break;
+            case "checkout.session.completed": {
+                const session = event.data.object as {
+                    client_reference_id?: string;
+                    customer?: string;
+                    mode?: string;
+                    metadata?: Record<string, string>;
+                    subscription?: string;
+                    payment_intent?: string;
+                };
 
-            case "customer.subscription.updated":
-                console.log("[Stripe] Subscription updated:", event.data.object.id);
-                // TODO: Update subscription status
-                break;
+                const userId = session.client_reference_id || session.metadata?.userId;
+                if (!userId) break;
 
-            case "customer.subscription.deleted":
-                console.log("[Stripe] Subscription cancelled:", event.data.object.id);
-                // TODO: Downgrade user to free plan
-                break;
+                if (session.mode === "subscription") {
+                    // Subscription checkout completed
+                    const plan = session.metadata?.plan || "starter";
+                    const planConfig = PLANS[plan];
 
-            case "invoice.payment_failed":
-                console.log("[Stripe] Payment failed:", event.data.object.customer_email);
-                // TODO: Notify user, retry logic
+                    await prisma.subscription.upsert({
+                        where: { userId },
+                        update: {
+                            plan,
+                            status: "active",
+                            stripeCustomerId: session.customer as string,
+                            stripeSubscriptionId: session.subscription as string,
+                            aiMessagesLimit: planConfig?.aiMessages || 200,
+                            aiMessagesUsed: 0,
+                            campaignsLimit: planConfig?.campaigns || 10,
+                            adsAccountsLimit: planConfig?.adsAccounts || 2,
+                            currentPeriodStart: new Date(),
+                        },
+                        create: {
+                            userId,
+                            plan,
+                            status: "active",
+                            stripeCustomerId: session.customer as string,
+                            stripeSubscriptionId: session.subscription as string,
+                            aiMessagesLimit: planConfig?.aiMessages || 200,
+                            campaignsLimit: planConfig?.campaigns || 10,
+                            adsAccountsLimit: planConfig?.adsAccounts || 2,
+                            currentPeriodStart: new Date(),
+                        },
+                    });
+
+                    console.log(`[Stripe] User ${userId} subscribed to ${plan}`);
+                } else if (session.mode === "payment") {
+                    // Top-up payment completed
+                    const topUpId = session.metadata?.topUpId;
+                    if (topUpId && TOP_UP_TOKENS[topUpId]) {
+                        const tokens = TOP_UP_TOKENS[topUpId];
+
+                        // Record the purchase
+                        await prisma.tokenPurchase.create({
+                            data: {
+                                userId,
+                                amount: topUpId === "topup_30" ? 30 : topUpId === "topup_50" ? 50 : 100,
+                                tokens,
+                                stripePaymentIntentId: session.payment_intent as string,
+                                status: "completed",
+                            },
+                        });
+
+                        // Add bonus tokens to subscription
+                        await prisma.subscription.update({
+                            where: { userId },
+                            data: { bonusTokens: { increment: tokens } },
+                        });
+
+                        console.log(`[Stripe] User ${userId} purchased ${tokens} bonus tokens ($${topUpId})`);
+                    }
+                }
                 break;
+            }
+
+            case "customer.subscription.updated": {
+                const sub = event.data.object as {
+                    id?: string;
+                    status?: string;
+                    cancel_at_period_end?: boolean;
+                    current_period_end?: number;
+                    metadata?: Record<string, string>;
+                };
+
+                if (sub.id) {
+                    const existing = await prisma.subscription.findFirst({
+                        where: { stripeSubscriptionId: sub.id },
+                    });
+
+                    if (existing) {
+                        await prisma.subscription.update({
+                            where: { id: existing.id },
+                            data: {
+                                status: sub.status === "active" ? "active" : sub.status === "past_due" ? "past_due" : existing.status,
+                                cancelAtPeriodEnd: sub.cancel_at_period_end || false,
+                                currentPeriodEnd: sub.current_period_end ? new Date(sub.current_period_end * 1000) : undefined,
+                            },
+                        });
+                    }
+                }
+                break;
+            }
+
+            case "customer.subscription.deleted": {
+                const sub = event.data.object as { id?: string; metadata?: Record<string, string> };
+
+                if (sub.id) {
+                    const existing = await prisma.subscription.findFirst({
+                        where: { stripeSubscriptionId: sub.id },
+                    });
+
+                    if (existing) {
+                        // Downgrade to free
+                        const freePlan = PLANS.free;
+                        await prisma.subscription.update({
+                            where: { id: existing.id },
+                            data: {
+                                plan: "free",
+                                status: "cancelled",
+                                aiMessagesLimit: freePlan.aiMessages,
+                                campaignsLimit: freePlan.campaigns,
+                                adsAccountsLimit: freePlan.adsAccounts,
+                                cancelAtPeriodEnd: false,
+                            },
+                        });
+                        console.log(`[Stripe] Subscription ${sub.id} cancelled — user downgraded to free`);
+                    }
+                }
+                break;
+            }
+
+            case "invoice.payment_failed": {
+                const invoice = event.data.object as {
+                    subscription?: string;
+                    customer_email?: string;
+                };
+
+                if (invoice.subscription) {
+                    const existing = await prisma.subscription.findFirst({
+                        where: { stripeSubscriptionId: invoice.subscription },
+                    });
+
+                    if (existing) {
+                        await prisma.subscription.update({
+                            where: { id: existing.id },
+                            data: { status: "past_due" },
+                        });
+                    }
+                }
+                console.log(`[Stripe] Payment failed for ${invoice.customer_email}`);
+                break;
+            }
 
             default:
                 console.log("[Stripe] Unhandled event:", event.type);
@@ -168,13 +283,16 @@ async function handleWebhook(req: NextRequest) {
     }
 }
 
-// GET — Check Stripe configuration status
+// ─── GET: Plan Info ─────────────────────────────────────────────────────────
+
 export async function GET() {
     return NextResponse.json({
-        configured: !!STRIPE_SECRET_KEY,
+        configured: isStripeConfigured(),
         plans: {
-            pro: { price: "$49/mo", features: ["Unlimited AI", "10 campaigns", "Display ads", "Call tracking"] },
-            agency: { price: "$149/mo", features: ["Everything in Pro", "Multi-client", "White-label", "API access"] },
+            free: { price: "$0", period: "forever" },
+            starter: { price: "$49", period: "/month" },
+            pro: { price: "$149", period: "/month" },
         },
+        topUps: TOP_UPS,
     });
 }

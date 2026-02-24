@@ -322,12 +322,12 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                     <div className="p-3 border-t border-border">
                         <div className="bg-primary-light rounded-lg p-3 mb-3">
                             <div className="text-xs font-medium text-primary mb-1">Free Plan</div>
-                            <div className="text-xs text-primary/70">2 of 3 AI suggestions used today</div>
+                            <div className="text-xs text-primary/70">Upgrade for unlimited AI + all features</div>
                             <Link
-                                href="/dashboard/settings"
+                                href="/pricing"
                                 className="text-xs font-medium text-primary hover:underline mt-1 inline-block"
                             >
-                                Upgrade to Pro →
+                                View Plans →
                             </Link>
                         </div>
                         <Link

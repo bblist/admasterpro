@@ -29,7 +29,7 @@ export default function LandingPage() {
           <div className="hidden md:flex items-center gap-8 text-sm text-muted">
             <a href="#features" className="hover:text-foreground transition">Features</a>
             <a href="#how-it-works" className="hover:text-foreground transition">How It Works</a>
-            <a href="#pricing" className="hover:text-foreground transition">Pricing</a>
+            <Link href="/pricing" className="hover:text-foreground transition">Pricing</Link>
           </div>
           <div className="flex items-center gap-3">
             <Link href="/login" className="text-sm text-muted hover:text-foreground transition">
@@ -243,39 +243,44 @@ export default function LandingPage() {
                 name: "Free",
                 price: "$0",
                 period: "forever",
-                features: ["Free account audit", "Basic stats dashboard", "3 AI suggestions/day", "Email support"],
+                features: ["Free Google Ads audit", "10 AI messages/month", "1 campaign draft", "Basic keyword research", "Email support"],
                 cta: "Start Free",
                 popular: false,
+                href: "/onboarding",
               },
               {
-                name: "Pro",
+                name: "Starter",
                 price: "$49",
                 period: "/month",
                 features: [
                   "Everything in Free",
-                  "Unlimited AI suggestions",
+                  "200 AI messages/month",
+                  "10 campaign drafts",
+                  "AI ad copy generation",
                   "Auto-Pilot mode",
-                  "Daily email/WhatsApp reports",
-                  "Draft ad creation",
+                  "Daily reports",
                   "Priority support",
                 ],
-                cta: "Start Pro Trial",
+                cta: "Start 7-Day Free Trial",
                 popular: true,
+                href: "/pricing",
               },
               {
-                name: "Agency",
+                name: "Pro",
                 price: "$149",
                 period: "/month",
                 features: [
-                  "Everything in Pro",
-                  "Up to 10 accounts",
-                  "Competitor benchmarks",
-                  "White-label reports",
+                  "Everything in Starter",
+                  "Unlimited AI messages",
+                  "Unlimited campaigns",
+                  "Shopping, Display & Video ads",
+                  "Performance Max campaigns",
+                  "Competitor analysis",
                   "Dedicated account manager",
-                  "API access",
                 ],
-                cta: "Contact Sales",
+                cta: "Start 7-Day Free Trial",
                 popular: false,
+                href: "/pricing",
               },
             ].map((plan, i) => (
               <div
@@ -302,7 +307,7 @@ export default function LandingPage() {
                   ))}
                 </ul>
                 <Link
-                  href="/onboarding"
+                  href={plan.href}
                   className={`block text-center py-2.5 rounded-lg font-medium text-sm transition ${plan.popular
                       ? "bg-primary hover:bg-primary-dark text-white"
                       : "border border-border hover:border-primary text-foreground"
@@ -313,10 +318,13 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
+          <div className="text-center mt-8">
+            <Link href="/pricing" className="text-sm text-primary hover:underline font-medium">
+              View detailed feature comparison →
+            </Link>
+          </div>
         </div>
       </section>
-
-      {/* Testimonials */}
       <section className="py-20 px-4">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16">

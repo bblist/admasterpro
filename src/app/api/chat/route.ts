@@ -543,7 +543,56 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Message is required" }, { status: 400 });
         }
 
-        // Try preferred model first, then fallback
+        // ─── Usage Limit Check ──────────────────────────────────────────────
+        let userId: string | null = null;
+        let userPlan = "free";
+        let messagesUsed = 0;
+        let messagesLimit = 10;
+        let bonusTokens = 0;
+
+        const cookieHeader = req.headers.get("cookie");
+        if (cookieHeader) {
+            const match = cookieHeader.match(/session=([^;]+)/);
+            if (match) {
+                try {
+                    const session = JSON.parse(decodeURIComponent(match[1]));
+                    userId = session.id || null;
+                } catch { /* ignore */ }
+            }
+        }
+
+        if (userId) {
+            try {
+                const { prisma } = await import("@/lib/db");
+                const { isAtMessageLimit, PLANS } = await import("@/lib/plans");
+
+                const subscription = await prisma.subscription.findUnique({
+                    where: { userId },
+                });
+
+                if (subscription) {
+                    userPlan = subscription.plan;
+                    messagesUsed = subscription.aiMessagesUsed;
+                    messagesLimit = subscription.aiMessagesLimit;
+                    bonusTokens = subscription.bonusTokens;
+
+                    if (isAtMessageLimit(userPlan, messagesUsed, bonusTokens)) {
+                        const plan = PLANS[userPlan];
+                        return NextResponse.json({
+                            error: "message_limit_reached",
+                            content: `\u26A0\uFE0F **You've used all ${plan?.aiMessages || messagesLimit} AI messages for this month${bonusTokens > 0 ? ` (plus ${bonusTokens} bonus)` : ""}.**\n\nUpgrade your plan or purchase additional messages to continue:\n\n- **Starter** ($49/mo) \u2192 200 messages/month\n- **Pro** ($149/mo) \u2192 Unlimited messages\n- **Top-up** \u2192 $30 for 50, $50 for 100, or $100 for 250 messages\n\n[View Plans](/pricing)`,
+                            model: "system",
+                            limitReached: true,
+                            usage: { used: messagesUsed, limit: messagesLimit + bonusTokens, plan: userPlan },
+                        }, { status: 429 });
+                    }
+                }
+            } catch (dbError) {
+                console.warn("[Chat] DB unavailable for usage check:", dbError);
+            }
+        }
+
+        // ─── Call AI Model ──────────────────────────────────────────────────
         const preferredModel = body.model || "gpt-4o";
         let result = null;
 
@@ -555,7 +604,6 @@ export async function POST(req: NextRequest) {
             if (!result) result = await callOpenAI(body);
         }
 
-        // No API keys configured \u2014 return demo mode response
         if (!result) {
             return NextResponse.json({
                 content: "\uD83D\uDD27 **Demo Mode** \u2014 AI API keys not configured yet. The assistant is running with pre-built responses. Once API keys are added, this will use real GPT-4o and Claude models.",
@@ -565,7 +613,69 @@ export async function POST(req: NextRequest) {
             });
         }
 
-        return NextResponse.json(result);
+        // ─── Track Usage in DB ──────────────────────────────────────────────
+        if (userId) {
+            try {
+                const { prisma } = await import("@/lib/db");
+                const { AI_COSTS } = await import("@/lib/plans");
+
+                const modelKey = result.model?.includes("claude") ? "claude-sonnet" : "gpt-4o";
+                const costConfig = AI_COSTS[modelKey];
+                const costUsd = costConfig
+                    ? (result.tokens.prompt / 1000) * costConfig.inputPer1kTokens +
+                      (result.tokens.completion / 1000) * costConfig.outputPer1kTokens
+                    : 0;
+
+                await Promise.all([
+                    prisma.usage.create({
+                        data: {
+                            userId,
+                            type: "chat",
+                            model: result.model,
+                            inputTokens: result.tokens.prompt,
+                            outputTokens: result.tokens.completion,
+                            totalTokens: result.tokens.total,
+                            costUsd,
+                        },
+                    }),
+                    prisma.subscription.update({
+                        where: { userId },
+                        data: { aiMessagesUsed: { increment: 1 } },
+                    }),
+                    prisma.chatMessage.createMany({
+                        data: [
+                            {
+                                userId,
+                                role: "user",
+                                content: body.message,
+                                businessId: body.businessName || undefined,
+                            },
+                            {
+                                userId,
+                                role: "assistant",
+                                content: result.content,
+                                model: result.model,
+                                inputTokens: result.tokens.prompt,
+                                outputTokens: result.tokens.completion,
+                                costUsd,
+                                businessId: body.businessName || undefined,
+                            },
+                        ],
+                    }),
+                ]);
+            } catch (dbError) {
+                console.warn("[Chat] DB unavailable for usage tracking:", dbError);
+            }
+        }
+
+        return NextResponse.json({
+            ...result,
+            usage: {
+                used: messagesUsed + 1,
+                limit: messagesLimit + bonusTokens,
+                plan: userPlan,
+            },
+        });
     } catch (error) {
         console.error("[Chat API] Error:", error);
         return NextResponse.json(

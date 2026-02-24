@@ -5,29 +5,22 @@
  *   1. User clicks "Sign in with Google" → redirected here (no code param)
  *   2. We redirect to Google OAuth with openid + email + profile + Google Ads scope
  *   3. Google redirects back here with ?code=xxx
- *   4. We exchange code for tokens, fetch user info, store refresh_token
+ *   4. We exchange code for tokens, fetch user info, store in database
  *   5. Redirect to dashboard with session cookie
  *
- * The refresh_token is critical — it lets us call the Google Ads API on behalf
- * of each user without them being present. Combined with our platform's Developer
- * Token, this enables full multi-tenant Google Ads management.
- *
- * Environment variables needed:
- *   GOOGLE_CLIENT_ID      - Google OAuth Client ID
- *   GOOGLE_CLIENT_SECRET  - Google OAuth Client Secret
- *   NEXTAUTH_SECRET       - Random secret for session encryption
- *   NEXTAUTH_URL          - Base URL (https://admasterai.nobleblocks.com)
- *   GOOGLE_ADS_DEVELOPER_TOKEN - (future) Developer Token from MCC account
+ * The refresh_token is stored in the database (encrypted in production).
+ * Combined with our platform's Developer Token, this enables full multi-tenant
+ * Google Ads management.
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+import { PLANS } from "@/lib/plans";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const REDIRECT_URI = (process.env.NEXTAUTH_URL || "https://admasterai.nobleblocks.com") + "/api/auth/callback";
 
-// Scopes: identity + Google Ads API access
-// The adwords scope lets us manage their Google Ads account via API
 const SCOPES = [
     "openid",
     "email",
@@ -39,7 +32,6 @@ export async function GET(req: NextRequest) {
     const code = req.nextUrl.searchParams.get("code");
     const errorParam = req.nextUrl.searchParams.get("error");
 
-    // Handle user denying consent
     if (errorParam) {
         console.error("[Auth] User denied consent:", errorParam);
         return NextResponse.redirect(new URL("/login?error=auth_failed", req.url));
@@ -51,12 +43,6 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({
                 error: "Google OAuth not configured",
                 message: "Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables.",
-                setup: {
-                    GOOGLE_CLIENT_ID: "Get from https://console.cloud.google.com/apis/credentials",
-                    GOOGLE_CLIENT_SECRET: "Same page as above",
-                    NEXTAUTH_URL: "https://admasterai.nobleblocks.com",
-                    NEXTAUTH_SECRET: "Run: openssl rand -base64 32",
-                },
             }, { status: 503 });
         }
 
@@ -65,8 +51,8 @@ export async function GET(req: NextRequest) {
             redirect_uri: REDIRECT_URI,
             response_type: "code",
             scope: SCOPES,
-            access_type: "offline",   // Required to get refresh_token
-            prompt: "consent",        // Force consent to always get refresh_token
+            access_type: "offline",
+            prompt: "consent",
             include_granted_scopes: "true",
         });
 
@@ -98,47 +84,73 @@ export async function GET(req: NextRequest) {
         }
 
         const tokens = await tokenRes.json();
-
-        // tokens contains:
-        //   access_token  - short-lived (~1hr), for immediate API calls
-        //   refresh_token - long-lived, for offline API access (only on first consent)
-        //   id_token      - JWT with user identity
-        //   expires_in    - seconds until access_token expires
-        //   scope         - granted scopes (may or may not include adwords)
-
         console.log("[Auth] Token exchange successful. Scopes granted:", tokens.scope);
         console.log("[Auth] Refresh token received:", !!tokens.refresh_token);
 
-        // Check if the user granted Google Ads access
         const hasAdsAccess = tokens.scope?.includes("adwords") || false;
 
         // Get user profile info
         const userRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
             headers: { Authorization: `Bearer ${tokens.access_token}` },
         });
+        const userInfo = await userRes.json();
 
-        const user = await userRes.json();
+        // ─── Persist to Database ────────────────────────────────────────────
+        let user;
+        try {
+            user = await prisma.user.upsert({
+                where: { email: userInfo.email },
+                update: {
+                    name: userInfo.name,
+                    picture: userInfo.picture,
+                    googleId: userInfo.id,
+                    authMethod: "google",
+                    hasAdsAccess,
+                    refreshToken: tokens.refresh_token || undefined,
+                    lastActiveAt: new Date(),
+                },
+                create: {
+                    email: userInfo.email,
+                    name: userInfo.name,
+                    picture: userInfo.picture,
+                    googleId: userInfo.id,
+                    authMethod: "google",
+                    hasAdsAccess,
+                    refreshToken: tokens.refresh_token || undefined,
+                },
+            });
 
-        // TODO: Store in database:
-        //   - user.id, user.email, user.name, user.picture
-        //   - tokens.refresh_token (encrypted!) for Google Ads API calls
-        //   - tokens.access_token + tokens.expires_in for short-term use
-        //   - hasAdsAccess flag
-        // For now, storing essential session data in cookie
+            // Ensure subscription record exists
+            await prisma.subscription.upsert({
+                where: { userId: user.id },
+                update: {}, // don't change existing subscription
+                create: {
+                    userId: user.id,
+                    plan: "free",
+                    status: "active",
+                    aiMessagesLimit: PLANS.free.aiMessages,
+                    campaignsLimit: PLANS.free.campaigns,
+                    adsAccountsLimit: PLANS.free.adsAccounts,
+                },
+            });
+
+            console.log(`[Auth] User persisted: ${user.email} (${user.id})`);
+        } catch (dbError) {
+            // Database might not be set up yet — continue with cookie-only auth
+            console.warn("[Auth] Database not available, using cookie-only auth:", dbError);
+        }
 
         const response = NextResponse.redirect(new URL("/dashboard/chat", req.url));
 
-        // Session cookie with user info + auth metadata
+        // Session cookie with user info
         response.cookies.set("session", JSON.stringify({
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            picture: user.picture,
+            id: user?.id || userInfo.id,
+            email: userInfo.email,
+            name: userInfo.name,
+            picture: userInfo.picture,
             authenticated: true,
             method: "google",
             hasAdsAccess,
-            // NOTE: In production, refresh_token should be stored server-side in a database,
-            // NOT in a cookie. This is here temporarily until we add a database layer.
             adsTokenPresent: !!tokens.refresh_token,
         }), {
             httpOnly: true,
@@ -147,18 +159,6 @@ export async function GET(req: NextRequest) {
             maxAge: 60 * 60 * 24 * 7, // 7 days
             path: "/",
         });
-
-        // Store refresh token in a separate httpOnly cookie for now
-        // TODO: Move to encrypted database storage
-        if (tokens.refresh_token) {
-            response.cookies.set("ads_refresh_token", tokens.refresh_token, {
-                httpOnly: true,
-                secure: true,
-                sameSite: "lax",
-                maxAge: 60 * 60 * 24 * 365, // 1 year
-                path: "/",
-            });
-        }
 
         return response;
     } catch (error) {

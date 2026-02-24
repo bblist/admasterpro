@@ -1,0 +1,203 @@
+// ─── AdMaster Pro Database Schema ───────────────────────────────────────────
+// PostgreSQL via Prisma ORM
+// Handles: Users, Subscriptions, Usage Tracking, Chat History, Campaign Drafts
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Users ──────────────────────────────────────────────────────────────────
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  name            String?
+  picture         String?
+  passwordHash    String?   // null for Google OAuth users
+  authMethod      String    @default("email") // "google" | "email"
+  googleId        String?   @unique
+  refreshToken    String?   // Encrypted Google OAuth refresh token for Ads API
+  hasAdsAccess    Boolean   @default(false)
+  role            String    @default("user") // "user" | "admin"
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  lastActiveAt    DateTime  @default(now())
+
+  // Relations
+  subscription    Subscription?
+  usage           Usage[]
+  chatMessages    ChatMessage[]
+  campaignDrafts  CampaignDraft[]
+  businesses      Business[]
+  tokenPurchases  TokenPurchase[]
+  knowledgeBase   KnowledgeBaseItem[]
+
+  @@index([email])
+  @@index([googleId])
+}
+
+// ─── Subscriptions ──────────────────────────────────────────────────────────
+
+model Subscription {
+  id                    String    @id @default(cuid())
+  userId                String    @unique
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  plan                  String    @default("free") // "free" | "starter" | "pro"
+  status                String    @default("active") // "active" | "past_due" | "cancelled" | "trialing"
+
+  // Stripe integration
+  stripeCustomerId      String?   @unique
+  stripeSubscriptionId  String?   @unique
+  stripePriceId         String?
+
+  // Plan limits (populated from plan config)
+  aiMessagesLimit       Int       @default(10) // monthly AI messages
+  aiMessagesUsed        Int       @default(0)
+  campaignsLimit        Int       @default(1)
+  adsAccountsLimit      Int       @default(1)
+  bonusTokens           Int       @default(0) // from top-ups
+
+  // Billing cycle
+  currentPeriodStart    DateTime  @default(now())
+  currentPeriodEnd      DateTime?
+  cancelAtPeriodEnd     Boolean   @default(false)
+
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([stripeCustomerId])
+  @@index([stripeSubscriptionId])
+}
+
+// ─── Usage Tracking ─────────────────────────────────────────────────────────
+
+model Usage {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type            String    // "chat" | "transcription" | "campaign_create" | "keyword_research"
+  model           String?   // "gpt-4o" | "claude-4.6"
+  inputTokens     Int       @default(0)
+  outputTokens    Int       @default(0)
+  totalTokens     Int       @default(0)
+  costUsd         Float     @default(0)  // actual cost to us
+  metadata        String?   // JSON string for extra data
+
+  createdAt       DateTime  @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([userId, createdAt])
+  @@index([type])
+}
+
+// ─── Chat History ───────────────────────────────────────────────────────────
+
+model ChatMessage {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessId      String?
+
+  role            String    // "user" | "assistant" | "system"
+  content         String    @db.Text
+  model           String?   // which AI model was used
+  inputTokens     Int       @default(0)
+  outputTokens    Int       @default(0)
+  costUsd         Float     @default(0)
+
+  createdAt       DateTime  @default(now())
+
+  @@index([userId])
+  @@index([userId, businessId])
+  @@index([createdAt])
+}
+
+// ─── Campaign Drafts ────────────────────────────────────────────────────────
+
+model CampaignDraft {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessId      String?
+
+  name            String
+  type            String    // "search" | "display" | "shopping" | "pmax" | "video"
+  status          String    @default("draft") // "draft" | "ready" | "published" | "paused"
+  content         String    @db.Text // JSON: ad groups, keywords, ads, extensions, budget
+  budget          Float?
+  notes           String?   @db.Text
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([userId, status])
+}
+
+// ─── Businesses ─────────────────────────────────────────────────────────────
+
+model Business {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name            String
+  industry        String?
+  website         String?
+  location        String?
+  services        String?   // JSON array
+  googleAdsId     String?   // Google Ads Customer ID
+  kbStatus        String    @default("empty") // "empty" | "training" | "trained"
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+// ─── Knowledge Base ─────────────────────────────────────────────────────────
+
+model KnowledgeBaseItem {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessId      String?
+
+  type            String    // "file" | "text" | "url" | "transcript"
+  title           String
+  content         String    @db.Text
+  fileUrl         String?
+  mimeType        String?
+  sizeBytes       Int?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([userId, businessId])
+}
+
+// ─── Token Purchases (Top-ups) ──────────────────────────────────────────────
+
+model TokenPurchase {
+  id                    String    @id @default(cuid())
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  amount                Float     // USD amount paid
+  tokens                Int       // number of AI tokens/messages purchased
+  stripePaymentIntentId String?   @unique
+  status                String    @default("completed") // "pending" | "completed" | "failed"
+
+  createdAt             DateTime  @default(now())
+
+  @@index([userId])
+}
