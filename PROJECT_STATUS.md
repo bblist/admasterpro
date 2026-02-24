@@ -1,9 +1,10 @@
 # AdMaster Pro — Project Status
 
-**Last Updated:** February 24, 2026  
-**Live URL:** https://admasterai.nobleblocks.com  
-**Repository:** https://github.com/bblist/admasterpro  
-**Latest Commit:** `9478be2` (+ pending Google Ads knowledge expansion)
+**Last Updated:** February 24, 2026
+**Live URL:** https://admasterai.nobleblocks.com
+**Repository:** https://github.com/bblist/admasterpro
+**Company:** NobleBlocks LLC
+**Latest Commit:** `0c77285` (Multi-tenant SaaS auth)
 
 ---
 
@@ -15,196 +16,230 @@
 | Language | TypeScript |
 | UI | React 18, Tailwind CSS v3 |
 | Icons | lucide-react |
-| Hosting | AWS Lightsail (2GB, Static IP) |
+| AI Models | GPT-4o (primary), Claude (fallback) |
+| Hosting | AWS Lightsail (2GB RAM, Static IP) |
 | Process Manager | PM2 |
-| SSL | Let's Encrypt (Caddy reverse proxy) |
+| Reverse Proxy | Caddy (auto SSL via Let's Encrypt) |
+| Domain | admasterai.nobleblocks.com |
 
 ---
 
-## API Endpoints & Integrations
+## What's Working RIGHT NOW (Live in Production)
 
-### Internal API Routes
+| Feature | Status | Details |
+|---------|--------|---------|
+| Google OAuth Sign-In | ✅ Live | Users sign in with Google, gets Ads API scope |
+| Email/Password Sign-In | ✅ Live | Demo mode (cookie-based, needs DB for production) |
+| AI Chat (GPT-4o) | ✅ Live | Full Google Ads expert agent, 10K system prompt |
+| AI Chat (Claude fallback) | ✅ Live | Auto-fallback when GPT-4o fails |
+| Knowledge Base | ✅ Live | Upload files, edit content, brand profile, industry dropdown |
+| Video Transcription | ✅ Live | Deepgram Nova-2 model, real API key configured |
+| Campaign Planning | ✅ Live | AI creates full campaign structures on request |
+| Keyword Research | ✅ Live | AI suggests keywords, match types, negatives |
+| Ad Copy Generation | ✅ Live | RSA, RDA, all extension types |
+| Policy Compliance | ✅ Live | Built into every AI response |
+| Notification Bell | ✅ Live | In-app dropdown with read/unread/dismiss |
+| Multi-Business Switching | ✅ Live | Context-isolated per business |
+| WebSocket Server | ✅ Live | Real-time notifications, campaign updates, budget alerts |
+| SSL/HTTPS | ✅ Live | Auto-renewing via Caddy |
+
+## Waiting On
+
+| Item | Status | ETA |
+|------|--------|-----|
+| Google Ads API Basic Access | ⏳ Applied | 2-5 business days |
+| Developer Token | ✅ Received | Test tier until Basic approved |
+| Direct Ads Account Read/Write | ⏳ Blocked by above | After approval |
+
+---
+
+## API Endpoints
 
 | Route | Method | Purpose | Status |
 |-------|--------|---------|--------|
-| `/api/chat` | POST | AI chat — routes to GPT-4o (primary) or Claude (fallback) | ✅ Live |
-| `/api/transcribe` | POST | Video/audio transcription via Deepgram | ✅ Live (demo mode without key) |
-| `/api/auth/callback` | GET | Google OAuth callback handler | ⏳ Awaiting Google credentials |
-| `/api/stripe` | POST | Stripe webhook for billing/subscriptions | ✅ Route exists |
-| `/api/ws` | GET | WebSocket upgrade for real-time features | ✅ Route exists |
-
-### External APIs Used
-
-| Service | Endpoint | Purpose | Key Location |
-|---------|----------|---------|--------------|
-| **OpenAI (GPT-4o)** | `https://api.openai.com/v1/chat/completions` | Primary AI model for chat, ad creation, analysis | Server `.env` → `OPENAI_API_KEY` |
-| **Anthropic (Claude)** | `https://api.anthropic.com/v1/messages` | Fallback AI model (uses `claude-sonnet-4-20250514`) | Server `.env` → `ANTHROPIC_API_KEY` |
-| **Deepgram** | `https://api.deepgram.com/v1/listen` | Speech-to-text for video transcription (Nova-2 model) | Server `.env` → `DEEPGRAM_API_KEY` |
-| **Google OAuth 2.0** | `https://accounts.google.com/o/oauth2/v2/auth` | User authentication via Google | Server `.env` → `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` |
-| **Google Ads API** | `https://googleads.googleapis.com/` | Campaign management, keyword data, ad operations | 🔜 Not yet integrated — needs Google Ads API credentials |
-| **Google Trends** | Informal / via SerpAPI or similar | Keyword trend data | 🔜 Planned |
-| **Stripe** | `https://api.stripe.com/` | Subscription billing, payment processing | Server `.env` → `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET` |
-
-### API Key Storage
-
-> ⚠️ **IMPORTANT:** All API keys are stored ONLY in environment variables on the server.
-> - **Server:** `/home/ubuntu/admasterpro/.env` (chmod 600, owned by ubuntu)
-> - **Local dev:** `/Users/bblist/admasterpro/.env.local`
-> - **NEVER** committed to git — `.gitignore` excludes all `.env*` files
-> - Keys are NOT stored in any documentation, code, or config files
-
-### Environment Variables Required
-
-| Variable | Service | Required |
-|----------|---------|----------|
-| `OPENAI_API_KEY` | OpenAI GPT-4o | ✅ Set |
-| `ANTHROPIC_API_KEY` | Anthropic Claude | ✅ Set |
-| `DEEPGRAM_API_KEY` | Deepgram transcription | ❌ Not yet set (runs in demo mode) |
-| `GOOGLE_CLIENT_ID` | Google OAuth | ❌ Not yet set |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth | ❌ Not yet set |
-| `NEXTAUTH_SECRET` | Session encryption | ✅ Set |
-| `NEXTAUTH_URL` | Auth redirect base URL | ✅ Set |
-| `STRIPE_SECRET_KEY` | Stripe billing | ❌ Not yet set |
-| `STRIPE_WEBHOOK_SECRET` | Stripe webhooks | ❌ Not yet set |
+| `/api/chat` | POST | AI chat — GPT-4o primary, Claude fallback | ✅ Live |
+| `/api/transcribe` | POST | Deepgram video/audio transcription | ✅ Live |
+| `/api/auth/callback` | GET | Google OAuth flow (openid + email + profile + adwords scope) | ✅ Live |
+| `/api/stripe` | POST | Stripe webhook for billing | ✅ Route exists (needs Stripe keys) |
+| `/api/ws` | GET | WebSocket status/health check | ✅ Live |
+| `wss://.../ws` | WS | WebSocket real-time updates | ✅ Live (PM2 + Caddy) |
 
 ---
 
-## Pages & Features
+## Environment Variables (ALL configured on server + local)
 
-### Dashboard Pages (all fully functional)
+| Variable | Status |
+|----------|--------|
+| `OPENAI_API_KEY` | ✅ Set |
+| `ANTHROPIC_API_KEY` | ✅ Set |
+| `DEEPGRAM_API_KEY` | ✅ Set |
+| `NEXTAUTH_SECRET` | ✅ Set |
+| `NEXTAUTH_URL` | ✅ Set |
+| `GOOGLE_CLIENT_ID` | ✅ Set |
+| `GOOGLE_CLIENT_SECRET` | ✅ Set |
+| `GOOGLE_ADS_DEVELOPER_TOKEN` | ✅ Set |
+| `STRIPE_SECRET_KEY` | ❌ Not set (needs Stripe account) |
+| `STRIPE_WEBHOOK_SECRET` | ❌ Not set (needs Stripe account) |
 
-| Page | Route | Features |
-|------|-------|----------|
-| **Dashboard** | `/dashboard` | Overview stats, quick actions, business summary |
-| **AI Assistant** | `/dashboard/chat` | Full AI chat with GPT-4o/Claude, voice input, per-business history, NLP intent matching, structured ad creation UI |
-| **Campaigns** | `/dashboard/campaigns` | Campaign table with Search/Shopping/Display types, status, budget, spend, clicks, conversions, cost/conv, trends, AI tips |
-| **Keywords** | `/dashboard/keywords` | Keyword management with Google Trends data, AI quality scores & verdicts, match types, bulk import/export, add/delete, search & filter |
-| **Ad Drafts** | `/dashboard/drafts` | Draft editor: text ads (headline/description inline editing), display ads (image library, drag-to-reposition, overlay text, CTA), version history, regenerate, go live workflow |
-| **Shopping Ads** | `/dashboard/shopping` | Product listings with Shopify connection, ROAS tracking, product status (active/disapproved/pending), performance stats |
-| **Knowledge Base** | `/dashboard/knowledge-base` | 4 tabs: Files & Media (drag-drop upload, AI analysis, Deepgram video transcription), Text Content (inline editing), Website URLs, Brand Profile (searchable industry dropdown with 100+ industries, editable fields) |
-| **AI Examples** | `/dashboard/demo/examples` | Example prompts organized by category (text ads, display ads, analysis, competitors, optimization) |
-| **FAQ** | `/dashboard/faq` | Searchable FAQ with categories |
-| **Settings** | `/dashboard/settings` | Account settings, preferences |
+> **Storage:** Server `.env` at `/home/ubuntu/admasterpro/.env` (chmod 600). Local at `/Users/bblist/admasterpro/.env.local`. Never committed to git.
 
-### Admin Pages
+---
 
-| Page | Route | Purpose |
-|------|-------|---------|
-| Admin Dashboard | `/admin` | Platform overview |
-| AI Costs | `/admin/ai-costs` | Token usage & cost tracking |
-| Analytics | `/admin/analytics` | Platform usage analytics |
-| Revenue | `/admin/revenue` | Subscription revenue tracking |
-| Users | `/admin/users` | User management |
+## Pages & Routes
+
+### Dashboard Pages
+| Page | Route | Status |
+|------|-------|--------|
+| Dashboard Home | `/dashboard` | ✅ Live |
+| AI Chat | `/dashboard/chat` | ✅ Live (real AI) |
+| Campaigns | `/dashboard/campaigns` | ✅ Empty state (shows after Ads API connected) |
+| Keywords | `/dashboard/keywords` | ✅ Empty state (shows after Ads API connected) |
+| Ad Drafts | `/dashboard/drafts` | ✅ Empty state (shows after Ads API connected) |
+| Shopping Ads | `/dashboard/shopping` | ✅ Empty state (shows after Ads API connected) |
+| Knowledge Base | `/dashboard/knowledge-base` | ✅ Full functionality |
+| AI Examples | `/dashboard/demo/examples` | ✅ Example prompts |
+| FAQ | `/dashboard/faq` | ✅ Live |
+| Settings | `/dashboard/settings` | ✅ Live |
+
+### Demo Pages (sample data — not in main nav)
+| Page | Route |
+|------|-------|
+| Demo Campaigns | `/dashboard/demo/campaigns` |
+| Demo Keywords | `/dashboard/demo/keywords` |
+| Demo Drafts | `/dashboard/demo/drafts` |
+| Demo Shopping | `/dashboard/demo/shopping` |
+| Demo Examples | `/dashboard/demo/examples` |
 
 ### Other Pages
-
-| Page | Route | Purpose |
-|------|-------|---------|
-| Landing Page | `/` | Marketing homepage |
-| Login | `/login` | Authentication page |
-| Onboarding | `/onboarding` | New user setup flow |
+| Page | Route |
+|------|-------|
+| Landing Page | `/` |
+| Login | `/login` |
+| Onboarding | `/onboarding` |
+| Admin Dashboard | `/admin` |
+| Admin AI Costs | `/admin/ai-costs` |
+| Admin Analytics | `/admin/analytics` |
+| Admin Revenue | `/admin/revenue` |
+| Admin Users | `/admin/users` |
 
 ---
 
 ## AI Agent Capabilities
 
-The AI assistant has comprehensive Google Ads knowledge and can perform:
+The system prompt (~10K characters) covers the complete Google Ads ecosystem:
 
-### Campaign Management
-- Create full campaign structures (campaign → ad groups → ads → keywords)
-- All campaign types: Search, Display, Shopping, Video, Performance Max, App, Demand Gen, Local
-- Budget recommendations with daily/monthly projections
-- Bidding strategy selection (tCPA, tROAS, Maximize Conversions, Manual CPC, etc.)
-- Ad scheduling (dayparting) and device/location bid adjustments
-
-### Ad Group Operations
-- Create themed ad groups with tight keyword groupings
-- Recommend 10-20 keywords per ad group with match types
-- Generate 3+ Responsive Search Ads per ad group (15 headlines + 4 descriptions)
-
-### Ad Creation
-- Responsive Search Ads (RSA) with full headline/description sets
-- Responsive Display Ads (RDA) with image/text specifications
-- Call-Only Ads for service businesses
-- All ad extensions: Sitelinks, Callouts, Structured Snippets, Call, Location, Price, Promotion, Image, Lead Form
-
-### Keyword Management
-- Keyword research with search volume estimates
-- Match type recommendations (Broad, Phrase, Exact)
-- Negative keyword suggestions (campaign + ad group level)
-- Search term analysis and pruning
-- Long-tail keyword discovery
-
-### Optimization & Analysis
-- Campaign audits with specific dollar amounts
-- Quality Score improvement recommendations
-- Budget reallocation suggestions
-- Competitive analysis (Auction Insights)
-- Geographic optimization
-- Seasonal strategy planning
-- Remarketing audience setup
-- Conversion tracking guidance
-
-### Policy Compliance (enforced automatically)
-- Blocks profanity, ALL CAPS, misleading claims
-- Handles sensitive industries: Cannabis/CBD, Dating, Weight Loss, Alcohol, Gambling, Financial Services
-- Suggests compliant alternatives when requests violate policy
+- **Campaign Types:** Search, Display, Shopping, Video, PMax, App, Demand Gen, Local
+- **Ad Formats:** RSA (15 headlines + 4 descriptions), RDA, Call-Only, Video
+- **Extensions:** Sitelinks, Callouts, Structured Snippets, Call, Location, Price, Promotion, Image, Lead Form, App
+- **Bidding:** tCPA, tROAS, Maximize Conversions, Maximize Clicks, Manual CPC, eCPC, Maximize Conv Value
+- **Optimization:** Quality Score, budget reallocation, geo targeting, dayparting, audience segmentation, A/B testing, negative keywords, search term analysis
+- **Compliance:** Profanity filter, ALL CAPS blocking, sensitive industry handling
+- **Models:** GPT-4o primary (4096 max tokens, temp 0.75), Claude fallback
 
 ---
 
-## Shared Components
+## Key Files
 
-| Component | Path | Purpose |
-|-----------|------|---------|
-| Tooltip | `src/components/Tooltip.tsx` | Information tooltips throughout the app |
-| Business Context | `src/lib/business-context.tsx` | Multi-business switching, active business state |
-| WebSocket | `src/lib/ws.ts` | Real-time communication infrastructure |
+| File | Purpose |
+|------|---------|
+| `src/app/api/chat/route.ts` | AI chat API with 10K system prompt |
+| `src/app/api/auth/callback/route.ts` | Google OAuth with Ads scope + refresh token storage |
+| `src/app/api/transcribe/route.ts` | Deepgram transcription API |
+| `src/app/login/page.tsx` | Login page with Google OAuth + email/password |
+| `src/app/dashboard/layout.tsx` | Sidebar nav, business switcher, notification bell |
+| `src/app/dashboard/chat/page.tsx` | AI chat interface |
+| `src/app/dashboard/knowledge-base/page.tsx` | KB with upload, editing, transcription |
+| `src/lib/business-context.tsx` | Multi-business state management |
+| `src/lib/ws.ts` | WebSocket client hook (reconnection, heartbeat) |
+| `src/components/Tooltip.tsx` | Shared tooltip component |
+| `ws-server.ts` | WebSocket server (runs as separate PM2 process) |
 
 ---
 
-## Deployment
+## Infrastructure
 
 | Item | Value |
 |------|-------|
-| Server | AWS Lightsail `admasterpro-v2` (2GB RAM) |
+| Instance | AWS Lightsail `admasterpro-v2` |
+| Spec | 2GB RAM, 2 vCPU, 60GB SSD |
 | Static IP | `3.225.249.236` |
-| Domain | `admasterai.nobleblocks.com` |
-| SSL | Let's Encrypt via Caddy |
-| Process | PM2 (`admasterpro`) |
+| OS | Ubuntu 24.04 LTS |
+| Node.js | v20 LTS |
 | SSH Key | `~/.ssh/lightsail-admasterpro.pem` |
-| Deploy Flow | `git push` → SSH → `git pull && npm run build && pm2 restart admasterpro` |
+| SSH Command | `ssh -i ~/.ssh/lightsail-admasterpro.pem ubuntu@3.225.249.236` |
+| App Directory (server) | `/home/ubuntu/admasterpro` |
+| App Directory (local) | `/Users/bblist/admasterpro` |
+| GitHub | `https://github.com/bblist/admasterpro` |
+
+### Deploy Command (one-liner from Mac)
+```bash
+ssh -i ~/.ssh/lightsail-admasterpro.pem ubuntu@3.225.249.236 'cd /home/ubuntu/admasterpro && git pull origin main && npm run build 2>&1 | tail -20 && pm2 restart all'
+```
 
 ---
 
-## What's Next (Roadmap)
+## Google Ads API Setup (Multi-Tenant SaaS)
 
-### Immediate Priorities
-1. **Google OAuth setup** — User creating credentials. Redirect URI: `https://admasterai.nobleblocks.com/api/auth/callback`
-2. **Deepgram API key** — Add to server `.env` to enable real video transcription
-3. **Google Ads API integration** — Connect to live Google Ads data for real campaign/keyword management
+### How It Works
+1. **Platform** has ONE Developer Token (from MCC account)
+2. **Each user** signs in with Google OAuth → grants `adwords` scope
+3. Platform stores user's `refresh_token` (currently in httpOnly cookie, needs DB)
+4. API calls use: Platform Developer Token + User's OAuth token
+5. This lets us manage ANY user's Google Ads account
 
-### Future Enhancements
-- Stripe subscription billing (plans: Free, Pro, Enterprise)
-- Google Analytics 4 linking
-- Google Merchant Center / Shopify auto-sync
-- Automated rules engine (pause/adjust based on thresholds)
-- White-label support for agencies
-- Multi-user access with roles (admin, editor, viewer)
-- Scheduled reporting (daily/weekly email reports)
+### OAuth Scopes Requested
+- `openid`, `email`, `profile` — identity
+- `https://www.googleapis.com/auth/adwords` — Google Ads API access
+
+### Google Cloud Console Setup (completed)
+- ✅ OAuth Client ID created
+- ✅ Redirect URI configured
+- ✅ Google Ads API enabled
+- ✅ Adwords scope added to consent screen
+- ✅ Identity scopes added
+
+---
+
+## What's Next (Priority Order)
+
+### After API Approval (2-5 days)
+1. Wire up Google Ads API integration (read campaigns, push ads)
+2. Auto-discover user's Ads Customer IDs
+3. Campaign sync — pull existing campaigns into dashboard
+4. Push AI-generated campaigns directly to user's account
+
+### Soon
+5. Database layer (PostgreSQL/Supabase + Prisma) for user accounts, sessions, refresh tokens, chat history
+6. Stripe billing integration
+7. Protected route middleware (auth guard)
+
+### Later
+8. Automated rules engine (auto-pause, bid adjustments)
+9. PDF report export
+10. Multi-user agency support (roles: admin, editor, viewer)
+11. Google Analytics 4 linking
+12. White-label for agencies
 
 ---
 
 ## Recent Commits
 
 ```
+0c77285 Multi-tenant SaaS auth: Google OAuth with Ads scope + email sign-in
+dea793e Google Ads agent knowledge expansion + PROJECT_STATUS.md
 9478be2 Move all demo features to live pages - fully working
 74170ec KB enhancements, Deepgram transcription, Google Ads policy compliance, notification bell
 db12b13 Go live: real AI integration, demo migration, humanized responses
-8c09bdc Cross-account awareness, smart confirmations, portfolio queries
-c02b9ea Keyword management with AI control, Google Trends, bulk import, branded report export
-3ef5d41 Per-business chat history isolation, in-chat account switching, KB business context
-35eae27 Restructure: Demo Examples section, empty states, hide LLM badges, drag-to-reposition
-9a34979 Business context isolation — sidebar switcher + agent off-topic guard
-98a6828 AnalyserNode silence detection + platform-aware mic permission UX
-3f36ae2 Mobile optimization + mic permission flow + cross-browser voice
 ```
+
+---
+
+## Important Notes for Future Developers
+
+1. **NEVER write large files via SSH heredoc** — it corrupts content. Use Python scripts or `scp` instead.
+2. **API keys** are ONLY in `.env` / `.env.local` — never in code or docs.
+3. **The AI system prompt** is in `src/app/api/chat/route.ts` (~10K chars, full Google Ads ecosystem).
+4. **Demo pages** at `/dashboard/demo/*` contain sample data. Live pages show empty states until Google Ads API is connected.
+5. **Caddy** handles SSL + reverse proxy (not Nginx — some old docs reference Nginx but we switched to Caddy).
+6. **Build takes ~2-3 min** on the 2GB Lightsail instance.
+7. **WebSocket server** runs as separate PM2 process on port 3001, Caddy proxies `/ws` to it.
