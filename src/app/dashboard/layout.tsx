@@ -42,6 +42,8 @@ const mainNavItems = [
 ];
 
 const demoNavItems = [
+    { href: "/dashboard/demo/campaigns", label: "Campaigns", icon: FileText },
+    { href: "/dashboard/demo/keywords", label: "Keywords", icon: Search },
     { href: "/dashboard/demo/drafts", label: "Ad Drafts", icon: FileText },
     { href: "/dashboard/demo/shopping", label: "Shopping Ads", icon: ShoppingBag },
     { href: "/dashboard/demo/examples", label: "AI Examples", icon: Lightbulb },

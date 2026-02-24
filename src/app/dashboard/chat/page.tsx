@@ -1524,6 +1524,37 @@ export default function ChatPage() {
         setIsTyping(false);
     }, [businesses, activeBusiness, messages, setActiveBusiness]);
 
+    // ─── Call Real AI API ───────────────────────────────────────────────────
+
+    const callAI = useCallback(async (message: string, chatHistory: Message[]) => {
+        try {
+            const res = await fetch("/api/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    message,
+                    businessName: activeBusiness.name,
+                    businessIndustry: activeBusiness.industry,
+                    businessServices: activeBusiness.services,
+                    businessLocation: activeBusiness.location,
+                    context: activeBusiness.shortDesc,
+                    history: chatHistory
+                        .filter((m) => m.role === "ai" || m.role === "user")
+                        .slice(-10)
+                        .map((m) => ({
+                            role: m.role === "ai" ? "assistant" : "user",
+                            content: m.content,
+                        })),
+                }),
+            });
+            if (!res.ok) throw new Error(`API error: ${res.status}`);
+            return await res.json();
+        } catch (err) {
+            console.error("AI call failed:", err);
+            return null;
+        }
+    }, [activeBusiness]);
+
     // ─── Send Message ───────────────────────────────────────────────────────
 
     const sendMessage = useCallback((text: string) => {
@@ -1771,6 +1802,26 @@ export default function ChatPage() {
                         { label: "No, not yet", type: "secondary" },
                     ],
                 };
+            } else if (intent.intent === "unknown") {
+                // ── Route to real AI API for general / free-form queries ──
+                callAI(text, messages).then((aiResult) => {
+                    const aiResponse: Message = {
+                        id: Date.now() + 2,
+                        role: "ai",
+                        model: (aiResult?.model as LLMModel) || "gpt-4o",
+                        content: aiResult?.content || "Hmm, something went sideways. Give it another shot?",
+                        timestamp: timeNow(),
+                    };
+                    const divider: Message = {
+                        id: Date.now() + 1,
+                        role: "divider",
+                        content: "",
+                        timestamp: `${dateNow()} \u2022 ${timeNow()}`,
+                    };
+                    setMessages((prev) => [...prev, divider, aiResponse]);
+                    setIsTyping(false);
+                });
+                return;
             } else {
                 response = generateResponse(intent, text, activeBusiness);
             }
@@ -1798,7 +1849,7 @@ export default function ChatPage() {
             setMessages((prev) => [...prev, divider, aiMsg]);
             setIsTyping(false);
         }, delay);
-    }, [isTyping, activeBusiness, businesses, getOffTopicBusiness, switchToBusiness]);
+    }, [isTyping, activeBusiness, businesses, getOffTopicBusiness, switchToBusiness, callAI, messages]);
 
     // Keep ref in sync so startListening can call sendMessage via ref
     useEffect(() => {

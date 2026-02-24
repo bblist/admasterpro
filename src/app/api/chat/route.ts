@@ -1,13 +1,12 @@
 /**
  * AI Chat API Route
  *
- * Handles AI chat requests, routing to GPT-4o (primary) or Claude 4.6 (fallback).
- * When API keys are provided via environment variables, this becomes fully functional.
- * Without keys, it returns a demo response.
+ * Routes to GPT-4o (primary) or Claude (fallback).
+ * Provides structured responses with actions, stats, and ad previews.
  *
- * Environment variables needed:
+ * Environment variables:
  *   OPENAI_API_KEY     - OpenAI API key for GPT-4o
- *   ANTHROPIC_API_KEY  - Anthropic API key for Claude 4.6
+ *   ANTHROPIC_API_KEY  - Anthropic API key for Claude
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -19,54 +18,123 @@ interface ChatRequest {
     message: string;
     model?: "gpt-4o" | "claude-4.6";
     context?: string;
+    businessName?: string;
+    businessIndustry?: string;
+    businessServices?: string[];
+    businessLocation?: string;
     history?: { role: string; content: string }[];
 }
 
-const SYSTEM_PROMPT = `You are AdMaster Pro AI, an expert Google Ads assistant. You help clients create ads, optimize campaigns, find wasted spend, and analyze competitors. Be concise, actionable, and friendly. When creating ads, always provide complete headlines, descriptions, and display URLs. When analyzing data, give specific numbers and recommendations. You have access to the client's Knowledge Base, campaign data, and industry benchmarks.`;
+const SYSTEM_PROMPT = `You are the AI assistant for AdMaster Pro — a Google Ads management platform. You work directly for the business owner as their personal ad strategist and campaign manager.
+
+PERSONALITY & TONE:
+- Talk like a sharp, friendly colleague — not a corporate bot
+- Be direct, specific, and confident. No waffling or filler
+- Use real numbers, real percentages, real dollar amounts 
+- Show genuine excitement about wins ("Nice! That's a solid CTR" not "Your CTR is performing well")
+- Be honest about problems ("This keyword is bleeding money" not "This keyword may benefit from optimization")
+- Use casual language where natural: "Looks like...", "Here's the deal...", "Quick heads up..."
+- NEVER say "I'd be happy to help" or "Certainly!" or "I understand your concern" — just do it
+- Keep responses punchy. 2-4 paragraphs max unless creating ads or detailed analysis
+- Use **bold** for key numbers and names. Use bullet points for lists.
+
+CAPABILITIES:
+- Create Google Search text ads (headlines, descriptions, display URLs)
+- Create Display ad concepts (dimensions, copy, CTA)
+- Analyze campaign performance with specific metrics
+- Find wasted ad spend (junk keywords, bad time slots, device overbidding)
+- Research and suggest keywords with estimated performance
+- Analyze competitor strategies and positioning
+- Recommend budget allocation and bid adjustments
+- Generate branded reports
+
+WHEN CREATING ADS:
+- Always create 3 variations minimum
+- Each ad: 2 headlines (30 chars each), 1 description (90 chars), display URL
+- Make each variation genuinely different in approach (benefit-focused, urgency, social proof)
+- Reference the business name, location, and specific services
+- Include strong CTAs
+
+WHEN ANALYZING:
+- Give specific dollar amounts for savings/waste
+- Name actual keywords, not generic placeholders
+- Provide actionable next steps, not vague suggestions
+- Compare to industry benchmarks when relevant
+
+WHEN DISCUSSING COMPETITORS:
+- Reference competitor names when provided
+- Give estimated ad positions, spend, and strategy
+- Suggest specific counter-strategies
+
+FORMAT:
+- Use markdown: **bold**, bullet points, numbered lists
+- Keep it scannable — busy business owners need to get the point fast
+- End with a clear next step or question when appropriate`;
 
 async function callOpenAI(body: ChatRequest) {
     if (!OPENAI_API_KEY) return null;
 
+    const contextParts: string[] = [];
+    if (body.businessName) contextParts.push(`Business: ${body.businessName}`);
+    if (body.businessIndustry) contextParts.push(`Industry: ${body.businessIndustry}`);
+    if (body.businessServices?.length) contextParts.push(`Services: ${body.businessServices.join(", ")}`);
+    if (body.businessLocation) contextParts.push(`Location: ${body.businessLocation}`);
+    if (body.context) contextParts.push(body.context);
+
     const messages = [
         { role: "system", content: SYSTEM_PROMPT },
-        ...(body.context ? [{ role: "system", content: `Client context: ${body.context}` }] : []),
+        ...(contextParts.length ? [{ role: "system", content: `Client context: ${contextParts.join(" | ")}` }] : []),
         ...(body.history || []),
         { role: "user", content: body.message },
     ];
 
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${OPENAI_API_KEY}`,
-        },
-        body: JSON.stringify({
-            model: "gpt-4o",
-            messages,
-            max_tokens: 2048,
-            temperature: 0.7,
-        }),
-    });
+    try {
+        const res = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${OPENAI_API_KEY}`,
+            },
+            body: JSON.stringify({
+                model: "gpt-4o",
+                messages,
+                max_tokens: 2048,
+                temperature: 0.75,
+            }),
+        });
 
-    if (!res.ok) {
-        console.error("[OpenAI] Error:", res.status, await res.text());
+        if (!res.ok) {
+            console.error("[OpenAI] Error:", res.status, await res.text());
+            return null;
+        }
+
+        const data = await res.json();
+        return {
+            content: data.choices?.[0]?.message?.content || "Hmm, didn\u2019t get a response back. Try again?",
+            model: "gpt-4o" as const,
+            tokens: {
+                prompt: data.usage?.prompt_tokens || 0,
+                completion: data.usage?.completion_tokens || 0,
+                total: data.usage?.total_tokens || 0,
+            },
+        };
+    } catch (err) {
+        console.error("[OpenAI] Fetch error:", err);
         return null;
     }
-
-    const data = await res.json();
-    return {
-        content: data.choices?.[0]?.message?.content || "No response generated.",
-        model: "gpt-4o" as const,
-        tokens: {
-            prompt: data.usage?.prompt_tokens || 0,
-            completion: data.usage?.completion_tokens || 0,
-            total: data.usage?.total_tokens || 0,
-        },
-    };
 }
 
 async function callAnthropic(body: ChatRequest) {
     if (!ANTHROPIC_API_KEY) return null;
+
+    const contextParts: string[] = [];
+    if (body.businessName) contextParts.push(`Business: ${body.businessName}`);
+    if (body.businessIndustry) contextParts.push(`Industry: ${body.businessIndustry}`);
+    if (body.businessServices?.length) contextParts.push(`Services: ${body.businessServices.join(", ")}`);
+    if (body.businessLocation) contextParts.push(`Location: ${body.businessLocation}`);
+    if (body.context) contextParts.push(body.context);
+
+    const systemText = SYSTEM_PROMPT + (contextParts.length ? `\n\nClient context: ${contextParts.join(" | ")}` : "");
 
     const messages = [
         ...(body.history || []).map((m) => ({
@@ -76,36 +144,41 @@ async function callAnthropic(body: ChatRequest) {
         { role: "user" as const, content: body.message },
     ];
 
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "x-api-key": ANTHROPIC_API_KEY,
-            "anthropic-version": "2023-06-01",
-        },
-        body: JSON.stringify({
-            model: "claude-sonnet-4-20250514",
-            max_tokens: 2048,
-            system: SYSTEM_PROMPT + (body.context ? `\n\nClient context: ${body.context}` : ""),
-            messages,
-        }),
-    });
+    try {
+        const res = await fetch("https://api.anthropic.com/v1/messages", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "x-api-key": ANTHROPIC_API_KEY,
+                "anthropic-version": "2023-06-01",
+            },
+            body: JSON.stringify({
+                model: "claude-sonnet-4-20250514",
+                max_tokens: 2048,
+                system: systemText,
+                messages,
+            }),
+        });
 
-    if (!res.ok) {
-        console.error("[Anthropic] Error:", res.status, await res.text());
+        if (!res.ok) {
+            console.error("[Anthropic] Error:", res.status, await res.text());
+            return null;
+        }
+
+        const data = await res.json();
+        return {
+            content: data.content?.[0]?.text || "Hmm, didn\u2019t get a response back. Try again?",
+            model: "claude-4.6" as const,
+            tokens: {
+                prompt: data.usage?.input_tokens || 0,
+                completion: data.usage?.output_tokens || 0,
+                total: (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0),
+            },
+        };
+    } catch (err) {
+        console.error("[Anthropic] Fetch error:", err);
         return null;
     }
-
-    const data = await res.json();
-    return {
-        content: data.content?.[0]?.text || "No response generated.",
-        model: "claude-4.6" as const,
-        tokens: {
-            prompt: data.usage?.input_tokens || 0,
-            completion: data.usage?.output_tokens || 0,
-            total: (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0),
-        },
-    };
 }
 
 export async function POST(req: NextRequest) {
@@ -128,10 +201,10 @@ export async function POST(req: NextRequest) {
             if (!result) result = await callOpenAI(body);
         }
 
-        // No API keys configured — return demo mode response
+        // No API keys configured \u2014 return demo mode response
         if (!result) {
             return NextResponse.json({
-                content: "🔧 **Demo Mode** — AI API keys not configured yet. The AI assistant is running in demo mode with pre-built responses. Once API keys are added, this will use real GPT-4o and Claude 4.6 models for dynamic responses.",
+                content: "\uD83D\uDD27 **Demo Mode** \u2014 AI API keys not configured yet. The assistant is running with pre-built responses. Once API keys are added, this will use real GPT-4o and Claude models.",
                 model: "gpt-4o",
                 demo: true,
                 tokens: { prompt: 0, completion: 0, total: 0 },
@@ -142,7 +215,7 @@ export async function POST(req: NextRequest) {
     } catch (error) {
         console.error("[Chat API] Error:", error);
         return NextResponse.json(
-            { error: "Internal server error" },
+            { error: "Something went wrong on our end. Give it another shot." },
             { status: 500 }
         );
     }
