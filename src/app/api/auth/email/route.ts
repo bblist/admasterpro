@@ -11,7 +11,7 @@ import { PLANS } from "@/lib/plans";
 import { signToken } from "@/lib/jwt";
 import { authLimiter, checkRateLimit } from "@/lib/rate-limit";
 
-const emailLoginEnabled = process.env.NODE_ENV !== "production" || process.env.ENABLE_EMAIL_LOGIN === "true";
+const emailLoginEnabled = process.env.ENABLE_EMAIL_LOGIN !== "false";
 
 export async function POST(req: NextRequest) {
     if (!emailLoginEnabled) {

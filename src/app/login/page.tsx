@@ -6,7 +6,7 @@ import { Suspense, useState } from "react";
 import { Zap, Mail, ArrowRight, Shield } from "lucide-react";
 import { setAuth, decodeTokenPayload, clearAuth } from "@/lib/auth-client";
 
-const emailLoginEnabled = process.env.NODE_ENV !== "production" || process.env.NEXT_PUBLIC_ENABLE_EMAIL_LOGIN === "true";
+const emailLoginEnabled = process.env.NEXT_PUBLIC_ENABLE_EMAIL_LOGIN !== "false";
 
 function LoginForm() {
     const searchParams = useSearchParams();
