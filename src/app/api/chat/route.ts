@@ -1,11 +1,11 @@
 /**
  * AI Chat API Route
  *
- * Routes to GPT-4o (primary) or Claude (fallback).
+ * Routes to GPT-4o-mini (primary) or Claude (fallback).
  * Provides structured responses with actions, stats, and ad previews.
  *
  * Environment variables:
- *   OPENAI_API_KEY     - OpenAI API key for GPT-4o
+ *   OPENAI_API_KEY     - OpenAI API key for GPT-4o-mini
  *   ANTHROPIC_API_KEY  - Anthropic API key for Claude
  */
 
@@ -18,7 +18,7 @@ const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
 interface ChatRequest {
     message: string;
-    model?: "gpt-4o" | "claude-4.6";
+    model?: "gpt-4o-mini" | "gpt-4o" | "claude-4.6";
     context?: string;
     locale?: string;
     businessId?: string;
@@ -785,7 +785,7 @@ export async function POST(req: NextRequest) {
         }
 
         // ─── Call AI Model ──────────────────────────────────────────────────
-        const preferredModel = body.model || "gpt-4o-mini";
+        const preferredModel = body.model === "gpt-4o" ? "gpt-4o-mini" : (body.model || "gpt-4o-mini");
         let result = null;
 
         if (preferredModel === "gpt-4o-mini") {

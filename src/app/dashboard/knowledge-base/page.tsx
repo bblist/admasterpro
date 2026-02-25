@@ -2,7 +2,7 @@
 
 import {
     Upload,
-    Image,
+    Image as ImageIcon,
     FileText,
     Trash2,
     MessageSquare,
@@ -225,7 +225,7 @@ const typeIcon = (type: AssetType) => {
         case "image": return <FileImage className="w-8 h-8 text-white/80" />;
         case "video": return <FileVideo className="w-8 h-8 text-white/80" />;
         case "document": return <FileText className="w-8 h-8 text-white/80" />;
-        case "ad": return <Image className="w-8 h-8 text-white/80" />;
+        case "ad": return <ImageIcon className="w-8 h-8 text-white/80" />;
         default: return <File className="w-8 h-8 text-white/80" />;
     }
 };

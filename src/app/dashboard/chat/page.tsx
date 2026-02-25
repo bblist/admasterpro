@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import NextImage from "next/image";
 import {
     Send,
     Zap,
@@ -21,7 +22,7 @@ import {
     Users,
     ArrowRight,
     FileText,
-    Image,
+    Image as ImageIcon,
     ExternalLink,
     Eye,
     Rocket,
@@ -45,7 +46,7 @@ import { useTranslation } from "@/i18n/context";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-type LLMModel = "gpt-4o" | "claude-4.6";
+type LLMModel = "gpt-4o-mini" | "claude-4.6";
 
 interface AdPreview {
     type: "text" | "display";
@@ -264,7 +265,7 @@ const getInitialMessages = (bizIn: BusinessProfile | null, t: (key: string, para
         {
             id: 2,
             role: "ai",
-            model: "gpt-4o",
+            model: "gpt-4o-mini",
             content:
                 `${t("chat.greeting.hello", { name })} **${t("chat.status")}**\n\n` +
                 `${t("chat.greeting.actions")}`,
@@ -371,8 +372,8 @@ const getMicInstructions = (browser: string, platform: Platform): { steps: strin
 export default function ChatPage() {
     const { activeBusiness, businesses, setActiveBusiness } = useBusiness();
     const { t, locale } = useTranslation();
-    // getOffTopicBusiness was removed — stub it to always return null
-    const getOffTopicBusiness = (_text: string): BusinessProfile | null => null;
+    // getOffTopicBusiness was removed — keep stable callback to avoid hook churn
+    const getOffTopicBusiness = useCallback((_text: string): BusinessProfile | null => null, []);
     const chatHistoryRef = useRef<Map<string, Message[]>>(new Map());
     const [messages, setMessages] = useState<Message[]>(() => getInitialMessages(activeBusiness, t));
     const [input, setInput] = useState("");
@@ -733,7 +734,7 @@ export default function ChatPage() {
                 .then((stream) => attemptStart(stream))
                 .catch(() => attemptStart()); // If stream fails, start without analyser
         }
-    }, [clearSilenceTimer, startSilenceCountdown, startAudioLevelMonitoring, stopAudioAnalysis, micPermission]);
+    }, [clearSilenceTimer, startSilenceCountdown, startAudioLevelMonitoring, stopAudioAnalysis, micPermission, locale, t]);
 
     const stopListening = useCallback(() => {
         clearSilenceTimer();
@@ -745,7 +746,7 @@ export default function ChatPage() {
         setIsListening(false);
         setVoiceText("");
         setVoicePaused(false);
-    }, [clearSilenceTimer]);
+    }, [clearSilenceTimer, stopAudioAnalysis]);
 
     // ─── In-chat business switch handler ────────────────────────────────────
 
@@ -774,7 +775,7 @@ export default function ChatPage() {
         const greeting: Message = {
             id: Date.now() + 1,
             role: "ai",
-            model: "gpt-4o",
+            model: "gpt-4o-mini",
             content: `🔄 ${t("chat.switchedTo", { name: biz.name })} (${biz.industry}).\n\n` +
                 `${t("chat.switchedUsing", { name: biz.name })}\n\n` +
                 `${t("chat.switchedQuestion", { name: biz.name })}`,
@@ -788,7 +789,7 @@ export default function ChatPage() {
 
         setMessages([...baseHistory, switchMsg, greeting]);
         setIsTyping(false);
-    }, [businesses, activeBusiness, messages, setActiveBusiness]);
+    }, [businesses, activeBusiness, messages, setActiveBusiness, t]);
 
     // ─── Call Real AI API ───────────────────────────────────────────────────
 
@@ -852,7 +853,7 @@ export default function ChatPage() {
         if (/^No, stay on /i.test(text)) {
             const stayResp: Omit<Message, "id"> = {
                 role: "ai",
-                model: "gpt-4o",
+                model: "gpt-4o-mini",
                 content: `\uD83D\uDC4D Staying on **${activeBusiness.name}**. What would you like me to do?`,
                 timestamp: timeNow(),
                 actions: [
@@ -901,7 +902,7 @@ export default function ChatPage() {
                 // Already on that account
                 const response: Omit<Message, "id"> = {
                     role: "ai",
-                    model: "gpt-4o",
+                    model: "gpt-4o-mini",
                     content: `You\u2019re already managing **${activeBusiness.name}** (${activeBusiness.industry}). I\u2019m using this account\u2019s Knowledge Base and campaign history.\n\nWhat would you like to do?`,
                     timestamp: timeNow(),
                     actions: [
@@ -924,7 +925,7 @@ export default function ChatPage() {
 
                 const response: Omit<Message, "id"> = {
                     role: "ai",
-                    model: "gpt-4o",
+                    model: "gpt-4o-mini",
                     content: `Sure! Which ad account would you like me to check on? Here are your accounts:\n\n${bizList}\n\nJust click one below or tell me the name.`,
                     timestamp: timeNow(),
                     actions: businesses
@@ -945,7 +946,7 @@ export default function ChatPage() {
             // Only 1 business — nothing to switch to
             const response: Omit<Message, "id"> = {
                 role: "ai",
-                model: "gpt-4o",
+                model: "gpt-4o-mini",
                 content: `You only have one ad account: **${activeBusiness.name}** (${activeBusiness.industry}). I\u2019m already using this account\u2019s data and Knowledge Base.\n\nNeed to add another business? Go to **Knowledge Base** in the sidebar.`,
                 timestamp: timeNow(),
                 actions: [
@@ -970,7 +971,7 @@ export default function ChatPage() {
                 const aiResponse: Message = {
                     id: Date.now() + 2,
                     role: "ai",
-                    model: (aiResult?.model as LLMModel) || "gpt-4o",
+                    model: (aiResult?.model as LLMModel) || "gpt-4o-mini",
                     content: aiResult?.content || "I couldn\u2019t fetch your portfolio data right now. Please try again.",
                     timestamp: timeNow(),
                     actions: [
@@ -1013,7 +1014,7 @@ export default function ChatPage() {
 
             response = {
                 role: "ai",
-                model: "gpt-4o",
+                model: "gpt-4o-mini",
                 content: `\uD83E\uDD14 Just to confirm \u2014 it sounds like you want me to **${actionLabel}** for **${offTopicBiz.name}** (${offTopicBiz.industry}).\n\n` +
                     `I\u2019m currently managing **${activeBusiness.name}**. I\u2019ll need to switch accounts first so I can use **${offTopicBiz.name}\u2019s** Knowledge Base, campaign data, and brand voice.\n\n` +
                     `Want me to switch over?`,
@@ -1029,7 +1030,7 @@ export default function ChatPage() {
                 const aiResponse: Message = {
                     id: Date.now() + 2,
                     role: "ai",
-                    model: (aiResult?.model as LLMModel) || "gpt-4o",
+                    model: (aiResult?.model as LLMModel) || "gpt-4o-mini",
                     content: aiResult?.content || "Hmm, something went sideways. Give it another shot?",
                     timestamp: timeNow(),
                 };
@@ -1130,13 +1131,19 @@ export default function ChatPage() {
         return (
             <div key={index} className="bg-white border border-orange-200 rounded-lg overflow-hidden mt-2 shadow-sm">
                 <div className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 border-b border-orange-100">
-                    <Image className="w-3 h-3 text-orange-600" />
+                    <ImageIcon className="w-3 h-3 text-orange-600" />
                     <span className="text-[10px] font-medium text-orange-600 uppercase tracking-wide">Display Ad</span>
                     {ad.dimensions && <span className="text-[10px] text-orange-400 ml-auto">{ad.format} ({ad.dimensions})</span>}
                 </div>
                 <div className={`relative h-28 ${!ad.imageUrl ? `bg-gradient-to-r ${ad.previewBg || "from-gray-400 to-gray-500"}` : ""}`}>
                     {ad.imageUrl && (
-                        <img src={ad.imageUrl} alt={ad.title || ""} className="absolute inset-0 w-full h-full object-cover" />
+                        <NextImage
+                            src={ad.imageUrl}
+                            alt={ad.title || "Display ad image"}
+                            fill
+                            unoptimized
+                            className="absolute inset-0 w-full h-full object-cover"
+                        />
                     )}
                     <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center p-3">
                         <div className="text-white font-bold text-sm text-center drop-shadow-lg leading-tight">
@@ -1335,7 +1342,7 @@ export default function ChatPage() {
             {/* Chat header */}
             <div className="flex items-center justify-between pb-3 border-b border-border mb-3">
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                    <img src="https://api.dicebear.com/9.x/bottts-neutral/svg?seed=AdMasterAI&backgroundColor=4f46e5" alt="AI" className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl shadow-lg shadow-primary/20 shrink-0" />
+                    <NextImage src="https://api.dicebear.com/9.x/bottts-neutral/svg?seed=AdMasterAI&backgroundColor=4f46e5" alt="AI" width={40} height={40} unoptimized className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl shadow-lg shadow-primary/20 shrink-0" />
                     <div className="min-w-0">
                         <h1 className="font-semibold text-sm sm:text-base flex items-center gap-1.5 sm:gap-2 flex-wrap">
                             <span className="truncate">AI Assistant</span>
@@ -1388,7 +1395,7 @@ export default function ChatPage() {
                     if (msg.role === "user") {
                         return (
                             <div key={msg.id} className="flex gap-2 sm:gap-3 flex-row-reverse py-2">
-                                <img src="https://api.dicebear.com/9.x/thumbs/svg?seed=MikeClient&backgroundColor=e2e8f0" alt="You" className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg shrink-0" />
+                                <NextImage src="https://api.dicebear.com/9.x/thumbs/svg?seed=MikeClient&backgroundColor=e2e8f0" alt="You" width={32} height={32} unoptimized className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg shrink-0" />
                                 <div className="max-w-[85%] sm:max-w-[80%] text-right">
                                     <div className="bg-primary text-white rounded-xl rounded-tr-sm px-3 sm:px-4 py-2 sm:py-2.5 text-sm leading-relaxed inline-block text-left">
                                         {msg.content}
@@ -1402,7 +1409,7 @@ export default function ChatPage() {
                     // AI message
                     return (
                         <div key={msg.id} className="flex gap-2 sm:gap-3 py-2">
-                            <img src="https://api.dicebear.com/9.x/bottts-neutral/svg?seed=AdMasterAI&backgroundColor=4f46e5" alt="AI" className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg shrink-0 shadow-sm" />
+                            <NextImage src="https://api.dicebear.com/9.x/bottts-neutral/svg?seed=AdMasterAI&backgroundColor=4f46e5" alt="AI" width={32} height={32} unoptimized className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg shrink-0 shadow-sm" />
                             <div className="max-w-[90%] sm:max-w-[88%] min-w-0">
 
 
@@ -1465,7 +1472,7 @@ export default function ChatPage() {
                 {/* Typing indicator */}
                 {isTyping && (
                     <div className="flex gap-3 py-2">
-                        <img src="https://api.dicebear.com/9.x/bottts-neutral/svg?seed=AdMasterAI&backgroundColor=4f46e5" alt="AI" className="w-8 h-8 rounded-lg shrink-0" />
+                        <NextImage src="https://api.dicebear.com/9.x/bottts-neutral/svg?seed=AdMasterAI&backgroundColor=4f46e5" alt="AI" width={32} height={32} unoptimized className="w-8 h-8 rounded-lg shrink-0" />
                         <div className="bg-card border border-border rounded-xl px-4 py-3 flex items-center gap-3">
                             <Loader2 className="w-4 h-4 animate-spin text-primary" />
                             <div className="flex items-center gap-1.5">

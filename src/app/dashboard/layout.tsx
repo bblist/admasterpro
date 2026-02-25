@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
     Zap,
@@ -472,7 +473,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                         </div>
                         <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white text-sm font-medium overflow-hidden">
                             {userPicture ? (
-                                <img src={userPicture} alt="" className="w-full h-full object-cover" />
+                                <Image src={userPicture} alt="User profile" width={32} height={32} unoptimized className="w-full h-full object-cover" />
                             ) : (
                                 userName ? userName.charAt(0).toUpperCase() : "U"
                             )}

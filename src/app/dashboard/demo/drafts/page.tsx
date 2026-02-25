@@ -7,7 +7,7 @@ import {
     Trash2,
     Rocket,
     Clock,
-    Image,
+    Image as ImageIcon,
     RefreshCw,
     ChevronDown,
     ChevronUp,
@@ -25,6 +25,7 @@ import {
     RotateCcw,
     EyeOff,
 } from "lucide-react";
+import NextImage from "next/image";
 import { useState, useRef, useCallback } from "react";
 import Tooltip from "@/components/Tooltip";
 
@@ -709,9 +710,11 @@ export default function DraftsPage() {
                     className={`relative rounded-lg overflow-hidden ${heightClass} ${!hasImage ? `bg-gradient-to-r ${content.previewBg}` : ""}`}
                 >
                     {hasImage && (
-                        <img
+                        <NextImage
                             src={content.imageUrl}
                             alt={content.title}
+                            fill
+                            unoptimized
                             className="absolute inset-0 w-full h-full object-cover"
                             style={{
                                 objectPosition: positionToCSS((content.imagePosition || "center") as ImagePosition),
@@ -763,7 +766,7 @@ export default function DraftsPage() {
                     <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-sidebar">
                         <div className="flex items-center gap-3">
                             <div className="bg-gradient-to-br from-orange-500 to-pink-500 rounded-lg p-2">
-                                <Image className="w-4 h-4 text-white" />
+                                <ImageIcon className="w-4 h-4 text-white" />
                             </div>
                             <div>
                                 <h2 className="font-semibold text-sm">Display Ad Editor</h2>
@@ -833,9 +836,12 @@ export default function DraftsPage() {
                                                                 : "border-border hover:border-primary/50"
                                                             }`}
                                                     >
-                                                        <img
+                                                        <NextImage
                                                             src={img.url}
                                                             alt={img.name}
+                                                            width={240}
+                                                            height={80}
+                                                            unoptimized
                                                             className="w-full h-20 object-cover"
                                                         />
                                                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition flex items-center justify-center">
@@ -1153,9 +1159,11 @@ export default function DraftsPage() {
                                             onPointerCancel={handleDragEnd}
                                         >
                                             {dc.imageUrl && (
-                                                <img
+                                                <NextImage
                                                     src={dc.imageUrl}
                                                     alt={dc.title}
+                                                    fill
+                                                    unoptimized
                                                     className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
                                                     draggable={false}
                                                     style={{
@@ -1281,7 +1289,7 @@ export default function DraftsPage() {
                         {[
                             { key: "all" as AdFilter, label: "All", count: drafts.length },
                             { key: "text" as AdFilter, label: "Text Ads", count: textDrafts.length, icon: FileText },
-                            { key: "display" as AdFilter, label: "Display Ads", count: displayDrafts.length, icon: Image },
+                            { key: "display" as AdFilter, label: "Display Ads", count: displayDrafts.length, icon: ImageIcon },
                         ].map((f) => (
                             <button
                                 key={f.key}
@@ -1365,7 +1373,7 @@ export default function DraftsPage() {
                                             {draft.type === "text" ? (
                                                 <><FileText className="w-3 h-3" /> Text Ad</>
                                             ) : (
-                                                <><Image className="w-3 h-3" /> Display Ad</>
+                                                <><ImageIcon className="w-3 h-3" /> Display Ad</>
                                             )}
                                         </span>
                                         <span className="text-xs text-muted">{draft.campaign} &bull; {draft.client}</span>
@@ -1459,9 +1467,11 @@ export default function DraftsPage() {
                                                         ) : (
                                                             <div className={`relative rounded overflow-hidden h-12 ${!(version.content as DisplayAdContent).imageUrl ? `bg-gradient-to-r ${(version.content as DisplayAdContent).previewBg}` : ""}`}>
                                                                 {(version.content as DisplayAdContent).imageUrl && (
-                                                                    <img
+                                                                    <NextImage
                                                                         src={(version.content as DisplayAdContent).imageUrl}
-                                                                        alt=""
+                                                                        alt="Display ad thumbnail"
+                                                                        fill
+                                                                        unoptimized
                                                                         className="absolute inset-0 w-full h-full object-cover"
                                                                         style={{ objectPosition: positionToCSS(((version.content as DisplayAdContent).imagePosition || "center") as ImagePosition) }}
                                                                     />

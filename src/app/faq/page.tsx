@@ -71,7 +71,7 @@ const categories: FAQCategory[] = [
         items: [
             {
                 q: "What can the AI assistant do?",
-                a: "Your AI assistant can:\n\n• Create text and display ads from a simple command\n• Find and fix wasted ad spend (money leaks)\n• Monitor and analyze competitor strategies\n• Show real-time performance stats and call tracking\n• Pause bad keywords automatically\n• Manage images and layouts for display ads\n• Generate ad variations using GPT-4o and Claude\n• Push approved ads live to Google\n\nJust speak or type naturally — the AI understands plain English."
+                a: "Your AI assistant can:\n\n• Create text and display ads from a simple command\n• Find and fix wasted ad spend (money leaks)\n• Monitor and analyze competitor strategies\n• Show real-time performance stats and call tracking\n• Pause bad keywords automatically\n• Manage images and layouts for display ads\n• Generate ad variations using GPT-4o-mini and Claude\n• Push approved ads live to Google\n\nJust speak or type naturally — the AI understands plain English."
             },
             {
                 q: "Does AdMaster Pro support voice commands?",
@@ -79,7 +79,7 @@ const categories: FAQCategory[] = [
             },
             {
                 q: "Which AI models does AdMaster Pro use?",
-                a: "AdMaster Pro uses two AI models for the best results:\n\n• **GPT-4o** (Primary) — OpenAI's latest model for ad creation, analysis, and conversation\n• **Claude** (Fallback) — Anthropic's model for diverse ad copy and competitor analysis\n\nThe system automatically picks the best model for each task, and you can see which model generated each response via a colored badge in the chat."
+                a: "AdMaster Pro uses two AI models for the best results:\n\n• **GPT-4o-mini** (Primary) — OpenAI model for fast ad creation, analysis, and conversation\n• **Claude** (Fallback) — Anthropic's model for diverse ad copy and competitor analysis\n\nThe system automatically picks the best model for each task, and you can see which model generated each response via a colored badge in the chat."
             },
             {
                 q: "Will the AI run ads without my approval?",
@@ -141,7 +141,7 @@ const categories: FAQCategory[] = [
             },
             {
                 q: "How accurate is the AI audit?",
-                a: "The audit is powered by GPT-4o and analyzes your actual website content, structure, and meta data. It provides data-driven assessments based on industry best practices. While no automated tool replaces a full manual audit, our AI provides actionable insights that most businesses can implement immediately to improve their ad performance."
+                a: "The audit is powered by GPT-4o-mini and analyzes your actual website content, structure, and meta data. It provides data-driven assessments based on industry best practices. While no automated tool replaces a full manual audit, our AI provides actionable insights that most businesses can implement immediately to improve their ad performance."
             },
         ],
     },

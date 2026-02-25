@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, ArrowRight, Zap, Type, Image, Layers } from "lucide-react";
+import { FileText, ArrowRight, Zap, Type, Image as ImageIcon, Layers } from "lucide-react";
 import Link from "next/link";
 
 export default function DraftsPage() {
@@ -53,7 +53,7 @@ export default function DraftsPage() {
                 </div>
                 <div className="bg-card border border-border rounded-xl p-5">
                     <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mb-3">
-                        <Image className="w-5 h-5 text-purple-600" />
+                        <ImageIcon className="w-5 h-5 text-purple-600" />
                     </div>
                     <h3 className="font-semibold mb-1">Display Ads (RDA)</h3>
                     <p className="text-xs text-muted">Responsive Display Ads with images, logos, and headlines for the Google Display Network.</p>

@@ -44,7 +44,7 @@ const milestones = [
     { year: "2024", event: "Idea born — frustrated with how complex Google Ads tools were for small businesses" },
     { year: "2024", event: "First prototype built with GPT-4 integration" },
     { year: "2025", event: "Added voice commands, Knowledge Base, and multi-account management" },
-    { year: "2025", event: "Launched dual AI engine (GPT-4o + Claude) and free audit tool" },
+    { year: "2025", event: "Launched dual AI engine (GPT-4o-mini + Claude) and free audit tool" },
     { year: "2026", event: "Platform goes live with full Stripe billing and Google Ads API integration" },
 ];
 
@@ -147,7 +147,7 @@ export default function AboutPage() {
                             {
                                 icon: MessageCircle,
                                 title: "AI-Powered Campaign Management",
-                                desc: "Create ads, manage keywords, and optimize budgets through simple voice or text commands. Our dual AI engines (GPT-4o + Claude) handle ad creation, analysis, and optimization.",
+                                desc: "Create ads, manage keywords, and optimize budgets through simple voice or text commands. Our dual AI engines (GPT-4o-mini + Claude) handle ad creation, analysis, and optimization.",
                             },
                             {
                                 icon: TrendingUp,

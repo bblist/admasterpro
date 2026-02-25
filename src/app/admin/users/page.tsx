@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import {
     Search,
     Download,
@@ -301,7 +302,7 @@ export default function AdminUsersPage() {
                                             <td className="px-4 py-3">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-white text-xs font-medium overflow-hidden shrink-0">
-                                                        {user.picture ? <img src={user.picture} alt="" className="w-full h-full object-cover" /> : user.name.charAt(0).toUpperCase()}
+                                                        {user.picture ? <Image src={user.picture} alt={`${user.name} avatar`} width={32} height={32} unoptimized className="w-full h-full object-cover" /> : user.name.charAt(0).toUpperCase()}
                                                     </div>
                                                     <div className="min-w-0">
                                                         <div className="text-white font-medium truncate flex items-center gap-1.5">

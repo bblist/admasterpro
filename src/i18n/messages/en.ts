@@ -250,7 +250,7 @@ const en = {
     "onboarding.kb.addLater": "You can also add more files later from your dashboard.",
     "onboarding.kb.runAudit": "Run Free Audit",
     "onboarding.audit.analyzing": "Analyzing your website...",
-    "onboarding.audit.usingAI": "Using GPT-4o to audit your site and analyze ad potential...",
+    "onboarding.audit.usingAI": "Using GPT-4o-mini to audit your site and analyze ad potential...",
     "onboarding.audit.ready": "Your Free Audit Is Ready!",
     "onboarding.audit.found": "Here's what our AI found:",
     "onboarding.audit.failed": "Audit couldn't complete",
