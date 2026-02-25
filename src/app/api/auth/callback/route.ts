@@ -22,7 +22,8 @@ import { authLimiter, checkRateLimit } from "@/lib/rate-limit";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const REDIRECT_URI = (process.env.NEXTAUTH_URL || "https://admasterai.nobleblocks.com") + "/api/auth/callback";
+const BASE_URL = process.env.NEXTAUTH_URL || "https://admasterai.nobleblocks.com";
+const REDIRECT_URI = BASE_URL + "/api/auth/callback";
 
 const SCOPES = [
     "openid",
@@ -46,7 +47,7 @@ export async function GET(req: NextRequest) {
 
     if (errorParam) {
         console.error("[Auth] User denied consent:", errorParam);
-        const response = NextResponse.redirect(new URL("/login?error=auth_failed", req.url));
+        const response = NextResponse.redirect(new URL("/login?error=auth_failed", BASE_URL));
         response.cookies.set(OAUTH_STATE_COOKIE, "", {
             path: "/",
             maxAge: 0,
@@ -104,7 +105,7 @@ export async function GET(req: NextRequest) {
     const stateCookie = req.cookies.get(OAUTH_STATE_COOKIE)?.value;
     if (!stateParam || !stateCookie || stateParam !== stateCookie) {
         console.warn("[Auth] Invalid OAuth state");
-        const response = NextResponse.redirect(new URL("/login?error=auth_failed", req.url));
+        const response = NextResponse.redirect(new URL("/login?error=auth_failed", BASE_URL));
         response.cookies.set(OAUTH_STATE_COOKIE, "", {
             path: "/",
             maxAge: 0,
@@ -136,7 +137,7 @@ export async function GET(req: NextRequest) {
         if (!tokenRes.ok) {
             const err = await tokenRes.text();
             console.error("[Auth] Token exchange failed:", err);
-            const response = NextResponse.redirect(new URL("/login?error=auth_failed", req.url));
+            const response = NextResponse.redirect(new URL("/login?error=auth_failed", BASE_URL));
             response.cookies.set(OAUTH_STATE_COOKIE, "", {
                 path: "/",
                 maxAge: 0,
@@ -224,7 +225,7 @@ export async function GET(req: NextRequest) {
         // Redirect to dashboard — JWT passed via short-lived readable cookie (not URL hash)
         const nextCookie = req.cookies.get(OAUTH_NEXT_COOKIE)?.value;
         const redirectPath = (nextCookie && /^\/[a-zA-Z]/.test(nextCookie)) ? nextCookie : "/dashboard/chat";
-        const redirectUrl = new URL(redirectPath, req.url);
+        const redirectUrl = new URL(redirectPath, BASE_URL);
         const response = NextResponse.redirect(redirectUrl);
 
         // Short-lived cookie for client-side JS to capture token into localStorage
@@ -262,7 +263,7 @@ export async function GET(req: NextRequest) {
         return response;
     } catch (error) {
         console.error("[Auth] OAuth error:", error);
-        const response = NextResponse.redirect(new URL("/login?error=auth_error", req.url));
+        const response = NextResponse.redirect(new URL("/login?error=auth_error", BASE_URL));
         response.cookies.set(OAUTH_STATE_COOKIE, "", {
             path: "/",
             maxAge: 0,
