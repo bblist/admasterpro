@@ -42,9 +42,10 @@ import {
     X,
     Check,
 } from "lucide-react";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import Tooltip from "@/components/Tooltip";
 import { useBusiness } from "@/lib/business-context";
+import { authFetch } from "@/lib/auth-client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -213,284 +214,8 @@ const INDUSTRIES = [
     "Other",
 ];
 
-// ─── Demo Data ───────────────────────────────────────────────────────────────
-
-const initialAssets: KBAsset[] = [
-    {
-        id: 1,
-        type: "image",
-        name: "Hero Banner - Summer Sale",
-        client: "Bella Fashion Boutique",
-        previewBg: "from-pink-400 to-purple-500",
-        previewText: "Summer Sale Hero Image",
-        dimensions: "1920 x 1080",
-        fileSize: "2.4 MB",
-        uploadedAt: "Jun 12, 2025 at 2:30 PM",
-        notes: "Main hero image for summer campaign. Use warm colors and lifestyle feel. Target audience: women 25-45.",
-        aiAnalysis: {
-            format: "JPEG",
-            dimensions: "1920 x 1080",
-            faceDetected: true,
-            dominantColors: ["#E91E8C", "#8B5CF6", "#F8FAFC"],
-            layoutNotes: "Face detected in center-right. Recommend placing text on left side for balance.",
-            textContent: "No text detected in image",
-        },
-    },
-    {
-        id: 2,
-        type: "ad",
-        name: "LASIK Before/After",
-        client: "ClearVision Eye Clinic",
-        previewBg: "from-blue-400 to-teal-500",
-        previewText: "Before & After LASIK Results",
-        dimensions: "1200 x 628",
-        fileSize: "890 KB",
-        uploadedAt: "Jun 11, 2025 at 10:15 AM",
-        notes: "Show real patient results. Include disclaimer text at bottom. Dr. Martinez approved this image.",
-        aiAnalysis: {
-            format: "PNG",
-            dimensions: "1200 x 628",
-            faceDetected: true,
-            dominantColors: ["#0EA5E9", "#14B8A6", "#FFFFFF"],
-            layoutNotes: "Two faces detected (before/after split). Recommend keeping faces in upper 2/3.",
-            textContent: "Detected: \u2018See the difference\u2019 watermark",
-        },
-    },
-    {
-        id: 3,
-        type: "video",
-        name: "30s Sushi Promo Reel",
-        client: "Sakura Sushi Bar",
-        previewBg: "from-amber-400 to-red-500",
-        previewText: "Sushi Promo Video",
-        duration: "0:30",
-        fileSize: "18.2 MB",
-        uploadedAt: "Jun 10, 2025 at 4:45 PM",
-        notes: "Short-form video ad for YouTube and Instagram. Focus on close-up sushi shots.",
-        aiAnalysis: {
-            format: "MP4 (H.264)",
-            dimensions: "1920 x 1080",
-            faceDetected: true,
-            dominantColors: ["#F59E0B", "#EF4444", "#1F2937"],
-            videoNotes: "30 frames analyzed. Key scenes: 0:03 sushi prep, 0:12 plating close-up, 0:22 happy customer, 0:28 logo+CTA. Recommend keeping CTA visible for final 5 seconds.",
-            textContent: "Detected at 0:28: \u2018Sakura Sushi - Order Now\u2019",
-            transcript: "Fresh fish. Hand-crafted rolls. An unforgettable dining experience. Visit Sakura Sushi Bar today.",
-        },
-    },
-    {
-        id: 4,
-        type: "document",
-        name: "Brand Guidelines",
-        client: "Pinnacle Auto Spa",
-        previewBg: "from-gray-400 to-gray-600",
-        previewText: "Brand Guide PDF",
-        fileSize: "1.8 MB",
-        uploadedAt: "Jun 9, 2025 at 11:00 AM",
-        notes: "Contains logo usage rules, color codes (#1A1A2E primary, #E94560 accent), font specs.",
-        aiAnalysis: {
-            format: "PDF (12 pages)",
-            textContent: "Extracted: Primary #1A1A2E, Accent #E94560, Logo min 120px, Tagline: \u2018Drive in Style\u2019",
-            layoutNotes: "Brand requires 20px clear space around logo. Dark backgrounds preferred.",
-        },
-    },
-    {
-        id: 5,
-        type: "document",
-        name: "Service Menu & Pricing",
-        client: "Mike\u2019s Plumbing",
-        previewBg: "from-blue-500 to-blue-700",
-        previewText: "Services & Pricing DOCX",
-        fileSize: "245 KB",
-        uploadedAt: "Jun 8, 2025 at 3:20 PM",
-        notes: "Full list of services with pricing. Emergency call-out $89. Free estimates on jobs over $200.",
-        aiAnalysis: {
-            format: "DOCX (8 pages)",
-            textContent: "Extracted 23 services. Key: Emergency $89, Drain Cleaning $149+, Water Heater $899+, Pipe Repair $199+.",
-            layoutNotes: "Structured price list. AI can reference exact prices in ad copy.",
-        },
-    },
-    {
-        id: 6,
-        type: "video",
-        name: "Customer Testimonial - Maria",
-        client: "ClearVision Eye Clinic",
-        previewBg: "from-teal-400 to-blue-500",
-        previewText: "Patient Testimonial",
-        duration: "1:15",
-        fileSize: "32.5 MB",
-        uploadedAt: "Jun 7, 2025 at 2:00 PM",
-        notes: "Real patient testimonial. Maria had LASIK April 2025. She consented to use in advertising.",
-        aiAnalysis: {
-            format: "MOV (H.265)",
-            dimensions: "1920 x 1080",
-            faceDetected: true,
-            dominantColors: ["#14B8A6", "#3B82F6", "#FFFFFF"],
-            videoNotes: "Single speaker, well-lit. Key quotes: 0:25 \u2018best decision I ever made\u2019, 0:48 \u2018I can see clearly now\u2019. Good for pull-quote ads.",
-            textContent: "Full transcript extracted (187 words). Sentiment: Very positive.",
-            transcript: "Hi, I'm Maria. I had LASIK at ClearVision last April and it was the best decision I ever made. I was so nervous before the surgery but Dr. Martinez and the whole team made me feel completely comfortable. The procedure took maybe 15 minutes. The next morning I could see clearly \u2014 no glasses, no contacts. I can see clearly now and it's changed my life. I would recommend ClearVision to anyone considering LASIK.",
-        },
-    },
-    {
-        id: 7,
-        type: "ad",
-        name: "Emergency Plumber - Google Ad",
-        client: "Mike\u2019s Plumbing",
-        previewBg: "from-blue-600 to-indigo-700",
-        previewText: "24/7 Plumber Display Ad",
-        dimensions: "300 x 250",
-        fileSize: "145 KB",
-        uploadedAt: "Jun 6, 2025 at 9:30 AM",
-        notes: "Best-performing display ad. CTR is 2.8%. Keep bold phone number visible.",
-        aiAnalysis: {
-            format: "PNG",
-            dimensions: "300 x 250",
-            faceDetected: false,
-            dominantColors: ["#3B82F6", "#1D4ED8", "#FFFFFF"],
-            layoutNotes: "Text-heavy design. Phone number prominent. Consider adding technician image for +12-18% CTR.",
-            textContent: "Detected: \u201824/7 Emergency Plumber\u2019, \u2018(305) 555-0123\u2019, \u2018Call Now\u2019",
-        },
-    },
-    {
-        id: 8,
-        type: "image",
-        name: "Designer Handbag Flat Lay",
-        client: "Bella Fashion Boutique",
-        previewBg: "from-rose-300 to-pink-500",
-        previewText: "Handbag Collection Photo",
-        dimensions: "1080 x 1080",
-        fileSize: "1.6 MB",
-        uploadedAt: "Jun 5, 2025 at 11:00 AM",
-        notes: "Square format for social and shopping ads. Top 4 sellers from Q2.",
-        aiAnalysis: {
-            format: "JPEG",
-            dimensions: "1080 x 1080",
-            faceDetected: false,
-            dominantColors: ["#FDA4AF", "#EC4899", "#FAFAF9"],
-            layoutNotes: "4 products in grid. Clean background ideal for shopping ads.",
-        },
-    },
-];
-
-const initialTextEntries: TextEntry[] = [
-    {
-        id: 1,
-        title: "About Us - Company Story",
-        category: "About Us",
-        client: "ClearVision Eye Clinic",
-        content: "ClearVision Eye Clinic was founded in 2012 by Dr. Elena Martinez, a board-certified ophthalmologist with over 20 years of experience. We specialize in LASIK, PRK, and cataract surgery. Our state-of-the-art facility in downtown Miami uses the latest Wavelight EX500 excimer laser. We have performed over 15,000 successful procedures with a 98.7% patient satisfaction rate.",
-        addedAt: "Jun 10, 2025 at 9:00 AM",
-        wordCount: 342,
-        aiSummary: "Eye clinic founded 2012, Dr. Martinez, LASIK/PRK/cataract, 15K+ procedures, 98.7% satisfaction, Miami.",
-    },
-    {
-        id: 2,
-        title: "Services & Specialties",
-        category: "Services",
-        client: "Mike\u2019s Plumbing",
-        content: "Mike\u2019s Plumbing offers residential and commercial plumbing across Miami-Dade County. 24/7 emergency service. Services: drain cleaning ($149+), water heater install ($899+), pipe repair ($199+), bathroom remodeling, sewer line repair, leak detection. Licensed #PLB-2847. All work guaranteed 2 years. Free estimates on jobs over $200. Senior discount: 10%.",
-        addedAt: "Jun 8, 2025 at 2:30 PM",
-        wordCount: 189,
-        aiSummary: "24/7 plumbing, Miami-Dade, emergency, prices listed, 2-year guarantee, senior discounts, licensed #PLB-2847.",
-    },
-    {
-        id: 3,
-        title: "Customer Testimonials Collection",
-        category: "Testimonials",
-        client: "Sakura Sushi Bar",
-        content: "\u201cBest sushi in Miami! The omakase experience is worth every penny.\u201d - Jennifer L. \u2605\u2605\u2605\u2605\u2605\n\u201cChef Tanaka\u2019s attention to detail is incredible. The fish is always fresh.\u201d - David R. \u2605\u2605\u2605\u2605\u2605\n\u201cThe sake pairing menu is a hidden gem.\u201d - Sarah T. \u2605\u2605\u2605\u2605\u2605",
-        addedAt: "Jun 6, 2025 at 5:15 PM",
-        wordCount: 156,
-        aiSummary: "5 testimonials, mostly 5-star. Themes: quality, freshness, value, special occasions.",
-    },
-    {
-        id: 4,
-        title: "Unique Selling Points & Differentiators",
-        category: "USPs",
-        client: "Pinnacle Auto Spa",
-        content: "What makes Pinnacle Auto Spa different:\n1. Only ceramic coating specialist in South Beach\n2. Use Gtechniq Crystal Serum Ultra (10-year warranty)\n3. Climate-controlled detailing bay\n4. Pick-up/drop-off within 15 miles\n5. VIP membership: unlimited washes + quarterly detail $199/mo\n6. IDA certified",
-        addedAt: "Jun 4, 2025 at 10:00 AM",
-        wordCount: 127,
-        aiSummary: "6 USPs: ceramic coating specialist, Gtechniq products, climate-controlled, VIP $199/mo, IDA certified.",
-    },
-    {
-        id: 5,
-        title: "FAQ - Common Customer Questions",
-        category: "FAQs",
-        client: "ClearVision Eye Clinic",
-        content: "Q: Does LASIK hurt? A: No, we use numbing drops. Most feel slight pressure for 30 seconds.\nQ: Recovery? A: Most see clearly within 24 hours. Full healing 3-6 months.\nQ: Cost? A: LASIK starts at $2,199 per eye. 0% financing for 24 months.\nQ: Insurance? A: LASIK is elective, but we accept HSA/FSA and CareCredit.",
-        addedAt: "Jun 3, 2025 at 3:00 PM",
-        wordCount: 203,
-        aiSummary: "5 FAQs: pain, recovery, candidacy, cost ($2,199/eye), financing. Good for search ad copy.",
-    },
-];
-
-const crawledURLs: CrawledURL[] = [
-    {
-        id: 1,
-        url: "https://www.clearvisionmiami.com",
-        status: "crawled",
-        pagesFound: 24,
-        lastCrawled: "Jun 11, 2025 at 8:00 AM",
-        contentExtracted: "24 pages crawled. Extracted: about page, 6 service pages, 12 doctor bios, pricing, FAQ, 2 blog posts. Total: 8,420 words indexed.",
-        client: "ClearVision Eye Clinic",
-    },
-    {
-        id: 2,
-        url: "https://www.mikesplumbing305.com",
-        status: "crawled",
-        pagesFound: 11,
-        lastCrawled: "Jun 10, 2025 at 3:00 PM",
-        contentExtracted: "11 pages crawled. Extracted: homepage, 5 service pages, pricing, about, contact, 2 blog posts. Total: 4,230 words indexed.",
-        client: "Mike\u2019s Plumbing",
-    },
-    {
-        id: 3,
-        url: "https://www.sakurasushibar.com",
-        status: "crawling",
-        pagesFound: 8,
-        contentExtracted: "Crawling in progress... 8 of ~15 pages processed so far.",
-        client: "Sakura Sushi Bar",
-    },
-    {
-        id: 4,
-        url: "https://www.pinnacleautospa.com",
-        status: "queued",
-        pagesFound: 0,
-        contentExtracted: "Queued for crawling. Will start automatically.",
-        client: "Pinnacle Auto Spa",
-    },
-    {
-        id: 5,
-        url: "https://www.bellafashionmiami.com",
-        status: "crawled",
-        pagesFound: 38,
-        lastCrawled: "Jun 9, 2025 at 11:00 AM",
-        contentExtracted: "38 pages crawled. Extracted: 28 product pages, collections, about, shipping, returns, 5 blog posts, size guide. Total: 12,680 words indexed.",
-        client: "Bella Fashion Boutique",
-    },
-    {
-        id: 6,
-        url: "https://blog.clearvisionmiami.com",
-        status: "failed",
-        pagesFound: 0,
-        lastCrawled: "Jun 11, 2025 at 8:05 AM",
-        contentExtracted: "Error: SSL certificate issue. Please verify the URL and try again.",
-        client: "ClearVision Eye Clinic",
-    },
-];
-
-const initialBrandProfile = {
-    businessName: "ClearVision Eye Clinic",
-    industry: "Healthcare / Ophthalmology",
-    brandVoice: "Professional, compassionate, reassuring. Avoid overly clinical jargon. Speak to patients\u2019 fears and aspirations.",
-    targetAudience: "Adults 25-55, Miami metro area, considering vision correction. Secondary: parents researching for young adults 18-22.",
-    competitors: "LensCrafters, Bascom Palmer, Miami Eye Institute",
-    uniqueSellingPoints: "15,000+ successful procedures, 98.7% satisfaction, Wavelight EX500 laser, 0% financing, free screenings",
-    avoidTopics: "Never guarantee outcomes. Don\u2019t compare negatively to competitors by name. Don\u2019t use \u2018cheap\u2019 or \u2018discount\u2019. Always include medical disclaimer.",
-    toneExamples: "Good: \u2018Imagine waking up and seeing clearly \u2014 no glasses, no contacts.\u2019 Bad: \u2018Our laser surgery procedure utilizes advanced excimer technology...\u2019",
-};
-
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+
 
 const typeIcon = (type: AssetType) => {
     switch (type) {
@@ -607,6 +332,13 @@ function IndustryDropdown({ value, onChange }: { value: string; onChange: (v: st
 
 // ─── Quick Actions ──────────────────────────────────────────────────────────
 
+// Helper: convert string ID to numeric for existing KBAsset interface
+const hashId = (s: string): number => {
+    let h = 0;
+    for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+    return Math.abs(h);
+};
+
 const quickActions = [
     { label: "Show my stats", icon: null },
 ];
@@ -627,24 +359,113 @@ export default function KnowledgeBasePage() {
     const [textTitle, setTextTitle] = useState("");
     const [textCategory, setTextCategory] = useState("About Us");
     const [textContent, setTextContent] = useState("");
-    const [textClient, setTextClient] = useState("ClearVision Eye Clinic");
     const [searchQuery, setSearchQuery] = useState("");
     const [filterType, setFilterType] = useState<AssetType | "all">("all");
     const [isDragging, setIsDragging] = useState(false);
     const [uploadingFiles, setUploadingFiles] = useState<string[]>([]);
     const [transcribingId, setTranscribingId] = useState<number | null>(null);
-    const [assets, setAssets] = useState<KBAsset[]>(initialAssets);
-    const [textEntries, setTextEntries] = useState<TextEntry[]>(initialTextEntries);
-    const [brandIndustry, setBrandIndustry] = useState(initialBrandProfile.industry);
-    const [brandName, setBrandName] = useState(initialBrandProfile.businessName);
-    const [brandVoice, setBrandVoice] = useState(initialBrandProfile.brandVoice);
-    const [brandAudience, setBrandAudience] = useState(initialBrandProfile.targetAudience);
-    const [brandCompetitors, setBrandCompetitors] = useState(initialBrandProfile.competitors);
-    const [brandUSPs, setBrandUSPs] = useState(initialBrandProfile.uniqueSellingPoints);
-    const [brandAvoid, setBrandAvoid] = useState(initialBrandProfile.avoidTopics);
+    const [assets, setAssets] = useState<KBAsset[]>([]);
+    const [textEntries, setTextEntries] = useState<TextEntry[]>([]);
+    const [crawledURLs, setCrawledURLs] = useState<CrawledURL[]>([]);
+    const [brandIndustry, setBrandIndustry] = useState("");
+    const [brandName, setBrandName] = useState("");
+    const [brandVoice, setBrandVoice] = useState("");
+    const [brandAudience, setBrandAudience] = useState("");
+    const [brandCompetitors, setBrandCompetitors] = useState("");
+    const [brandUSPs, setBrandUSPs] = useState("");
+    const [brandAvoid, setBrandAvoid] = useState("");
     const [brandGuardrails, setBrandGuardrails] = useState("");
-    const [brandTone, setBrandTone] = useState(initialBrandProfile.toneExamples);
+    const [brandTone, setBrandTone] = useState("");
+    const [brandSaving, setBrandSaving] = useState(false);
+    const [loadingKB, setLoadingKB] = useState(true);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // ── Fetch real KB data from API ──
+    useEffect(() => {
+        const fetchKBData = async () => {
+            setLoadingKB(true);
+            try {
+                const res = await authFetch(`/api/knowledge-base?businessId=${activeBusiness.id}`);
+                if (!res.ok) throw new Error("Failed to fetch");
+                const data = await res.json();
+                const items: { id: string; type: string; title: string; content: string; fileUrl?: string; mimeType?: string; sizeBytes?: number; createdAt: string }[] = data.items || [];
+
+                // Map KB items into local state categories
+                const fileAssets: KBAsset[] = [];
+                const texts: TextEntry[] = [];
+                const urls: CrawledURL[] = [];
+
+                for (const item of items) {
+                    if (item.type === "brand_profile") {
+                        try {
+                            const bp = JSON.parse(item.content);
+                            setBrandName(bp.businessName || "");
+                            setBrandIndustry(bp.industry || "");
+                            setBrandVoice(bp.brandVoice || "");
+                            setBrandAudience(bp.targetAudience || "");
+                            setBrandCompetitors(bp.competitors || "");
+                            setBrandUSPs(bp.uniqueSellingPoints || "");
+                            setBrandAvoid(bp.avoidTopics || "");
+                            setBrandTone(bp.toneExamples || "");
+                            setBrandGuardrails(bp.guardrails || "");
+                        } catch { /* ignore parse errors */ }
+                    } else if (item.type === "file") {
+                        const isVideo = item.mimeType?.startsWith("video/");
+                        const isImage = item.mimeType?.startsWith("image/");
+                        fileAssets.push({
+                            id: hashId(item.id),
+                            type: isVideo ? "video" : isImage ? "image" : "document",
+                            name: item.title,
+                            client: activeBusiness.name,
+                            previewBg: isVideo ? "from-purple-500 to-indigo-600" : isImage ? "from-emerald-400 to-cyan-500" : "from-gray-400 to-gray-600",
+                            previewText: item.title,
+                            fileSize: item.sizeBytes ? `${(item.sizeBytes / (1024 * 1024)).toFixed(1)} MB` : "—",
+                            uploadedAt: new Date(item.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }),
+                            notes: item.content || "",
+                            aiAnalysis: { format: item.mimeType?.split("/")[1]?.toUpperCase() || "Unknown" },
+                        });
+                    } else if (item.type === "text") {
+                        let category = "Other";
+                        try { const meta = JSON.parse(item.content); category = meta.category || "Other"; } catch { /* plain text */ }
+                        const plainContent = (() => { try { return JSON.parse(item.content).text || item.content; } catch { return item.content; } })();
+                        texts.push({
+                            id: hashId(item.id),
+                            title: item.title,
+                            category,
+                            content: plainContent,
+                            client: activeBusiness.name,
+                            addedAt: new Date(item.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }),
+                            wordCount: plainContent.split(/\s+/).filter(Boolean).length,
+                            aiSummary: "AI summary will be generated when content is analyzed.",
+                        });
+                    } else if (item.type === "url") {
+                        urls.push({
+                            id: hashId(item.id),
+                            url: item.title,
+                            status: "queued",
+                            pagesFound: 0,
+                            contentExtracted: item.content || "URL saved. Crawling not yet started.",
+                            client: activeBusiness.name,
+                        });
+                    }
+                }
+                setAssets(fileAssets);
+                setTextEntries(texts);
+                setCrawledURLs(urls);
+
+                // Set brand defaults from business if no brand profile saved
+                if (!items.some(i => i.type === "brand_profile")) {
+                    setBrandName(activeBusiness.name);
+                    setBrandIndustry(activeBusiness.industry || "");
+                }
+            } catch (err) {
+                console.error("[KB] Failed to fetch:", err);
+            } finally {
+                setLoadingKB(false);
+            }
+        };
+        fetchKBData();
+    }, [activeBusiness.id, activeBusiness.name, activeBusiness.industry]);
 
     const selected = assets.find((item) => item.id === selectedAsset);
     const selectedTextEntry = textEntries.find((item) => item.id === selectedText);
@@ -661,56 +482,82 @@ export default function KnowledgeBasePage() {
         const fileNames = Array.from(files).map(f => f.name);
         setUploadingFiles(fileNames);
 
-        // Simulate upload delay
-        await new Promise(r => setTimeout(r, 1500));
+        try {
+            // Upload images via /api/upload
+            const imageFiles = Array.from(files).filter(f => f.type.startsWith("image/"));
+            const otherFiles = Array.from(files).filter(f => !f.type.startsWith("image/"));
 
-        const newAssets: KBAsset[] = Array.from(files).map((file, i) => {
-            const isVideo = file.type.startsWith("video/");
-            const isImage = file.type.startsWith("image/");
-            const isPdf = file.name.endsWith(".pdf");
-            const type: AssetType = isVideo ? "video" : isImage ? "image" : "document";
+            // Upload images to storage
+            if (imageFiles.length > 0) {
+                const formData = new FormData();
+                imageFiles.forEach(f => formData.append("images", f));
+                const uploadRes = await authFetch("/api/upload", { method: "POST", body: formData });
+                if (uploadRes.ok) {
+                    const uploadData = await uploadRes.json();
+                    for (const uploaded of (uploadData.uploaded || [])) {
+                        // Create KB record for each uploaded image
+                        await authFetch("/api/knowledge-base", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                type: "file",
+                                title: uploaded.filename,
+                                content: "",
+                                fileUrl: uploaded.url,
+                                mimeType: "image/jpeg",
+                                sizeBytes: uploaded.size,
+                                businessId: activeBusiness.id,
+                            }),
+                        });
+                    }
+                }
+            }
 
-            return {
-                id: Date.now() + i,
-                type,
-                name: file.name,
-                client: activeBusiness.name,
-                previewBg: isVideo ? "from-purple-500 to-indigo-600" : isImage ? "from-emerald-400 to-cyan-500" : "from-gray-400 to-gray-600",
-                previewText: file.name,
-                dimensions: isImage ? "Auto-detected" : undefined,
-                duration: isVideo ? "Analyzing..." : undefined,
-                fileSize: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
-                uploadedAt: new Date().toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }),
-                notes: "",
-                aiAnalysis: {
-                    format: file.type.split("/")[1]?.toUpperCase() || "Unknown",
-                    faceDetected: false,
-                    textContent: isPdf ? "Extracting text..." : undefined,
-                    videoNotes: isVideo ? "Analyzing scenes..." : undefined,
-                    transcript: isVideo ? "Transcribing with Deepgram..." : undefined,
-                },
-            };
-        });
+            // For non-image files, store as KB text entries with file metadata
+            for (const file of otherFiles) {
+                await authFetch("/api/knowledge-base", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        type: "file",
+                        title: file.name,
+                        content: `Uploaded file: ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} MB)`,
+                        mimeType: file.type,
+                        sizeBytes: file.size,
+                        businessId: activeBusiness.id,
+                    }),
+                });
+            }
 
-        setAssets(prev => [...newAssets, ...prev]);
-        setUploadingFiles([]);
-
-        // Simulate Deepgram transcription for video files
-        const videoAssets = newAssets.filter(a => a.type === "video");
-        for (const va of videoAssets) {
-            setTranscribingId(va.id);
-            await new Promise(r => setTimeout(r, 3000));
-            setAssets(prev => prev.map(a => a.id === va.id ? {
-                ...a,
-                aiAnalysis: {
-                    ...a.aiAnalysis,
-                    transcript: "Transcription complete. Audio content has been extracted and indexed for AI training. The transcript is available for review and can be used in ad copy generation.",
-                    videoNotes: "Video analyzed. Key frames extracted. Scene transitions detected.",
-                },
-            } : a));
-            setTranscribingId(null);
+            // Build local asset records for immediate UI update
+            const newAssets: KBAsset[] = Array.from(files).map((file, i) => {
+                const isVideo = file.type.startsWith("video/");
+                const isImage = file.type.startsWith("image/");
+                const type: AssetType = isVideo ? "video" : isImage ? "image" : "document";
+                return {
+                    id: Date.now() + i,
+                    type,
+                    name: file.name,
+                    client: activeBusiness.name,
+                    previewBg: isVideo ? "from-purple-500 to-indigo-600" : isImage ? "from-emerald-400 to-cyan-500" : "from-gray-400 to-gray-600",
+                    previewText: file.name,
+                    dimensions: isImage ? "Auto-detected" : undefined,
+                    duration: isVideo ? "Analyzing..." : undefined,
+                    fileSize: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+                    uploadedAt: new Date().toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }),
+                    notes: "",
+                    aiAnalysis: {
+                        format: file.type.split("/")[1]?.toUpperCase() || "Unknown",
+                    },
+                };
+            });
+            setAssets(prev => [...newAssets, ...prev]);
+        } catch (err) {
+            console.error("[KB] Upload failed:", err);
+        } finally {
+            setUploadingFiles([]);
         }
-    }, [activeBusiness.name]);
+    }, [activeBusiness.name, activeBusiness.id]);
 
     // ── Drag and drop handlers ──
     const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -761,24 +608,41 @@ export default function KnowledgeBasePage() {
     };
 
     // ── Delete asset ──
-    const deleteAsset = (id: number) => {
+    const deleteAsset = async (id: number) => {
         setAssets(prev => prev.filter(a => a.id !== id));
         if (selectedAsset === id) setSelectedAsset(null);
+        // Find original string ID from KB items (best-effort cleanup)
+        try {
+            const res = await authFetch(`/api/knowledge-base?businessId=${activeBusiness.id}`);
+            if (res.ok) {
+                const data = await res.json();
+                const match = (data.items || []).find((i: { id: string }) => hashId(i.id) === id);
+                if (match) await authFetch(`/api/knowledge-base?id=${match.id}`, { method: "DELETE" });
+            }
+        } catch { /* silent */ }
     };
-    const deleteTextEntry = (id: number) => {
+    const deleteTextEntry = async (id: number) => {
         setTextEntries(prev => prev.filter(e => e.id !== id));
         if (selectedText === id) setSelectedText(null);
+        try {
+            const res = await authFetch(`/api/knowledge-base?businessId=${activeBusiness.id}`);
+            if (res.ok) {
+                const data = await res.json();
+                const match = (data.items || []).find((i: { id: string }) => hashId(i.id) === id);
+                if (match) await authFetch(`/api/knowledge-base?id=${match.id}`, { method: "DELETE" });
+            }
+        } catch { /* silent */ }
     };
 
     // ── Add text entry ──
-    const addTextEntry = () => {
+    const addTextEntry = async () => {
         if (!textTitle.trim() || !textContent.trim()) return;
         const newEntry: TextEntry = {
             id: Date.now(),
             title: textTitle,
             category: textCategory,
             content: textContent,
-            client: textClient,
+            client: activeBusiness.name,
             addedAt: new Date().toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }),
             wordCount: textContent.split(/\s+/).filter(Boolean).length,
             aiSummary: "Processing... AI summary will appear shortly.",
@@ -786,6 +650,95 @@ export default function KnowledgeBasePage() {
         setTextEntries(prev => [newEntry, ...prev]);
         setTextTitle("");
         setTextContent("");
+
+        // Persist to API
+        try {
+            await authFetch("/api/knowledge-base", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    type: "text",
+                    title: textTitle.trim(),
+                    content: JSON.stringify({ text: textContent, category: textCategory }),
+                    businessId: activeBusiness.id,
+                }),
+            });
+        } catch (err) { console.error("[KB] Failed to save text entry:", err); }
+    };
+
+    // ── Save brand profile ──
+    const saveBrandProfile = async () => {
+        setBrandSaving(true);
+        try {
+            // Check if brand_profile item already exists
+            const res = await authFetch(`/api/knowledge-base?businessId=${activeBusiness.id}`);
+            const data = res.ok ? await res.json() : { items: [] };
+            const existing = (data.items || []).find((i: { type: string }) => i.type === "brand_profile");
+
+            const profileData = JSON.stringify({
+                businessName: brandName,
+                industry: brandIndustry,
+                brandVoice,
+                targetAudience: brandAudience,
+                competitors: brandCompetitors,
+                uniqueSellingPoints: brandUSPs,
+                avoidTopics: brandAvoid,
+                toneExamples: brandTone,
+                guardrails: brandGuardrails,
+            });
+
+            if (existing) {
+                await authFetch("/api/knowledge-base", {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ id: existing.id, title: "Brand Profile", content: profileData }),
+                });
+            } else {
+                await authFetch("/api/knowledge-base", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        type: "brand_profile",
+                        title: "Brand Profile",
+                        content: profileData,
+                        businessId: activeBusiness.id,
+                    }),
+                });
+            }
+        } catch (err) {
+            console.error("[KB] Failed to save brand profile:", err);
+        } finally {
+            setBrandSaving(false);
+        }
+    };
+
+    // ── Add URL entry ──
+    const addURLEntry = async () => {
+        if (!urlInput.trim()) return;
+        const url = urlInput.trim();
+        const newURL: CrawledURL = {
+            id: Date.now(),
+            url,
+            status: "queued",
+            pagesFound: 0,
+            contentExtracted: "URL saved. Crawling will be available soon.",
+            client: activeBusiness.name,
+        };
+        setCrawledURLs(prev => [newURL, ...prev]);
+        setUrlInput("");
+
+        try {
+            await authFetch("/api/knowledge-base", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    type: "url",
+                    title: url,
+                    content: "URL saved. Crawling not yet started.",
+                    businessId: activeBusiness.id,
+                }),
+            });
+        } catch (err) { console.error("[KB] Failed to save URL:", err); }
     };
 
     const tabs: { id: TabId; label: string; icon: React.ReactNode; count: number }[] = [
@@ -822,20 +775,22 @@ export default function KnowledgeBasePage() {
                 </div>
             </div>
 
-            {/* AI Training Status */}
+            {/* Getting Started Tip */}
+            {!loadingKB && assets.length === 0 && textEntries.length === 0 && (
             <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
                 <div className="flex items-start gap-3">
                     <div className="bg-amber-100 dark:bg-amber-900/30 rounded-lg p-2 shrink-0">
                         <Sparkles className="w-4 h-4 text-amber-600" />
                     </div>
                     <div>
-                        <div className="text-sm font-medium text-amber-800 dark:text-amber-400">Sample Data Shown</div>
+                        <div className="text-sm font-medium text-amber-800 dark:text-amber-400">Get Started</div>
                         <p className="text-xs text-amber-700/80 dark:text-amber-500/80 mt-0.5">
-                            The assets and entries below are demo examples. Upload your own brand assets, enter your business details, and the AI will learn your brand for better ad copy and recommendations.
+                            Upload your brand assets, enter your business details, and add website URLs. The AI will learn your brand for better ad copy and recommendations.
                         </p>
                     </div>
                 </div>
             </div>
+            )}
 
             {/* AI Training Status */}
             <div className="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 border border-primary/20 rounded-xl p-4">
@@ -847,7 +802,7 @@ export default function KnowledgeBasePage() {
                         <div>
                             <div className="text-sm font-semibold flex items-center gap-2">
                                 AI Knowledge Status
-                                <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Trained</span>
+                                <span className={`text-xs px-2 py-0.5 rounded-full ${(assets.length + textEntries.length) > 0 ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>{(assets.length + textEntries.length) > 0 ? "Active" : "Empty"}</span>
                             </div>
                             <div className="text-xs text-muted mt-0.5">
                                 {assets.length} files &bull; {textEntries.reduce((sum, t) => sum + t.wordCount, 0).toLocaleString()} words indexed &bull; {crawledURLs.filter(u => u.status === "crawled").reduce((sum, u) => sum + u.pagesFound, 0)} web pages crawled
@@ -892,8 +847,8 @@ export default function KnowledgeBasePage() {
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
                         className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === tab.id
-                                ? "bg-primary text-white shadow-md shadow-primary/25 ring-1 ring-primary/30"
-                                : "text-muted hover:text-foreground hover:bg-card/50"
+                            ? "bg-primary text-white shadow-md shadow-primary/25 ring-1 ring-primary/30"
+                            : "text-muted hover:text-foreground hover:bg-card/50"
                             }`}
                     >
                         {tab.icon}
@@ -918,8 +873,8 @@ export default function KnowledgeBasePage() {
                         onDrop={handleDrop}
                         onClick={() => fileInputRef.current?.click()}
                         className={`relative overflow-hidden border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all ${isDragging
-                                ? "border-primary bg-primary/5 scale-[1.01] shadow-lg shadow-primary/10"
-                                : "border-primary/30 bg-gradient-to-br from-primary/[0.03] via-blue-500/[0.03] to-purple-500/[0.03] hover:border-primary/50 hover:shadow-md"
+                            ? "border-primary bg-primary/5 scale-[1.01] shadow-lg shadow-primary/10"
+                            : "border-primary/30 bg-gradient-to-br from-primary/[0.03] via-blue-500/[0.03] to-purple-500/[0.03] hover:border-primary/50 hover:shadow-md"
                             }`}
                     >
                         <input
@@ -1185,13 +1140,7 @@ export default function KnowledgeBasePage() {
                                 <option>Press Releases</option>
                                 <option>Other</option>
                             </select>
-                            <select value={textClient} onChange={(e) => setTextClient(e.target.value)} className="bg-sidebar border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary transition cursor-pointer">
-                                <option>ClearVision Eye Clinic</option>
-                                <option>Bella Fashion Boutique</option>
-                                <option>Mike&#39;s Plumbing</option>
-                                <option>Sakura Sushi Bar</option>
-                                <option>Pinnacle Auto Spa</option>
-                            </select>
+                            <div className="bg-sidebar border border-border rounded-lg px-3 py-2 text-sm text-muted">{activeBusiness.name}</div>
                         </div>
                         <textarea placeholder="Paste your text content here... About your business, services, pricing, FAQs, testimonials, product info, anything the AI should know to create accurate ads." value={textContent} onChange={(e) => setTextContent(e.target.value)} rows={6} className="w-full bg-sidebar border border-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-primary transition resize-y leading-relaxed" />
                         <div className="flex items-center justify-between">
@@ -1295,14 +1244,8 @@ export default function KnowledgeBasePage() {
                                 <Globe className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
                                 <input type="url" placeholder="https://www.yourbusiness.com" value={urlInput} onChange={(e) => setUrlInput(e.target.value)} className="w-full bg-sidebar border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-primary transition" />
                             </div>
-                            <select className="bg-sidebar border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary transition cursor-pointer">
-                                <option>ClearVision Eye Clinic</option>
-                                <option>Bella Fashion Boutique</option>
-                                <option>Mike&#39;s Plumbing</option>
-                                <option>Sakura Sushi Bar</option>
-                                <option>Pinnacle Auto Spa</option>
-                            </select>
-                            <button className="bg-primary text-white text-sm px-5 py-2.5 rounded-lg hover:bg-primary-dark transition flex items-center gap-2 whitespace-nowrap"><Plus className="w-4 h-4" />Crawl Website</button>
+                            <div className="bg-sidebar border border-border rounded-lg px-3 py-2.5 text-sm text-muted shrink-0">{activeBusiness.name}</div>
+                            <button onClick={addURLEntry} className="bg-primary text-white text-sm px-5 py-2.5 rounded-lg hover:bg-primary-dark transition flex items-center gap-2 whitespace-nowrap"><Plus className="w-4 h-4" />Add Website</button>
                         </div>
                         <div className="flex items-center gap-4 text-xs text-muted pt-1 border-t border-border flex-wrap">
                             <label className="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" defaultChecked className="rounded border-border text-primary focus:ring-primary" />Follow internal links</label>
@@ -1376,7 +1319,7 @@ export default function KnowledgeBasePage() {
                                 <h3 className="text-sm font-semibold">Brand Profile</h3>
                                 <Tooltip text="Define your brand voice, target audience, and guardrails. This ensures the AI always writes on-brand." />
                             </div>
-                            <button className="text-xs bg-primary text-white px-3 py-1.5 rounded-lg hover:bg-primary-dark transition">Save Changes</button>
+                            <button onClick={saveBrandProfile} disabled={brandSaving} className="text-xs bg-primary text-white px-3 py-1.5 rounded-lg hover:bg-primary-dark transition disabled:opacity-50 flex items-center gap-1.5">{brandSaving ? <><Loader2 className="w-3 h-3 animate-spin" />Saving...</> : "Save Changes"}</button>
                         </div>
                         <p className="text-xs text-muted -mt-2">This profile guides the AI&#39;s tone, language, and accuracy. The more detail you provide, the better your ads will sound.</p>
 
@@ -1421,56 +1364,44 @@ export default function KnowledgeBasePage() {
                         </div>
                     </div>
 
+                    {(brandUSPs || brandVoice || brandAvoid) && (
                     <div className="bg-card border border-border rounded-xl p-5 space-y-4">
                         <div className="flex items-center gap-2">
                             <Sparkles className="w-4 h-4 text-primary" />
                             <h3 className="text-sm font-semibold">AI Brand Understanding</h3>
-                            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Analyzed</span>
+                            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Active</span>
                         </div>
-                        <p className="text-xs text-muted">Based on your brand profile, uploaded content, and crawled website, here&#39;s what the AI understands:</p>
+                        <p className="text-xs text-muted">Based on your brand profile, the AI will use these guidelines when creating ads:</p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {brandUSPs && (
                             <div className="bg-sidebar border border-border rounded-lg p-3">
-                                <div className="text-xs font-medium mb-1">Key Messages the AI Will Use</div>
+                                <div className="text-xs font-medium mb-1">Unique Selling Points</div>
                                 <ul className="text-xs text-muted space-y-1">
-                                    <li>&bull; &ldquo;Over 15,000 successful procedures&rdquo;</li>
-                                    <li>&bull; &ldquo;98.7% patient satisfaction rate&rdquo;</li>
-                                    <li>&bull; &ldquo;Free vision screening available&rdquo;</li>
-                                    <li>&bull; &ldquo;0% financing for 24 months&rdquo;</li>
-                                    <li>&bull; &ldquo;Board-certified ophthalmologist&rdquo;</li>
+                                    {brandUSPs.split(",").map((usp, i) => <li key={i}>&bull; {usp.trim()}</li>)}
                                 </ul>
                             </div>
+                            )}
+                            {brandVoice && (
                             <div className="bg-sidebar border border-border rounded-lg p-3">
-                                <div className="text-xs font-medium mb-1">Emotional Triggers Identified</div>
-                                <ul className="text-xs text-muted space-y-1">
-                                    <li>&bull; Freedom from glasses/contacts</li>
-                                    <li>&bull; Fear of surgery &rarr; reassurance</li>
-                                    <li>&bull; Life-changing transformation</li>
-                                    <li>&bull; Trusted expertise / proven results</li>
-                                    <li>&bull; Affordability / financing options</li>
-                                </ul>
+                                <div className="text-xs font-medium mb-1">Brand Voice</div>
+                                <p className="text-xs text-muted">{brandVoice}</p>
                             </div>
+                            )}
+                            {brandAudience && (
                             <div className="bg-sidebar border border-border rounded-lg p-3">
-                                <div className="text-xs font-medium mb-1">Services the AI Knows About</div>
-                                <ul className="text-xs text-muted space-y-1">
-                                    <li>&bull; LASIK ($2,199/eye)</li>
-                                    <li>&bull; PRK (pricing on consultation)</li>
-                                    <li>&bull; Cataract Surgery</li>
-                                    <li>&bull; Free Vision Screening</li>
-                                    <li>&bull; Follow-up Care Included</li>
-                                </ul>
+                                <div className="text-xs font-medium mb-1">Target Audience</div>
+                                <p className="text-xs text-muted">{brandAudience}</p>
                             </div>
+                            )}
+                            {brandAvoid && (
                             <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                                 <div className="text-xs font-medium mb-1 text-red-700">Guardrails Active</div>
-                                <ul className="text-xs text-red-600 space-y-1">
-                                    <li>&bull; Will NOT guarantee surgical outcomes</li>
-                                    <li>&bull; Will NOT bash competitors by name</li>
-                                    <li>&bull; Will NOT use words: &ldquo;cheap&rdquo;, &ldquo;discount&rdquo;</li>
-                                    <li>&bull; Will include medical disclaimers</li>
-                                    <li>&bull; Will use &ldquo;affordable&rdquo; instead of &ldquo;cheap&rdquo;</li>
-                                </ul>
+                                <p className="text-xs text-red-600">{brandAvoid}</p>
                             </div>
+                            )}
                         </div>
                     </div>
+                    )}
                 </div>
             )}
         </div>

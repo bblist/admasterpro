@@ -250,8 +250,8 @@ export default function AdminOverview() {
                                     </div>
                                     <div className="text-right flex-shrink-0 ml-3">
                                         <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${u.plan === "pro" ? "bg-purple-900/40 text-purple-400"
-                                                : u.plan === "starter" ? "bg-blue-900/40 text-blue-400"
-                                                    : "bg-gray-800 text-gray-400"
+                                            : u.plan === "starter" ? "bg-blue-900/40 text-blue-400"
+                                                : "bg-gray-800 text-gray-400"
                                             }`}>
                                             {u.plan.charAt(0).toUpperCase() + u.plan.slice(1)}
                                         </span>

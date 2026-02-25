@@ -232,751 +232,6 @@ const matchIntent = (text: string): IntentMatch => {
     return { intent: "unknown", params: {} };
 };
 
-// ─── Response Generator ────────────────────────────────────────────────────
-
-const generateResponse = (intent: IntentMatch, rawText: string, biz: BusinessProfile): Omit<Message, "id"> => {
-    const time = timeNow();
-
-    switch (intent.intent) {
-        case "create_text_ads": {
-            const topic = intent.params.topic || biz.services[0] || "your top service";
-            return {
-                role: "ai",
-                model: "gpt-4o",
-                content: `Done! I just created **3 text ads** for **${topic}**. They're saved to your Drafts page and here's a preview:`,
-                timestamp: time,
-                ads: [
-                    {
-                        type: "text",
-                        headline1: `${topic.charAt(0).toUpperCase() + topic.slice(1)} \u2014 ${biz.location}`,
-                        headline2: "Fast Service \u2022 Free Estimates",
-                        description: `Looking for ${topic}? ${biz.name} is ${biz.location}'s top-rated provider. Same-day service, no hidden fees. 500+ 5-star reviews. Call now for a free estimate!`,
-                        displayUrl: `www.${biz.url}`,
-                    },
-                    {
-                        type: "text",
-                        headline1: `Need ${topic.charAt(0).toUpperCase() + topic.slice(1)}? Call Now`,
-                        headline2: "Licensed & Insured \u2022 Top Rated",
-                        description: `Professional ${topic} from ${biz.name}. We respond fast. ${biz.location}'s most trusted. Book online in 60 seconds.`,
-                        displayUrl: `www.${biz.url}`,
-                    },
-                    {
-                        type: "text",
-                        headline1: `Don't Overpay for ${topic.charAt(0).toUpperCase() + topic.slice(1)}`,
-                        headline2: "500+ Reviews \u2022 Fast Response",
-                        description: `Why pay more? Honest pricing, expert service from ${biz.name}. ${topic.charAt(0).toUpperCase() + topic.slice(1)} done right the first time. Free estimates available.`,
-                        displayUrl: `www.${biz.url}`,
-                    },
-                ],
-                taskSummary: {
-                    done: [
-                        `Created 3 text ad variations for "${topic}"`,
-                        "Saved all drafts to your Drafts page",
-                        `Used ${biz.name}'s Knowledge Base for pricing & USPs`,
-                    ],
-                },
-                actions: [
-                    { label: "Go Live with all 3", type: "primary" },
-                    { label: "Regenerate Ad #2", type: "secondary" },
-                    { label: "Create display ads too", type: "secondary" },
-                ],
-            };
-        }
-
-        case "create_display_ads": {
-            const topic = intent.params.topic || "your business";
-            return {
-                role: "ai",
-                model: "gpt-4o",
-                content: `Done! I designed **2 display ads** for **${topic}**. Here they are \u2014 you can customize images, text, and positioning right here:`,
-                timestamp: time,
-                ads: [
-                    {
-                        type: "display",
-                        title: `${topic.charAt(0).toUpperCase() + topic.slice(1)} \u2014 Banner`,
-                        dimensions: "728\u00d790",
-                        format: "Leaderboard",
-                        imageUrl: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&h=300&fit=crop",
-                        overlayText: `${topic.charAt(0).toUpperCase() + topic.slice(1)} \u2014 Miami's #1 Choice`,
-                        ctaText: "Get Started",
-                        previewBg: "from-blue-500 to-purple-600",
-                    },
-                    {
-                        type: "display",
-                        title: `${topic.charAt(0).toUpperCase() + topic.slice(1)} \u2014 Sidebar`,
-                        dimensions: "300\u00d7250",
-                        format: "Medium Rectangle",
-                        imageUrl: "https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=400&h=300&fit=crop",
-                        overlayText: "Special Offer \u2014 Limited Time",
-                        ctaText: "Learn More",
-                        previewBg: "from-amber-400 to-red-500",
-                    },
-                ],
-                taskSummary: {
-                    done: [
-                        `Designed 2 display ads for "${topic}"`,
-                        "Applied images from your library",
-                        "Saved to Drafts page for editing",
-                    ],
-                },
-                actions: [
-                    { label: "Edit images & layout", type: "primary" },
-                    { label: "Change the text", type: "secondary" },
-                    { label: "Add more sizes", type: "secondary" },
-                ],
-            };
-        }
-
-        case "move_image": {
-            const pos = intent.params.position || "center";
-            return {
-                role: "ai",
-                model: "gpt-4o",
-                content: `Done! I moved the image to **${pos}** position.`,
-                timestamp: time,
-                ads: [
-                    {
-                        type: "display",
-                        title: "Updated Display Ad",
-                        dimensions: "728\u00d790",
-                        format: "Leaderboard",
-                        imageUrl: "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=400&h=300&fit=crop",
-                        overlayText: "SUMMER SALE 40% OFF",
-                        ctaText: "Shop Now",
-                        previewBg: "from-pink-400 to-purple-500",
-                    },
-                ],
-                taskSummary: {
-                    done: [
-                        `Repositioned image to "${pos}"`,
-                        "Updated the draft on your Drafts page",
-                    ],
-                },
-                actions: [
-                    { label: "Try another position", type: "secondary" },
-                    { label: "Change the image", type: "secondary" },
-                    { label: "Go Live", type: "primary" },
-                ],
-            };
-        }
-
-        case "add_image": {
-            const target = intent.params.target || "display ad";
-            return {
-                role: "ai",
-                model: "gpt-4o",
-                content: `Done! I added an image to your **${target}** ad. Here\u2019s how it looks now:`,
-                timestamp: time,
-                ads: [
-                    {
-                        type: "display",
-                        title: `${target.charAt(0).toUpperCase() + target.slice(1)} Ad`,
-                        dimensions: "300\u00d7250",
-                        format: "Medium Rectangle",
-                        imageUrl: "https://images.unsplash.com/photo-1607082349566-187342175e2f?w=400&h=300&fit=crop",
-                        overlayText: "Your New Ad \u2014 Looking Great!",
-                        ctaText: "Shop Now",
-                        previewBg: "from-emerald-400 to-cyan-500",
-                    },
-                ],
-                taskSummary: {
-                    done: [
-                        `Added image to "${target}" ad`,
-                        "Auto-positioned for best visual impact",
-                        "Saved changes to Drafts",
-                    ],
-                },
-                actions: [
-                    { label: "Move the image", type: "secondary" },
-                    { label: "Use a different image", type: "secondary" },
-                    { label: "Looks great!", type: "primary" },
-                ],
-            };
-        }
-
-        case "change_text": {
-            const newText = intent.params.newText || "New headline text";
-            return {
-                role: "ai",
-                model: "gpt-4o",
-                content: `Done! Updated the text to **"${newText}"**. Here\u2019s the updated ad:`,
-                timestamp: time,
-                ads: [
-                    {
-                        type: "display",
-                        title: "Updated Display Ad",
-                        dimensions: "728\u00d790",
-                        format: "Leaderboard",
-                        imageUrl: "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=400&h=300&fit=crop",
-                        overlayText: newText,
-                        ctaText: "Shop Now",
-                        previewBg: "from-pink-400 to-purple-500",
-                    },
-                ],
-                taskSummary: {
-                    done: [
-                        `Changed overlay text to "${newText}"`,
-                        "Draft updated on your Drafts page",
-                    ],
-                },
-                actions: [
-                    { label: "Change the CTA button too", type: "secondary" },
-                    { label: "Looks perfect!", type: "primary" },
-                ],
-            };
-        }
-
-        case "show_stats": {
-            return {
-                role: "ai",
-                model: "gpt-4o",
-                content: "Here\u2019s your account at a glance for the **last 7 days**:",
-                timestamp: time,
-                stats: [
-                    { label: "Phone Calls", value: "18", change: "+38%", trend: "up" },
-                    { label: "Clicks", value: "342", change: "+12%", trend: "up" },
-                    { label: "CTR", value: "7.99%", change: "+11%", trend: "up" },
-                    { label: "Cost", value: "$295", change: "-5%", trend: "down" },
-                    { label: "Cost/Call", value: "$16.41", change: "-10%", trend: "down" },
-                    { label: "Budget Left", value: "$318", change: "6.3 days", trend: "neutral" },
-                ],
-                actions: [
-                    { label: "Show call details", type: "primary" },
-                    { label: "Find money leaks", type: "secondary" },
-                    { label: "Compare to last month", type: "secondary" },
-                ],
-            };
-        }
-
-        case "find_leaks": {
-            return {
-                role: "ai",
-                model: "gpt-4o",
-                content: `I scanned **${biz.name}**'s account for the last 30 days. Here\u2019s where money is leaking:\n\n` +
-                    "\ud83d\udea8 **Critical Leaks** (fix these first)\n\n" +
-                    "**1.** 3 junk keywords \u2014 **$45.50/week** wasted\n" +
-                    `\u2003\u2022 "free ${biz.services[0] || "service"} tips", "${biz.services[0] || "service"} salary", "how to ${biz.services[1] || "DIY"}"\n\n` +
-                    "**2.** Ads running 3am\u20136am \u2014 **$28/week** wasted\n" +
-                    "\u2003\u2022 Clicks at 3am but nobody calls then\n\n" +
-                    "**3.** Mobile bid too high \u2014 **~$35/week** overspent\n" +
-                    "\u2003\u2022 Mobile converts 40% less than desktop\n\n" +
-                    "**Total potential savings: ~$108.50/week ($434/month)** \ud83d\udca1",
-                timestamp: time,
-                stats: [
-                    { label: "Junk Keywords", value: "$45.50/wk", change: "3 keywords", trend: "down" },
-                    { label: "Night Ads", value: "$28/wk", change: "3am-6am", trend: "down" },
-                    { label: "Mobile Overbid", value: "$35/wk", change: "-40% conv", trend: "down" },
-                    { label: "Total Savings", value: "$434/mo", change: "If fixed", trend: "up" },
-                ],
-                taskSummary: {
-                    done: ["Scanned 47 keywords for waste", "Analyzed 30-day ad schedule", "Checked device bid modifiers"],
-                    pending: ["Fix junk keywords", "Adjust ad schedule", "Lower mobile bids"],
-                },
-                actions: [
-                    { label: "Fix all leaks now", type: "primary" },
-                    { label: "Fix keywords only", type: "secondary" },
-                    { label: "I'll review first", type: "secondary" },
-                ],
-            };
-        }
-
-        case "check_competitors": {
-            const c = biz.competitors;
-            return {
-                role: "ai",
-                model: "claude-4.6",
-                content: `I analyzed your competitors in the **${biz.location} ${biz.industry.split("/")[0].trim().toLowerCase()}** market:\n\n` +
-                    `\ud83c\udfc6 **1. ${c[0] || "Competitor A"}** \u2014 Avg pos: 1.2, 12 ads active\n` +
-                    `\ud83e\udd48 **2. ${c[1] || "Competitor B"}** \u2014 Avg pos: 2.1, 8 ads active\n` +
-                    `\ud83e\udd49 **3. ${c[2] || "Competitor C"}** \u2014 Avg pos: 2.8, 15 ads active\n\n` +
-                    `\ud83d\udca1 **Your edge:** ${biz.name} has unique positioning in the market.\n\n` +
-                    `\ud83d\udcb0 Estimated competitor spend: **$800\u2013$1,200/week** each`,
-                timestamp: time,
-                stats: [
-                    { label: c[0]?.split(" ")[0] || "Comp A", value: "Pos 1.2", change: "12 ads", trend: "neutral" },
-                    { label: c[1]?.split(" ")[0] || "Comp B", value: "Pos 2.1", change: "8 ads", trend: "neutral" },
-                    { label: c[2]?.split(" ")[0] || "Comp C", value: "Pos 2.8", change: "15 ads", trend: "neutral" },
-                    { label: "Your Position", value: "Pos 1.8", change: "Strong", trend: "up" },
-                ],
-                actions: [
-                    { label: "Write counter-ads", type: "primary" },
-                    { label: `How to beat ${c[0]?.split(" ")[0] || "them"}?`, type: "secondary" },
-                    { label: "Their keywords?", type: "secondary" },
-                ],
-            };
-        }
-
-        case "pause_keywords": {
-            const svc = biz.services[0] || "service";
-            return {
-                role: "ai",
-                model: "gpt-4o",
-                content: `Done! Here\u2019s what I paused for **${biz.name}**:`,
-                timestamp: time,
-                taskSummary: {
-                    done: [
-                        `Paused "free ${svc} tips" \u2014 saving ~$22/week`,
-                        `Added unrelated terms as negative keywords \u2014 saving ~$8.50/week`,
-                        `Paused low-intent queries \u2014 saving ~$15/week`,
-                    ],
-                },
-                stats: [
-                    { label: "Keywords Paused", value: "3", change: "Done", trend: "up" },
-                    { label: "Weekly Savings", value: "$45.50", change: "+100%", trend: "up" },
-                    { label: "Monthly Impact", value: "$182", change: "Saved", trend: "up" },
-                ],
-                actions: [
-                    { label: "Show my best keywords", type: "primary" },
-                    { label: "Any more to pause?", type: "secondary" },
-                    { label: "I'm good", type: "secondary" },
-                ],
-            };
-        }
-
-        case "go_live": {
-            return {
-                role: "ai",
-                model: "gpt-4o",
-                content: "I\u2019ve pushed your approved ads live! Here\u2019s the summary:",
-                timestamp: time,
-                taskSummary: {
-                    done: [
-                        "Published 3 text ads to Google Search campaigns",
-                        "Published 2 display ads to Display Network",
-                        "Set daily budget cap at $50/day",
-                        "Enabled conversion tracking",
-                    ],
-                },
-                stats: [
-                    { label: "Ads Live", value: "5", change: "Active", trend: "up" },
-                    { label: "Campaigns", value: "3", change: "Running", trend: "up" },
-                    { label: "Daily Budget", value: "$50", change: "Set", trend: "neutral" },
-                ],
-                actions: [
-                    { label: "Monitor performance", type: "primary" },
-                    { label: "Adjust budget", type: "secondary" },
-                    { label: "Create more ads", type: "secondary" },
-                ],
-            };
-        }
-
-        case "show_drafts": {
-            return {
-                role: "ai",
-                model: "gpt-4o",
-                content: `Here are your current drafts for **${biz.name}** \u2014 **6 text ads** and **4 display ads**:`,
-                timestamp: time,
-                ads: [
-                    { type: "text", headline1: `${biz.services[0] ? biz.services[0].charAt(0).toUpperCase() + biz.services[0].slice(1) : "Service"} \u2014 ${biz.location}`, headline2: "Fast Response \u2022 Top Rated", description: `Need ${biz.services[0] || "help"}? ${biz.name} is here for you. Call now!`, displayUrl: `www.${biz.url}` },
-                    { type: "text", headline1: `${biz.name} \u2014 Book Today`, headline2: "Free Consultation \u2022 Trusted", description: `${biz.shortDesc}. Get started today.`, displayUrl: `www.${biz.url}` },
-                    { type: "display", title: "Summer Collection Banner", dimensions: "728\u00d790", format: "Leaderboard", imageUrl: "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=400&h=300&fit=crop", overlayText: "SUMMER SALE 40% OFF", ctaText: "Shop Now", previewBg: "from-pink-400 to-purple-500" },
-                    { type: "display", title: "Sushi Lunch Special", dimensions: "300\u00d7250", format: "Medium Rectangle", imageUrl: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=400&h=300&fit=crop", overlayText: "LUNCH SPECIAL $12.99", ctaText: "Order Now", previewBg: "from-amber-400 to-red-500" },
-                ],
-                actions: [
-                    { label: "Edit a display ad", type: "primary" },
-                    { label: "Create more ads", type: "secondary" },
-                    { label: "Go live with all", type: "secondary" },
-                ],
-            };
-        }
-
-        case "export_report": {
-            const fmt = intent.params.format;
-            if (fmt) {
-                return {
-                    role: "ai",
-                    model: "claude-4.6",
-                    content: `I\u2019ll generate a **${fmt.toUpperCase()} report** for **${biz.name}** right away!\n\n` +
-                        `\ud83d\udcc4 **Report Preview:**\n` +
-                        `\u2022 Header: ${biz.name} branding & logo\n` +
-                        `\u2022 Executive Summary with KPIs\n` +
-                        `\u2022 Winning Keywords & Money Leaks\n` +
-                        `\u2022 Google Trends Analysis\n` +
-                        `\u2022 AI Recommendations\n` +
-                        `\u2022 Footer: ${biz.url} \u00b7 Generated by AdMaster Pro\n\n` +
-                        `Would you like to customize what\u2019s included, or should I generate as-is?`,
-                    timestamp: time,
-                    actions: [
-                        { label: `Generate ${fmt.toUpperCase()} now`, type: "primary" },
-                        { label: "Customize sections", type: "secondary" },
-                        { label: "Try a different format", type: "secondary" },
-                    ],
-                };
-            }
-            return {
-                role: "ai",
-                model: "claude-4.6",
-                content: `Sure! I can generate a branded report for **${biz.name}**. What format would you like?\n\n` +
-                    `\ud83d\udcc4 **PDF** \u2014 Best for printing & sharing\n` +
-                    `\ud83d\udcca **Excel** \u2014 Editable data with charts\n` +
-                    `\ud83d\udcc3 **Word** \u2014 Full written report\n` +
-                    `\ud83d\udcc1 **CSV** \u2014 Raw data export\n` +
-                    `\ud83d\udda8\ufe0f **Print** \u2014 Direct to printer\n\n` +
-                    `All reports include your **${biz.name} branding** (header, footer, brand colors) by default.`,
-                timestamp: time,
-                actions: [
-                    { label: "Export as PDF", type: "primary" },
-                    { label: "Export as Excel", type: "secondary" },
-                    { label: "Export as Word", type: "secondary" },
-                    { label: "Open report settings", type: "secondary" },
-                ],
-            };
-        }
-
-        case "add_keywords": {
-            return {
-                role: "ai",
-                model: "gpt-4o",
-                content: `Great question! Here\u2019s what I found for **${biz.name}** based on Google Trends, competitor analysis, and your Knowledge Base:\n\n` +
-                    `\ud83d\udd25 **Trending Keywords** (from Google Trends):\n` +
-                    `\u2022 \"${biz.services[0] || "service"} near me\" \u2014 \ud83d\udcc8 +24% this week\n` +
-                    `\u2022 \"best ${biz.services[0] || "service"} ${biz.location.split(" ")[0]}\" \u2014 \ud83d\udd25 Breakout!\n` +
-                    `\u2022 \"${biz.services[1] || "repair"} cost ${new Date().getFullYear()}\" \u2014 \ud83d\udcc8 +18%\n\n` +
-                    `\ud83e\udde0 **AI Recommendations** based on your data:\n` +
-                    `\u2022 \"${biz.services[2] || "consultation"} ${biz.location.split(" ")[0].toLowerCase()}\" \u2014 Score: 8/10\n` +
-                    `\u2022 \"emergency ${biz.services[0] || "service"}\" \u2014 Score: 7/10\n\n` +
-                    `Want me to add these, or would you prefer to add your own keywords? You can also bulk import from a list.`,
-                timestamp: time,
-                actions: [
-                    { label: "Add all suggested", type: "primary" },
-                    { label: "I\u2019ll add my own", type: "secondary" },
-                    { label: "Show more suggestions", type: "secondary" },
-                    { label: "Open Keywords page", type: "secondary" },
-                ],
-            };
-        }
-
-        case "help": {
-            return {
-                role: "ai",
-                model: "gpt-4o",
-                content: "I\u2019m your AI ad assistant! Here\u2019s what I can do \u2014 just tell me in plain English:\n\n" +
-                    "\ud83d\udcdd **Create Ads** \u2014 \"Create 3 text ads for drain cleaning\"\n" +
-                    "\ud83d\uddbc\ufe0f **Design Display Ads** \u2014 \"Make a display ad for summer sale\"\n" +
-                    "\ud83d\udcf7 **Manage Images** \u2014 \"Add a sushi image to the lunch ad\"\n" +
-                    "\u2194\ufe0f **Position Images** \u2014 \"Move the image to the top left\"\n" +
-                    "\u270f\ufe0f **Edit Text** \u2014 \"Change the headline to 50% OFF\"\n" +
-                    "\ud83d\udcca **Show Stats** \u2014 \"How are my ads doing?\"\n" +
-                    "\ud83d\udcb8 **Find Waste** \u2014 \"Where am I wasting money?\"\n" +
-                    "\ud83c\udfc6 **Competitors** \u2014 \"What are my competitors doing?\"\n" +
-                    "\ud83d\udd0d **Keywords** \u2014 \"Suggest keywords\" or \"What\u2019s trending?\"\n" +
-                    "\ud83d\udcc4 **Reports** \u2014 \"Export my report as PDF\"\n" +
-                    "\ud83c\udfe2 **Multi-Account** \u2014 \"How many accounts do we have?\" or \"Compare all accounts\"\n" +
-                    "\u23f8 **Pause/Block** \u2014 \"Pause the bad keywords\"\n" +
-                    "\ud83d\ude80 **Go Live** \u2014 \"Launch my ads\"\n\n" +
-                    "Just speak or type naturally \u2014 I\u2019ll handle the rest! \ud83c\udf99\ufe0f",
-                timestamp: time,
-                actions: [
-                    { label: "Show my stats", type: "primary" },
-                    { label: "Create new ads", type: "secondary" },
-                    { label: "Find money leaks", type: "secondary" },
-                    { label: "Export a report", type: "secondary" },
-                ],
-            };
-        }
-
-        case "off_topic": {
-            const offBizName = intent.params.offTopicBusiness || "another business";
-            return {
-                role: "ai",
-                model: "gpt-4o",
-                content: `I\u2019m currently managing ads for **${biz.name}** (${biz.industry}).\n\n` +
-                    `I can\u2019t create ads for **${offBizName}** in this context \u2014 ` +
-                    `each business has its own Knowledge Base, brand voice, and campaign data that I use to generate accurate ads.\n\n` +
-                    `\ud83d\udc49 **To manage ${offBizName}**, switch to it from the business menu in the sidebar.\n\n` +
-                    `Would you like me to help with something for **${biz.name}** instead?`,
-                timestamp: time,
-                actions: [
-                    { label: `Create ads for ${biz.name.split(" ")[0]}`, type: "primary" },
-                    { label: "Show my stats", type: "secondary" },
-                    { label: "What can you do?", type: "secondary" },
-                ],
-            };
-        }
-
-        default: {
-            return {
-                role: "ai",
-                model: Math.random() > 0.4 ? "gpt-4o" : "claude-4.6",
-                content: `Got it! Let me work on that for **${biz.name}**.\n\n` +
-                    "Based on your account data:\n\n" +
-                    "\u2022 Your account is healthy with a **7.99% CTR**\n" +
-                    "\u2022 **18 calls** this week from Google Ads\n" +
-                    "\u2022 **$318** remaining in this month\u2019s budget\n\n" +
-                    "Could you tell me a bit more about what you need? Here are some things I can do right now:",
-                timestamp: time,
-                stats: [
-                    { label: "CTR", value: "7.99%", change: "Healthy", trend: "up" },
-                    { label: "Calls", value: "18", change: "This week", trend: "up" },
-                    { label: "Budget", value: "$318", change: "Remaining", trend: "neutral" },
-                ],
-                actions: [
-                    { label: "Create ads for me", type: "primary" },
-                    { label: "Show my stats", type: "secondary" },
-                    { label: "Find money leaks", type: "secondary" },
-                    { label: "What can you do?", type: "secondary" },
-                ],
-            };
-        }
-    }
-};
-
-// ─── Exact Match Bank (for action buttons) ──────────────────────────────────
-
-const getExactMatchBank = (biz: BusinessProfile): Record<string, () => Omit<Message, "id">> => ({
-    "Yes, pause them all": () => generateResponse({ intent: "pause_keywords", params: {} }, "", biz),
-    "Fix all leaks now": () => generateResponse({ intent: "pause_keywords", params: {} }, "", biz),
-    "Go Live with all 3": () => generateResponse({ intent: "go_live", params: {} }, "", biz),
-    "Go live with all": () => generateResponse({ intent: "go_live", params: {} }, "", biz),
-    "Go Live": () => generateResponse({ intent: "go_live", params: {} }, "", biz),
-    "Show my stats": () => generateResponse({ intent: "show_stats", params: {} }, "", biz),
-    "Monitor performance": () => generateResponse({ intent: "show_stats", params: {} }, "", biz),
-    "Find money leaks": () => generateResponse({ intent: "find_leaks", params: {} }, "", biz),
-    "Check my competitors": () => generateResponse({ intent: "check_competitors", params: {} }, "", biz),
-    "What can you do?": () => generateResponse({ intent: "help", params: {} }, "", biz),
-    "Show call details": () => ({
-        role: "ai",
-        model: "claude-4.6",
-        content: `Here are your **18 calls** for **${biz.name}** from the last 7 days:\n\n` +
-            "| # | Date | Duration | Keyword | Result |\n" +
-            "|---|------|----------|---------|--------|\n" +
-            `| 1 | Feb 24 | 4:32 | ${biz.services[0] || "service"} | \u2705 Booked |\n` +
-            `| 2 | Feb 24 | 2:18 | ${biz.services[1] || "repair"} | \u2705 Booked |\n` +
-            `| 3 | Feb 24 | 0:45 | ${biz.services[0] || "service"} ${biz.location.split(" ")[0].toLowerCase()} | \u274c Hangup |\n` +
-            `| 4 | Feb 23 | 6:12 | ${biz.services[2] || "service"} | \u2705 Booked |\n` +
-            `| 5 | Feb 23 | 3:45 | ${biz.services[0] || "service"} | \u2705 Booked |\n\n` +
-            "\u2022 \u2705 **12 booked** (67%)\n\u2022 \ud83d\udccb 3 estimates\n\u2022 \u274c 2 hangups, 1 wrong number\n\n" +
-            "Booking rate **67%** vs industry avg 45% \ud83c\udf89",
-        timestamp: timeNow(),
-        stats: [
-            { label: "Booked", value: "12", change: "67%", trend: "up" },
-            { label: "Estimates", value: "3", change: "Pending", trend: "neutral" },
-            { label: "Missed", value: "3", change: "Hangups", trend: "down" },
-        ],
-        actions: [
-            { label: "Best keywords for bookings?", type: "primary" },
-            { label: "Why the hangups?", type: "secondary" },
-        ],
-    }),
-    "Compare to last month": () => ({
-        role: "ai",
-        model: "gpt-4o",
-        content: `**Month-over-month comparison for ${biz.name}:**\n\n` +
-            "| Metric | Jan | Feb (so far) | Change |\n" +
-            "|--------|-----|-------------|--------|\n" +
-            "| Calls | 52 | 48 | \ud83d\udfe2 +15% pace |\n" +
-            "| Cost/Call | $27.30 | $24.62 | \ud83d\udfe2 -10% |\n" +
-            "| CTR | 7.19% | 7.99% | \ud83d\udfe2 +11% |\n" +
-            "| Cost | $1,420 | $1,182 | \ud83d\udfe2 Under budget |\n\n" +
-            "\ud83d\ude80 **Trending better across the board!** On pace for 63 calls (vs 52 in Jan).",
-        timestamp: timeNow(),
-        stats: [
-            { label: "Calls Pace", value: "63", change: "+21%", trend: "up" },
-            { label: "Cost/Call", value: "$24.62", change: "-10%", trend: "down" },
-            { label: "CTR", value: "7.99%", change: "+11%", trend: "up" },
-        ],
-        actions: [
-            { label: "What helped most?", type: "primary" },
-            { label: "Predict next month", type: "secondary" },
-        ],
-    }),
-    "Create display ads too": () => generateResponse({ intent: "create_display_ads", params: { topic: biz.services[0] || "your top service" } }, "", biz),
-    "Create more ads": () => generateResponse({ intent: "help", params: {} }, "", biz),
-    "Edit images & layout": () => ({
-        role: "ai",
-        model: "gpt-4o",
-        content: "Sure! You can edit your display ads in two ways:\n\n" +
-            "**1. Tell me what to do** (easiest)\n" +
-            "\u2022 \"Move the image to the top\"\n" +
-            "\u2022 \"Add an image to the ad\"\n" +
-            "\u2022 \"Change the headline to 50% OFF\"\n\n" +
-            "**2. Manual editor**\n" +
-            "\u2022 Go to your **Drafts** page and click **Edit Display** on any display ad\n" +
-            "\u2022 Full image library, position controls, text editor, color picker\n\n" +
-            "What would you like to do?",
-        timestamp: timeNow(),
-        actions: [
-            { label: "Move image to top", type: "primary" },
-            { label: "Change the text", type: "secondary" },
-            { label: "Open Drafts page", type: "secondary" },
-        ],
-    }),
-    "Move image to top": () => generateResponse({ intent: "move_image", params: { position: "top center" } }, "", biz),
-    "Change the text": () => ({
-        role: "ai",
-        model: "gpt-4o",
-        content: "What would you like the new text to say? Just tell me, for example:\n\n" +
-            "\u2022 \"Change headline to FLASH SALE 50% OFF\"\n" +
-            "\u2022 \"Set the button to Book Now\"\n" +
-            "\u2022 \"Update overlay text to Free Shipping Today\"",
-        timestamp: timeNow(),
-        actions: [
-            { label: "50% OFF Today Only", type: "secondary" },
-            { label: "Free Shipping", type: "secondary" },
-            { label: "Limited Time Offer", type: "secondary" },
-        ],
-    }),
-    "Write counter-ads": () => generateResponse({ intent: "create_text_ads", params: { topic: "counter-competitor messaging" } }, "", biz),
-    "Regenerate Ad #2": () => ({
-        role: "ai",
-        model: "claude-4.6",
-        content: `Done! I regenerated Ad #2 for **${biz.name}** with a fresh angle. Here\u2019s the new version:`,
-        timestamp: timeNow(),
-        ads: [
-            {
-                type: "text",
-                headline1: `${biz.name} \u2014 Top Rated in ${biz.location}`,
-                headline2: "Professional \u2022 No Hidden Fees",
-                description: `Choose ${biz.name} for expert ${biz.services[0] || "service"}. Professional, licensed, and ${biz.location}'s highest rated. Book now!`,
-                displayUrl: `www.${biz.url}`,
-            },
-        ],
-        taskSummary: { done: ["Regenerated Ad #2 with a fresh angle", "New version saved to Drafts (v2)", "Previous version kept in version history"] },
-        actions: [
-            { label: "Use this version", type: "primary" },
-            { label: "Try another angle", type: "secondary" },
-            { label: "Go Live with all", type: "secondary" },
-        ],
-    }),
-    "Fix keywords only": () => generateResponse({ intent: "pause_keywords", params: {} }, "", biz),
-    "I'm good": () => ({
-        role: "ai",
-        model: "gpt-4o",
-        content: `\ud83d\udc4d I\u2019ll keep watching **${biz.name}**'s account 24/7. I\u2019ll alert you if:\n\n` +
-            "\u2022 \ud83d\udea8 Any keyword spikes in cost\n\u2022 \ud83d\udcc9 CTR drops below 5%\n\u2022 \ud83d\udcb0 Spend exceeds budget by 20%+\n\u2022 \ud83c\udfc6 A competitor changes strategy\n\n" +
-            "Weekly summary every Monday at 9 AM. Come back anytime!",
-        timestamp: timeNow(),
-        actions: [
-            { label: "Set up email reports", type: "primary" },
-            { label: "Change alert settings", type: "secondary" },
-        ],
-    }),
-    "Looks great!": () => ({
-        role: "ai",
-        model: "gpt-4o",
-        content: "Awesome! \ud83c\udf89 Everything is saved and ready. Want to push any of these live or keep editing?\n\nRemember, nothing runs until you say **Go Live**.",
-        timestamp: timeNow(),
-        actions: [
-            { label: "Go Live with all", type: "primary" },
-            { label: "Create more ads", type: "secondary" },
-            { label: "I'm done for now", type: "secondary" },
-        ],
-    }),
-    "Looks perfect!": () => ({
-        role: "ai",
-        model: "gpt-4o",
-        content: "Awesome! \ud83c\udf89 Everything is saved and ready. Want to push any of these live or keep editing?\n\nRemember, nothing runs until you say **Go Live**.",
-        timestamp: timeNow(),
-        actions: [
-            { label: "Go Live with all", type: "primary" },
-            { label: "Create more ads", type: "secondary" },
-            { label: "I'm done for now", type: "secondary" },
-        ],
-    }),
-    "Use this version": () => ({
-        role: "ai",
-        model: "gpt-4o",
-        content: "\u2705 Set as active version! The previous version is saved in your version history on the Drafts page.",
-        timestamp: timeNow(),
-        actions: [
-            { label: "Go Live", type: "primary" },
-            { label: "Show all my drafts", type: "secondary" },
-        ],
-    }),
-    "Show all my drafts": () => generateResponse({ intent: "show_drafts", params: {} }, "", biz),
-    "Open Drafts page": () => ({
-        role: "ai",
-        model: "gpt-4o",
-        content: "Head over to your **Drafts** page to use the full visual editor:\n\n\ud83d\udc49 [Open Drafts Page](/dashboard/drafts)\n\nYou can filter by Text or Display ads, and click **Edit Display** to open the full image editor with library, positioning, and text controls.",
-        timestamp: timeNow(),
-        actions: [
-            { label: "Show my drafts here instead", type: "primary" },
-            { label: "Create new ads", type: "secondary" },
-        ],
-    }),
-    "Show my drafts here instead": () => generateResponse({ intent: "show_drafts", params: {} }, "", biz),
-    "50% OFF Today Only": () => generateResponse({ intent: "change_text", params: { newText: "50% OFF Today Only" } }, "", biz),
-    "Free Shipping": () => generateResponse({ intent: "change_text", params: { newText: "Free Shipping \u2014 Order Now" } }, "", biz),
-    "Limited Time Offer": () => generateResponse({ intent: "change_text", params: { newText: "Limited Time Offer \u2014 Don\u2019t Miss Out" } }, "", biz),
-    "Add more sizes": () => generateResponse({ intent: "create_display_ads", params: { topic: "additional sizes" } }, "", biz),
-    "Write the speed ad": () => generateResponse({ intent: "create_text_ads", params: { topic: "speed & fast response" } }, "", biz),
-    "Write the competitor ad": () => generateResponse({ intent: "create_text_ads", params: { topic: "competitor comparison" } }, "", biz),
-    "I'm done for now": () => ({
-        role: "ai",
-        model: "gpt-4o",
-        content: `\ud83d\udc4d All good! Your ads and changes for **${biz.name}** are saved. I\u2019m always here \u2014 just speak or type when you need me.\n\nI\u2019ll keep monitoring your account 24/7. \ud83d\ude0a`,
-        timestamp: timeNow(),
-        actions: [],
-    }),
-    [`Create ads for ${biz.name.split(" ")[0]}`]: () => generateResponse({ intent: "create_text_ads", params: { topic: biz.services[0] || "your top service" } }, "", biz),
-    "Create new ads": () => generateResponse({ intent: "help", params: {} }, "", biz),
-    "Create ads for me": () => generateResponse({ intent: "create_text_ads", params: { topic: biz.services[0] || "your top service" } }, "", biz),
-    // ── Export Report actions ──
-    "Export as PDF": () => generateResponse({ intent: "export_report", params: { format: "pdf" } }, "", biz),
-    "Export as Excel": () => generateResponse({ intent: "export_report", params: { format: "excel" } }, "", biz),
-    "Export as Word": () => generateResponse({ intent: "export_report", params: { format: "word" } }, "", biz),
-    "Export a report": () => generateResponse({ intent: "export_report", params: {} }, "", biz),
-    "Generate PDF now": () => generateResponse({ intent: "export_report", params: { format: "pdf" } }, "", biz),
-    "Generate EXCEL now": () => generateResponse({ intent: "export_report", params: { format: "excel" } }, "", biz),
-    "Generate WORD now": () => generateResponse({ intent: "export_report", params: { format: "word" } }, "", biz),
-    "Try a different format": () => generateResponse({ intent: "export_report", params: {} }, "", biz),
-    "Open report settings": () => ({
-        role: "ai" as const,
-        model: "gpt-4o",
-        content: `📊 To customize your report settings, head to the **Keywords** page and click the **Export Report** button in the top-right.\n\nThere you can:\n- Choose your format (PDF, Excel, Word, CSV)\n- Toggle report sections on/off\n- Select your date range\n- Preview with your **${biz.name}** branding\n\nWant me to do anything else?`,
-        timestamp: timeNow(),
-        actions: [{ label: "Export as PDF", type: "primary" }, { label: "Export as Excel", type: "secondary" }, { label: "Show my stats", type: "secondary" }],
-    }),
-    "Customize sections": () => ({
-        role: "ai" as const,
-        model: "gpt-4o",
-        content: `✏️ You can customize which sections appear in your report from the **Keywords > Export Report** modal.\n\nAvailable sections:\n• Executive Summary\n• Winning Keywords\n• Money Leaks Analysis\n• Google Trends Insights\n• AI Recommendations\n• Competitor Insights\n• 30-Day Forecast\n\nJust toggle each section on or off before exporting!`,
-        timestamp: timeNow(),
-        actions: [{ label: "Export as PDF", type: "primary" }, { label: "Open report settings", type: "secondary" }],
-    }),
-    // ── Keyword actions ──
-    "Add all suggested": () => ({
-        role: "ai" as const,
-        model: "gpt-4o",
-        content: `✅ Great choice! I've queued all the suggested keywords for **${biz.name}**.\n\nRemember — I'll run each one through my AI analysis before activating it. Keywords that don't meet quality thresholds will be paused automatically.\n\nYou can review everything on the **Keywords** page. Want me to find more opportunities?`,
-        timestamp: timeNow(),
-        actions: [{ label: "Show more suggestions", type: "primary" }, { label: "Open Keywords page", type: "secondary" }, { label: "Show my stats", type: "secondary" }],
-    }),
-    "I'll add my own": () => ({
-        role: "ai" as const,
-        model: "gpt-4o",
-        content: `👍 No problem! Head to the **Keywords** page and click **Add Keywords** to enter your own.\n\nYou can add them one-by-one or bulk import. I'll automatically analyze each keyword and provide:\n- Quality score (1-10)\n- Google Trends data\n- AI verdict (approve/review/reject)\n\nI'll make sure only the best ones go live! 🎯`,
-        timestamp: timeNow(),
-        actions: [{ label: "Open Keywords page", type: "primary" }, { label: "Show more suggestions", type: "secondary" }],
-    }),
-    "Show more suggestions": () => generateResponse({ intent: "add_keywords", params: {} }, "", biz),
-    "Open Keywords page": () => ({
-        role: "ai" as const,
-        model: "gpt-4o",
-        content: `📋 You can find all your keywords on the **Keywords** page in the left sidebar.\n\nFrom there you can:\n- View all keywords with AI verdicts & Google Trends\n- Add new keywords (single or bulk)\n- Export branded reports\n- See which keywords I've approved, paused, or flagged\n\nNeed anything else?`,
-        timestamp: timeNow(),
-        actions: [{ label: "Add all suggested", type: "primary" }, { label: "Export a report", type: "secondary" }, { label: "Show my stats", type: "secondary" }],
-    }),
-    // ── Confirmation actions ──
-    "Yes, go live!": () => generateResponse({ intent: "go_live", params: {} }, "", biz),
-    "No, not yet": () => ({
-        role: "ai" as const,
-        model: "gpt-4o",
-        content: `👍 No problem! Your drafts for **${biz.name}** are safe and ready whenever you are.\n\nI\u2019ll keep monitoring your account 24/7 in the meantime. 🔒`,
-        timestamp: timeNow(),
-        actions: [{ label: "Show my stats", type: "primary" }, { label: "Show my drafts", type: "secondary" }],
-    }),
-    "Let me review drafts first": () => generateResponse({ intent: "show_drafts", params: {} }, "", biz),
-    "Show my drafts": () => generateResponse({ intent: "show_drafts", params: {} }, "", biz),
-    "How many accounts?": () => ({
-        role: "ai" as const,
-        model: "gpt-4o",
-        content: `You have **5 ad accounts** connected. I\u2019m currently managing **${biz.name}**. Ask me \u201CShow all accounts\u201D for a full portfolio overview with spend, calls, and CTR.`,
-        timestamp: timeNow(),
-        actions: [{ label: "Show my stats", type: "primary" }],
-    }),
-});
-
 // ─── Quick Actions ──────────────────────────────────────────────────────────
 
 const quickActions = [
@@ -1011,22 +266,17 @@ const getInitialMessages = (bizIn: BusinessProfile | null): Message[] => {
             model: "gpt-4o",
             content:
                 `Hey! \ud83d\udc4b I\u2019m your AI ad assistant for **${name}**. Just **speak or type** what you need \u2014 I\u2019ll handle everything.\n\n` +
-                `I just scanned your **${biz.name}** account for the last 7 days:\n\n` +
-                "**Good news:** 18 conversions this week \u2014 5 more than last week! \ud83c\udf89\n\n" +
-                `**Needs attention:** I found 3 keywords wasting **$45.50/week**:\n` +
-                `\u2022 "free ${biz.services[0] || "service"} tips" \u2014 $22, 0 conversions\n` +
-                `\u2022 "${biz.services[0] || "service"} salary" \u2014 $8.50, 0 conversions\n` +
-                `\u2022 "how to ${biz.services[1] || "DIY"}" \u2014 $15, 0 conversions\n\n` +
-                "Want me to pause these? Just say the word.",
+                `Here\u2019s what I can do for you:\n` +
+                `\u2022 **Show real stats** from your Google Ads account\n` +
+                `\u2022 **Find wasted spend** and money leaks\n` +
+                `\u2022 **Create ad copy** tailored to your business\n` +
+                `\u2022 **Check competitors** and market position\n` +
+                `\u2022 **Manage keywords** \u2014 pause, add, or optimize\n\n` +
+                `What would you like to start with?`,
             timestamp: timeNow(),
-            stats: [
-                { label: "Conversions", value: "18", change: "+38%", trend: "up" },
-                { label: "Wasted", value: "$45.50", change: "This week", trend: "down" },
-                { label: "CTR", value: "7.99%", change: "Above avg", trend: "up" },
-            ],
             actions: [
-                { label: "Yes, pause them all", type: "primary" },
-                { label: "Let me review first", type: "secondary" },
+                { label: "Show my stats", type: "primary" },
+                { label: "Find money leaks", type: "secondary" },
                 { label: "What else can you do?", type: "secondary" },
             ],
         },
@@ -1708,51 +958,29 @@ export default function ChatPage() {
 
         // ── Cross-account portfolio query ──────────────────────────
         if (intent.intent === "cross_account_query") {
-            const spendData = [295, 412, 187, 340, 265];
-            const ctrData = [7.99, 6.2, 8.4, 5.8, 9.1];
-            const callsData = [18, 24, 12, 15, 21];
-
-            const portfolioLines = businesses.map((b, i) => {
-                const spend = spendData[i % 5];
-                const ctr = ctrData[i % 5];
-                const calls = callsData[i % 5];
-                const isCurrent = b.id === activeBusiness.id;
-                return `**${i + 1}. ${b.name}** \u2014 ${b.industry}\n` +
-                    `\u2003\uD83D\uDCB0 $${spend}/wk \u00B7 \uD83D\uDCDE ${calls} calls \u00B7 \uD83D\uDCCA ${ctr}% CTR${isCurrent ? " *(\u2190 currently managing)*" : ""}`;
-            });
-
-            const totalSpend = businesses.reduce((sum, _, i) => sum + spendData[i % 5], 0);
-            const totalCalls = businesses.reduce((sum, _, i) => sum + callsData[i % 5], 0);
-
-            const portfolioResp: Omit<Message, "id"> = {
-                role: "ai",
-                model: "gpt-4o",
-                content: `\uD83C\uDFE2 **Portfolio Overview \u2014 All Ad Accounts**\n\n` +
-                    `You have **${businesses.length} ad accounts** connected to AdMaster Pro:\n\n` +
-                    portfolioLines.join("\n\n") + "\n\n" +
-                    `\u2500\u2500\u2500\n\n` +
-                    `**Portfolio Totals (7 days):** $${totalSpend.toLocaleString()} spent \u00B7 ${totalCalls} calls \u00B7 ${(6.5 + Math.random()).toFixed(1)}% avg CTR\n\n` +
-                    `I\u2019m currently managing **${activeBusiness.name}**. Want me to switch to another account or dive deeper into any of these?`,
-                timestamp: timeNow(),
-                stats: [
-                    { label: "Accounts", value: String(businesses.length), change: "All Active", trend: "up" },
-                    { label: "Total Spend", value: `$${totalSpend.toLocaleString()}`, change: "This week", trend: "neutral" },
-                    { label: "Total Calls", value: String(totalCalls), change: "Combined", trend: "up" },
-                ],
-                actions: [
-                    ...businesses
-                        .filter(b => b.id !== activeBusiness.id)
-                        .slice(0, 3)
-                        .map(b => ({ label: `Switch to ${b.name}`, type: "secondary" as const })),
-                    { label: "Show my stats", type: "primary" as const },
-                ],
-            };
-
-            setTimeout(() => {
+            const bizList = businesses.map((b, i) =>
+                `${i + 1}. ${b.name} — ${b.industry}${b.id === activeBusiness.id ? " (currently managing)" : ""}`
+            ).join("\n");
+            const enrichedMsg = `${text}\n\n[Context: The user has ${businesses.length} ad accounts:\n${bizList}\nCurrently managing: ${activeBusiness.name}. Provide a portfolio overview and offer to switch accounts or dive deeper.]`;
+            callAI(enrichedMsg, messages).then((aiResult) => {
+                const aiResponse: Message = {
+                    id: Date.now() + 2,
+                    role: "ai",
+                    model: (aiResult?.model as LLMModel) || "gpt-4o",
+                    content: aiResult?.content || "I couldn\u2019t fetch your portfolio data right now. Please try again.",
+                    timestamp: timeNow(),
+                    actions: [
+                        ...businesses
+                            .filter(b => b.id !== activeBusiness.id)
+                            .slice(0, 3)
+                            .map(b => ({ label: `Switch to ${b.name}`, type: "secondary" as const })),
+                        { label: "Show my stats", type: "primary" as const },
+                    ],
+                };
                 const divider: Message = { id: Date.now() + 1, role: "divider", content: "", timestamp: `${dateNow()} \u2022 ${timeNow()}` };
-                setMessages((prev) => [...prev, divider, { ...portfolioResp, id: Date.now() + 2 } as Message]);
+                setMessages((prev) => [...prev, divider, aiResponse]);
                 setIsTyping(false);
-            }, 1200);
+            });
             return;
         }
 
@@ -1792,77 +1020,42 @@ export default function ChatPage() {
                 ],
             };
         } else {
-            // Check exact match bank first, then NLP intent
-            const exactMatchBank = getExactMatchBank(activeBusiness);
-            const exactMatch = exactMatchBank[text];
-
-            if (exactMatch) {
-                response = exactMatch();
-            } else if (intent.intent === "go_live") {
-                // High-impact action \u2014 confirm before going live
-                response = {
+            // ── Route ALL intents through real AI API ────────────────────
+            callAI(text, messages).then((aiResult) => {
+                const aiResponse: Message = {
+                    id: Date.now() + 2,
                     role: "ai",
-                    model: "gpt-4o",
-                    content: `\u26A1 Just to confirm \u2014 you\u2019d like me to **push your approved ads live** for **${activeBusiness.name}**?\n\n` +
-                        `This will:\n` +
-                        `\u2022 Publish approved drafts to Google Search & Display Network\n` +
-                        `\u2022 Start spending your daily budget\n` +
-                        `\u2022 Enable conversion tracking\n\n` +
-                        `Once live, your ads will start showing to potential customers immediately. Ready to go?`,
+                    model: (aiResult?.model as LLMModel) || "gpt-4o",
+                    content: aiResult?.content || "Hmm, something went sideways. Give it another shot?",
                     timestamp: timeNow(),
-                    actions: [
-                        { label: "Yes, go live!", type: "primary" },
-                        { label: "Let me review drafts first", type: "secondary" },
-                        { label: "No, not yet", type: "secondary" },
-                    ],
                 };
-            } else if (intent.intent === "unknown") {
-                // ── Route to real AI API for general / free-form queries ──
-                callAI(text, messages).then((aiResult) => {
-                    const aiResponse: Message = {
-                        id: Date.now() + 2,
-                        role: "ai",
-                        model: (aiResult?.model as LLMModel) || "gpt-4o",
-                        content: aiResult?.content || "Hmm, something went sideways. Give it another shot?",
-                        timestamp: timeNow(),
-                    };
-                    const divider: Message = {
-                        id: Date.now() + 1,
-                        role: "divider",
-                        content: "",
-                        timestamp: `${dateNow()} \u2022 ${timeNow()}`,
-                    };
-                    setMessages((prev) => [...prev, divider, aiResponse]);
-                    setIsTyping(false);
-                });
-                return;
-            } else {
-                response = generateResponse(intent, text, activeBusiness);
-            }
+                const divider: Message = {
+                    id: Date.now() + 1,
+                    role: "divider",
+                    content: "",
+                    timestamp: `${dateNow()} \u2022 ${timeNow()}`,
+                };
+                setMessages((prev) => [...prev, divider, aiResponse]);
+                setIsTyping(false);
+            });
+            return;
         }
 
-        // Simulate AI processing (multi-step for agentic feel) 
-        const baseDelay = 1200;
-        const extraDelay = response.ads ? 800 : response.taskSummary ? 600 : 400;
-        const delay = baseDelay + Math.random() * extraDelay;
-
+        // Simulate AI processing for account-switch confirmation only
         setTimeout(() => {
-            // Add divider before AI response for visual separation
             const divider: Message = {
                 id: Date.now() + 1,
                 role: "divider",
                 content: "",
                 timestamp: `${dateNow()} \u2022 ${timeNow()}`,
             };
-
             const aiMsg: Message = {
                 ...response,
                 id: Date.now() + 2,
             } as Message;
-
             setMessages((prev) => [...prev, divider, aiMsg]);
             setIsTyping(false);
-        }, delay);
+        }, 800);
     }, [isTyping, activeBusiness, businesses, getOffTopicBusiness, switchToBusiness, callAI, messages]);
 
     // Keep ref in sync so startListening can call sendMessage via ref

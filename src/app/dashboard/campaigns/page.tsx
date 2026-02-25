@@ -206,8 +206,8 @@ export default function CampaignsPage() {
                         key={s}
                         onClick={() => setStatusFilter(s)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${statusFilter === s
-                                ? "bg-primary text-white"
-                                : "bg-card border border-border hover:border-primary"
+                            ? "bg-primary text-white"
+                            : "bg-card border border-border hover:border-primary"
                             }`}
                     >
                         {s === "all" ? "All" : s === "ENABLED" ? "Active" : "Paused"}
@@ -248,8 +248,8 @@ export default function CampaignsPage() {
                                         <td className="p-3 font-medium max-w-[200px] truncate">{c.name}</td>
                                         <td className="p-3">
                                             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${c.status === "ENABLED"
-                                                    ? "bg-green-100 text-green-700"
-                                                    : "bg-yellow-100 text-yellow-700"
+                                                ? "bg-green-100 text-green-700"
+                                                : "bg-yellow-100 text-yellow-700"
                                                 }`}>
                                                 {c.status === "ENABLED" ? "Active" : "Paused"}
                                             </span>
@@ -272,8 +272,8 @@ export default function CampaignsPage() {
                                                 onClick={() => toggleCampaign(c.id, c.status)}
                                                 disabled={mutating === c.id}
                                                 className={`p-1.5 rounded-lg transition ${c.status === "ENABLED"
-                                                        ? "hover:bg-yellow-100 text-yellow-600"
-                                                        : "hover:bg-green-100 text-green-600"
+                                                    ? "hover:bg-yellow-100 text-yellow-600"
+                                                    : "hover:bg-green-100 text-green-600"
                                                     } disabled:opacity-50`}
                                                 title={c.status === "ENABLED" ? "Pause" : "Enable"}
                                             >

@@ -31,6 +31,7 @@ const SCOPES = [
     "https://www.googleapis.com/auth/adwords",
 ].join(" ");
 const OAUTH_STATE_COOKIE = "oauth_state";
+const OAUTH_NEXT_COOKIE = "oauth_next";
 
 export async function GET(req: NextRequest) {
     const code = req.nextUrl.searchParams.get("code");
@@ -84,6 +85,19 @@ export async function GET(req: NextRequest) {
             secure: process.env.NODE_ENV === "production",
             sameSite: "lax",
         });
+
+        // Store optional redirect target (e.g., /onboarding)
+        const nextPath = req.nextUrl.searchParams.get("next");
+        if (nextPath && /^\/[a-zA-Z]/.test(nextPath)) {
+            response.cookies.set(OAUTH_NEXT_COOKIE, nextPath, {
+                path: "/",
+                maxAge: 60 * 10,
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "lax",
+            });
+        }
+
         return response;
     }
 
@@ -208,7 +222,9 @@ export async function GET(req: NextRequest) {
         const jwt = await signToken(sessionData);
 
         // Redirect with JWT in URL fragment (not sent to server, client reads it)
-        const redirectUrl = new URL("/dashboard/chat", req.url);
+        const nextCookie = req.cookies.get(OAUTH_NEXT_COOKIE)?.value;
+        const redirectPath = (nextCookie && /^\/[a-zA-Z]/.test(nextCookie)) ? nextCookie : "/dashboard/chat";
+        const redirectUrl = new URL(redirectPath, req.url);
         redirectUrl.hash = `token=${jwt}`;
         const response = NextResponse.redirect(redirectUrl);
 
@@ -221,6 +237,13 @@ export async function GET(req: NextRequest) {
             path: "/",
         });
         response.cookies.set(OAUTH_STATE_COOKIE, "", {
+            path: "/",
+            maxAge: 0,
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+        });
+        response.cookies.set(OAUTH_NEXT_COOKIE, "", {
             path: "/",
             maxAge: 0,
             httpOnly: true,

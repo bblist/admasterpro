@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import {
     Zap,
@@ -13,7 +13,9 @@ import {
     MapPin,
     Phone,
     Loader2,
+    AlertCircle,
 } from "lucide-react";
+import { captureTokenFromHash, isAuthenticated, authFetch, getAuthUser } from "@/lib/auth-client";
 
 const steps = [
     { id: 1, title: "Connect Google Ads" },
@@ -21,6 +23,21 @@ const steps = [
     { id: 3, title: "Knowledge Base" },
     { id: 4, title: "Free Audit" },
 ];
+
+interface AuditSection {
+    title: string;
+    score: number;
+    summary: string;
+    findings: string[];
+}
+
+interface AuditResult {
+    overallScore: number;
+    overallSummary: string;
+    sections: AuditSection[];
+    quickWins: string[];
+    estimatedSavings: string;
+}
 
 export default function OnboardingPage() {
     const [currentStep, setCurrentStep] = useState(1);
@@ -31,28 +48,118 @@ export default function OnboardingPage() {
     const [location, setLocation] = useState("");
     const [phoneNumber, setPhoneNumber] = useState("");
     const [uploading, setUploading] = useState(false);
-    const [uploaded, setUploaded] = useState(false);
+    const [uploadedFiles, setUploadedFiles] = useState<{ name: string; size: string }[]>([]);
     const [auditing, setAuditing] = useState(false);
     const [auditDone, setAuditDone] = useState(false);
+    const [auditResult, setAuditResult] = useState<AuditResult | null>(null);
+    const [auditError, setAuditError] = useState("");
+    const [businessSaving, setBusinessSaving] = useState(false);
+    const [businessError, setBusinessError] = useState("");
+    const [uploadError, setUploadError] = useState("");
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // On mount, capture token from URL hash (after Google OAuth redirect)
+    useEffect(() => {
+        captureTokenFromHash();
+        if (isAuthenticated()) {
+            setConnected(true);
+            setCurrentStep(2);
+        }
+    }, []);
 
     const handleConnect = () => {
+        // Redirect to real Google OAuth flow
+        window.location.href = "/api/auth/callback?next=/onboarding";
+    };
+
+    const handleSkipConnect = () => {
         setConnected(true);
+        setCurrentStep(2);
     };
 
-    const handleUpload = () => {
+    const handleSaveBusiness = async () => {
+        if (!businessName.trim()) {
+            setBusinessError("Please enter your business name.");
+            return;
+        }
+        setBusinessSaving(true);
+        setBusinessError("");
+        try {
+            const res = await authFetch("/api/businesses", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: businessName.trim(),
+                    website: websiteUrl.trim() || undefined,
+                    industry: businessType || undefined,
+                }),
+            });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.error || `Failed to save (${res.status})`);
+            }
+            setCurrentStep(3);
+        } catch (err: unknown) {
+            setBusinessError(err instanceof Error ? err.message : "Failed to save business info");
+        } finally {
+            setBusinessSaving(false);
+        }
+    };
+
+    const handleFileUpload = useCallback(async (files: FileList | null) => {
+        if (!files || files.length === 0) return;
         setUploading(true);
-        setTimeout(() => {
+        setUploadError("");
+        try {
+            const formData = new FormData();
+            Array.from(files).forEach((file) => formData.append("images", file));
+            const res = await authFetch("/api/upload", { method: "POST", body: formData });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.error || `Upload failed (${res.status})`);
+            }
+            const data = await res.json();
+            const newFiles = (data.uploaded || []).map((f: { filename: string; size: number }) => ({
+                name: f.filename,
+                size: `${(f.size / (1024 * 1024)).toFixed(1)} MB`,
+            }));
+            setUploadedFiles((prev) => [...prev, ...newFiles]);
+        } catch (err: unknown) {
+            setUploadError(err instanceof Error ? err.message : "Upload failed");
+        } finally {
             setUploading(false);
-            setUploaded(true);
-        }, 1500);
-    };
+        }
+    }, []);
 
-    const handleAudit = () => {
+    const handleAudit = async () => {
         setAuditing(true);
-        setTimeout(() => {
-            setAuditing(false);
+        setAuditError("");
+        setAuditResult(null);
+        try {
+            const user = getAuthUser();
+            const res = await authFetch("/api/audit", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    websiteUrl: websiteUrl.trim() || `https://${businessName.toLowerCase().replace(/[^a-z0-9]/g, "")}.com`,
+                    businessName: businessName.trim(),
+                    industry: businessType || undefined,
+                    email: user?.email || "user@admasterai.com",
+                }),
+            });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.error || `Audit failed (${res.status})`);
+            }
+            const data = await res.json();
+            setAuditResult(data.result || null);
             setAuditDone(true);
-        }, 3000);
+        } catch (err: unknown) {
+            setAuditError(err instanceof Error ? err.message : "Audit failed");
+            setAuditDone(true);
+        } finally {
+            setAuditing(false);
+        }
     };
 
     return (
@@ -122,30 +229,40 @@ export default function OnboardingPage() {
                         </p>
 
                         {!connected ? (
-                            <button
-                                onClick={handleConnect}
-                                className="bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-50 transition inline-flex items-center gap-3 shadow-sm"
-                            >
-                                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                                    <path
-                                        fill="#4285F4"
-                                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
-                                    />
-                                    <path
-                                        fill="#34A853"
-                                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                                    />
-                                    <path
-                                        fill="#FBBC05"
-                                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                                    />
-                                    <path
-                                        fill="#EA4335"
-                                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                                    />
-                                </svg>
-                                Sign in with Google
-                            </button>
+                            <div className="space-y-4">
+                                <button
+                                    onClick={handleConnect}
+                                    className="bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-50 transition inline-flex items-center gap-3 shadow-sm"
+                                >
+                                    <svg className="w-5 h-5" viewBox="0 0 24 24">
+                                        <path
+                                            fill="#4285F4"
+                                            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
+                                        />
+                                        <path
+                                            fill="#34A853"
+                                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                                        />
+                                        <path
+                                            fill="#FBBC05"
+                                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                                        />
+                                        <path
+                                            fill="#EA4335"
+                                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                                        />
+                                    </svg>
+                                    Sign in with Google
+                                </button>
+                                <div>
+                                    <button
+                                        onClick={handleSkipConnect}
+                                        className="text-sm text-muted hover:text-foreground transition underline"
+                                    >
+                                        Skip for now — I&apos;ll connect later
+                                    </button>
+                                </div>
+                            </div>
                         ) : (
                             <div className="inline-flex items-center gap-2 text-success bg-success/10 px-4 py-2 rounded-lg">
                                 <CheckCircle className="w-5 h-5" />
@@ -253,6 +370,13 @@ export default function OnboardingPage() {
                             </div>
                         </div>
 
+                        {businessError && (
+                            <div className="max-w-md mx-auto mt-4 p-3 bg-danger/10 border border-danger/20 rounded-lg text-sm text-danger flex items-center gap-2">
+                                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                                {businessError}
+                            </div>
+                        )}
+
                         <div className="flex justify-between mt-8 max-w-md mx-auto">
                             <button
                                 onClick={() => setCurrentStep(1)}
@@ -262,11 +386,21 @@ export default function OnboardingPage() {
                                 Back
                             </button>
                             <button
-                                onClick={() => setCurrentStep(3)}
-                                className="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg text-sm font-medium transition flex items-center gap-2"
+                                onClick={handleSaveBusiness}
+                                disabled={businessSaving}
+                                className="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg text-sm font-medium transition flex items-center gap-2 disabled:opacity-50"
                             >
-                                Continue
-                                <ArrowRight className="w-4 h-4" />
+                                {businessSaving ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Saving...
+                                    </>
+                                ) : (
+                                    <>
+                                        Continue
+                                        <ArrowRight className="w-4 h-4" />
+                                    </>
+                                )}
                             </button>
                         </div>
                     </div>
@@ -285,35 +419,57 @@ export default function OnboardingPage() {
                         </p>
 
                         <div className="max-w-md mx-auto">
+                            {/* Hidden file input */}
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                multiple
+                                accept="image/jpeg,image/png,image/gif,image/webp"
+                                className="hidden"
+                                onChange={(e) => handleFileUpload(e.target.files)}
+                            />
+
                             {/* Upload zone */}
                             <div
-                                className={`border-2 border-dashed rounded-xl p-8 text-center transition cursor-pointer ${uploaded
+                                className={`border-2 border-dashed rounded-xl p-8 text-center transition cursor-pointer ${uploadedFiles.length > 0
                                     ? "border-success bg-success/5"
                                     : "border-border hover:border-primary"
                                     }`}
-                                onClick={!uploaded ? handleUpload : undefined}
+                                onClick={() => !uploading && fileInputRef.current?.click()}
                             >
                                 {uploading ? (
                                     <div className="flex flex-col items-center gap-2">
                                         <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                                        <p className="text-sm text-muted">Processing your files...</p>
+                                        <p className="text-sm text-muted">Uploading your files...</p>
                                     </div>
-                                ) : uploaded ? (
+                                ) : uploadedFiles.length > 0 ? (
                                     <div className="flex flex-col items-center gap-2">
                                         <CheckCircle className="w-8 h-8 text-success" />
-                                        <p className="text-sm font-medium">3 files uploaded successfully!</p>
-                                        <p className="text-xs text-muted">price-list.pdf, services.docx, logo.png</p>
+                                        <p className="text-sm font-medium">{uploadedFiles.length} file{uploadedFiles.length > 1 ? "s" : ""} uploaded!</p>
+                                        <div className="text-xs text-muted space-y-0.5">
+                                            {uploadedFiles.map((f, i) => (
+                                                <p key={i}>{f.name} ({f.size})</p>
+                                            ))}
+                                        </div>
+                                        <p className="text-xs text-primary mt-2">Click to upload more</p>
                                     </div>
                                 ) : (
                                     <div className="flex flex-col items-center gap-2">
                                         <Upload className="w-8 h-8 text-muted" />
                                         <p className="text-sm font-medium">Drop files here or click to upload</p>
                                         <p className="text-xs text-muted">
-                                            PDF, Word, images, or any document about your business
+                                            JPEG, PNG, GIF, WebP images (max 5 MB each)
                                         </p>
                                     </div>
                                 )}
                             </div>
+
+                            {uploadError && (
+                                <div className="mt-3 p-3 bg-danger/10 border border-danger/20 rounded-lg text-sm text-danger flex items-center gap-2">
+                                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                                    {uploadError}
+                                </div>
+                            )}
 
                             <div className="mt-4 text-center text-sm text-muted">
                                 <p>You can also add more files later from your dashboard.</p>
@@ -348,9 +504,9 @@ export default function OnboardingPage() {
                         {auditing ? (
                             <div className="text-center py-12">
                                 <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
-                                <h2 className="text-xl font-bold mb-2">Checking your account...</h2>
+                                <h2 className="text-xl font-bold mb-2">Analyzing your website...</h2>
                                 <p className="text-muted text-sm">
-                                    Looking for money leaks, junk keywords, and missed opportunities...
+                                    Using GPT-4o to audit your site for ad opportunities, SEO gaps, and more...
                                 </p>
                             </div>
                         ) : auditDone ? (
@@ -360,68 +516,93 @@ export default function OnboardingPage() {
                                         <CheckCircle className="w-8 h-8 text-success" />
                                     </div>
                                     <h2 className="text-2xl font-bold mb-2">Your Free Audit Is Ready!</h2>
-                                    <p className="text-muted">Here&apos;s what I found in your account:</p>
+                                    <p className="text-muted">Here&apos;s what our AI found:</p>
                                 </div>
 
-                                {/* Audit Results */}
-                                <div className="space-y-4 max-w-lg mx-auto">
-                                    <div className="bg-danger/5 border border-danger/20 rounded-xl p-4">
+                                {auditError ? (
+                                    <div className="max-w-lg mx-auto p-4 bg-danger/10 border border-danger/20 rounded-xl">
                                         <div className="flex items-center gap-2 mb-2">
-                                            <span className="text-lg">🚨</span>
-                                            <h3 className="font-semibold text-sm">$45/week wasted on junk keywords</h3>
+                                            <AlertCircle className="w-5 h-5 text-danger" />
+                                            <h3 className="font-semibold text-sm">Audit couldn&apos;t complete</h3>
                                         </div>
-                                        <p className="text-xs text-muted">
-                                            3 keywords are attracting the wrong people (DIY-ers, job seekers). Pausing
-                                            them would save you ~$180/month.
+                                        <p className="text-xs text-muted">{auditError}</p>
+                                        <p className="text-xs text-muted mt-2">
+                                            Don&apos;t worry — you can still use the AI assistant to get recommendations.
                                         </p>
                                     </div>
+                                ) : auditResult ? (
+                                    <div className="space-y-4 max-w-lg mx-auto">
+                                        <div className="bg-primary-light border border-primary/20 rounded-xl p-4">
+                                            <div className="font-semibold text-sm mb-1">
+                                                Overall Score: {auditResult.overallScore}/100
+                                            </div>
+                                            <p className="text-xs text-muted">{auditResult.overallSummary}</p>
+                                        </div>
 
-                                    <div className="bg-warning/5 border border-warning/20 rounded-xl p-4">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span className="text-lg">⚠️</span>
-                                            <h3 className="font-semibold text-sm">Ads running 24/7 but you close at 6pm</h3>
-                                        </div>
-                                        <p className="text-xs text-muted">
-                                            You&apos;re spending ~$8/day on clicks between midnight and 6am when nobody picks
-                                            up the phone. That&apos;s ~$56/week.
-                                        </p>
-                                    </div>
+                                        {auditResult.sections?.slice(0, 4).map((section, i) => (
+                                            <div
+                                                key={i}
+                                                className={`rounded-xl p-4 ${section.score >= 70
+                                                        ? "bg-success/5 border border-success/20"
+                                                        : section.score >= 40
+                                                            ? "bg-warning/5 border border-warning/20"
+                                                            : "bg-danger/5 border border-danger/20"
+                                                    }`}
+                                            >
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <span className="text-lg">
+                                                        {section.score >= 70 ? "✅" : section.score >= 40 ? "⚠️" : "🚨"}
+                                                    </span>
+                                                    <h3 className="font-semibold text-sm">{section.title} ({section.score}/100)</h3>
+                                                </div>
+                                                <p className="text-xs text-muted">{section.summary}</p>
+                                                {section.findings?.length > 0 && (
+                                                    <ul className="mt-2 space-y-1">
+                                                        {section.findings.slice(0, 3).map((finding, j) => (
+                                                            <li key={j} className="text-xs text-muted">• {finding}</li>
+                                                        ))}
+                                                    </ul>
+                                                )}
+                                            </div>
+                                        ))}
 
-                                    <div className="bg-success/5 border border-success/20 rounded-xl p-4">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span className="text-lg">✅</span>
-                                            <h3 className="font-semibold text-sm">Your best keyword is a goldmine</h3>
-                                        </div>
-                                        <p className="text-xs text-muted">
-                                            &quot;emergency plumber near me&quot; gets you calls at $4.50 each. That&apos;s excellent
-                                            for your area. We should get more of those.
-                                        </p>
-                                    </div>
+                                        {auditResult.quickWins?.length > 0 && (
+                                            <div className="bg-primary-light border border-primary/20 rounded-xl p-4">
+                                                <h3 className="font-semibold text-sm mb-2">💡 Quick Wins</h3>
+                                                <ul className="space-y-1">
+                                                    {auditResult.quickWins.slice(0, 5).map((win, i) => (
+                                                        <li key={i} className="text-xs text-muted">• {win}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
 
-                                    <div className="bg-primary-light border border-primary/20 rounded-xl p-4">
-                                        <div className="font-semibold text-sm mb-1">
-                                            Total potential savings: ~$236/month
-                                        </div>
-                                        <p className="text-xs text-muted">
-                                            By fixing these issues, you could get the same (or more) customers while
-                                            spending significantly less.
-                                        </p>
+                                        {auditResult.estimatedSavings && (
+                                            <div className="bg-success/5 border border-success/20 rounded-xl p-4">
+                                                <div className="font-semibold text-sm mb-1">
+                                                    Estimated Savings: {auditResult.estimatedSavings}
+                                                </div>
+                                                <p className="text-xs text-muted">
+                                                    Implementing these recommendations could significantly improve your ad performance.
+                                                </p>
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
+                                ) : null}
 
                                 <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">
                                     <Link
-                                        href="/login?next=/dashboard"
+                                        href="/dashboard/chat"
                                         className="bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-lg font-medium transition flex items-center justify-center gap-2"
                                     >
                                         Go to Dashboard
                                         <ArrowRight className="w-4 h-4" />
                                     </Link>
                                     <Link
-                                        href="/login?next=/dashboard/chat"
+                                        href="/dashboard/chat"
                                         className="border border-border hover:border-primary px-6 py-3 rounded-lg font-medium transition text-center"
                                     >
-                                        Fix These Now with AI
+                                        Start Chatting with AI
                                     </Link>
                                 </div>
                             </div>
