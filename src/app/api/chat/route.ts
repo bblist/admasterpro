@@ -559,7 +559,7 @@ async function callOpenAI(body: ChatRequest) {
                 Authorization: `Bearer ${OPENAI_API_KEY}`,
             },
             body: JSON.stringify({
-                model: "gpt-4o",
+                model: "gpt-4o-mini",
                 messages,
                 max_tokens: 4096,
                 temperature: 0.75,
@@ -574,7 +574,7 @@ async function callOpenAI(body: ChatRequest) {
         const data = await res.json();
         return {
             content: data.choices?.[0]?.message?.content || "Hmm, didn\u2019t get a response back. Try again?",
-            model: "gpt-4o" as const,
+            model: "gpt-4o-mini" as const,
             tokens: {
                 prompt: data.usage?.prompt_tokens || 0,
                 completion: data.usage?.completion_tokens || 0,
@@ -785,10 +785,10 @@ export async function POST(req: NextRequest) {
         }
 
         // ─── Call AI Model ──────────────────────────────────────────────────
-        const preferredModel = body.model || "gpt-4o";
+        const preferredModel = body.model || "gpt-4o-mini";
         let result = null;
 
-        if (preferredModel === "gpt-4o") {
+        if (preferredModel === "gpt-4o-mini") {
             result = await callOpenAI(body);
             if (!result) result = await callAnthropic(body);
         } else {
@@ -798,8 +798,8 @@ export async function POST(req: NextRequest) {
 
         if (!result) {
             return NextResponse.json({
-                content: "\uD83D\uDD27 **Demo Mode** \u2014 AI API keys not configured yet. The assistant is running with pre-built responses. Once API keys are added, this will use real GPT-4o and Claude models.",
-                model: "gpt-4o",
+                content: "🔧 **Demo Mode** — AI API keys not configured yet. The assistant is running with pre-built responses. Once API keys are added, this will use real GPT-4o-mini and Claude models.",
+                model: "gpt-4o-mini",
                 demo: true,
                 tokens: { prompt: 0, completion: 0, total: 0 },
             });
@@ -811,7 +811,7 @@ export async function POST(req: NextRequest) {
                 const { prisma } = await import("@/lib/db");
                 const { AI_COSTS } = await import("@/lib/plans");
 
-                const modelKey = result.model?.includes("claude") ? "claude-sonnet" : "gpt-4o";
+                const modelKey = result.model?.includes("claude") ? "claude-sonnet" : "gpt-4o-mini";
                 const costConfig = AI_COSTS[modelKey];
                 const costUsd = costConfig
                     ? (result.tokens.prompt / 1000) * costConfig.inputPer1kTokens +

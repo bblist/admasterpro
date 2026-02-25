@@ -205,7 +205,7 @@ Return as JSON:
                 Authorization: `Bearer ${OPENAI_API_KEY}`,
             },
             body: JSON.stringify({
-                model: "gpt-4o",
+                model: "gpt-4o-mini",
                 messages: [
                     { role: "system", content: "You are an expert digital marketing analyst. Always respond with valid JSON only, no markdown." },
                     { role: "user", content: prompt },
@@ -244,7 +244,7 @@ Return as JSON:
             };
         }
 
-        const costEstimate = promptTokens * 0.0000025 + completionTokens * 0.00001;
+        const costEstimate = promptTokens * 0.00000015 + completionTokens * 0.0000006;
 
         // Generate a unique audit ID and persist to DB
         const auditId = crypto.randomUUID();

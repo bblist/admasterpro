@@ -338,12 +338,20 @@ export const TOP_UPS: TopUpConfig[] = [
 // Used for admin dashboard margin calculations
 
 export const AI_COSTS: Record<string, { inputPer1kTokens: number; outputPer1kTokens: number; avgInputTokensPerMsg: number; avgOutputTokensPerMsg: number; avgCostPerMessage: number }> = {
+    "gpt-4o-mini": {
+        inputPer1kTokens: 0.00015,  // $0.15 per 1M input tokens
+        outputPer1kTokens: 0.0006,  // $0.60 per 1M output tokens
+        avgInputTokensPerMsg: 2500, // typical chat message
+        avgOutputTokensPerMsg: 800,
+        avgCostPerMessage: 0.000855, // ~$0.0009 per message
+    },
+    // Legacy reference — kept for backward compat if any old records reference gpt-4o
     "gpt-4o": {
         inputPer1kTokens: 0.0025,   // $2.50 per 1M input tokens
         outputPer1kTokens: 0.01,    // $10 per 1M output tokens
-        avgInputTokensPerMsg: 2500, // typical chat message
+        avgInputTokensPerMsg: 2500,
         avgOutputTokensPerMsg: 800,
-        avgCostPerMessage: 0.014,   // ~$0.014 per message
+        avgCostPerMessage: 0.014,
     },
     "claude-sonnet": {
         inputPer1kTokens: 0.003,    // $3 per 1M input tokens
@@ -363,8 +371,8 @@ export const AI_COSTS: Record<string, { inputPer1kTokens: number; outputPer1kTok
 };
 
 // At $49/mo with $9 AI budget:
-//   GPT-4o:  $9 / $0.014 = ~643 messages (we give 200, safe margin)
-//   Claude:  $9 / $0.02  = ~450 messages
+//   GPT-4o-mini: $9 / $0.0009 = ~10,000 messages (we give 200, huge margin)
+//   Claude:      $9 / $0.02   = ~450 messages
 // At $149/mo "unlimited" actually means we cover more, but cost per message stays same
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
