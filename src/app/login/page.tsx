@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense, useState } from "react";
-import { Zap, Mail, Lock, ArrowRight, Shield, Eye, EyeOff } from "lucide-react";
+import { Zap, Mail, ArrowRight, Shield } from "lucide-react";
 import { setAuth, decodeTokenPayload, clearAuth } from "@/lib/auth-client";
+
+const emailLoginEnabled = process.env.NODE_ENV !== "production" || process.env.NEXT_PUBLIC_ENABLE_EMAIL_LOGIN === "true";
 
 function LoginForm() {
     const searchParams = useSearchParams();
@@ -14,8 +16,6 @@ function LoginForm() {
     const error = searchParams.get("error");
 
     const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [emailError, setEmailError] = useState("");
 
@@ -144,17 +144,17 @@ function LoginForm() {
                         Use the same Google account as your Google Ads account for instant access
                     </p>
 
-                    <div className="relative my-6">
+                    {emailLoginEnabled && <div className="relative my-6">
                         <div className="absolute inset-0 flex items-center">
                             <div className="w-full border-t border-border"></div>
                         </div>
                         <div className="relative flex justify-center text-xs">
                             <span className="bg-background px-3 text-muted">or sign in with email</span>
                         </div>
-                    </div>
+                    </div>}
 
                     {/* Email Sign In */}
-                    <form onSubmit={handleEmailSignIn} className="space-y-3">
+                    {emailLoginEnabled && <form onSubmit={handleEmailSignIn} className="space-y-3">
                         <div className="relative">
                             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                             <input
@@ -166,23 +166,6 @@ function LoginForm() {
                             />
                         </div>
                         {emailError && <p className="text-xs text-red-500 -mt-1">{emailError}</p>}
-                        <div className="relative">
-                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
-                            <input
-                                type={showPassword ? "text" : "password"}
-                                placeholder="Password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full bg-card border border-border rounded-lg pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:border-primary transition"
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground transition"
-                            >
-                                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                            </button>
-                        </div>
                         <button
                             type="submit"
                             disabled={loading}
@@ -191,7 +174,13 @@ function LoginForm() {
                             Sign In
                             <ArrowRight className="w-4 h-4" />
                         </button>
-                    </form>
+                    </form>}
+
+                    {!emailLoginEnabled && (
+                        <p className="text-xs text-muted mt-4 text-center">
+                            Email sign-in is disabled in production. Use Google sign-in.
+                        </p>
+                    )}
 
                     <div className="text-center mt-6 space-y-2">
                         <Link href="/onboarding" className="text-sm text-primary hover:underline block">

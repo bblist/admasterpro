@@ -5,7 +5,9 @@ import { getSessionDual } from "@/lib/session";
 async function isAdmin(req: Request): Promise<boolean> {
     const session = await getSessionDual(req);
     if (!session?.email) return false;
-    return session.email === process.env.ADMIN_EMAIL || session.email === "admin@nobleblocks.com";
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (!adminEmail) return false;
+    return session.email === adminEmail;
 }
 
 export async function GET(req: Request) {
@@ -46,7 +48,7 @@ export async function GET(req: Request) {
     });
     const subMap: Map<string, any> = new Map(subs.map((s: any) => [s.userId, s]));
 
-    const planPrices: Record<string, number> = { starter: 49, pro: 149 };
+    const planPrices: Record<string, number> = { free: 0, trial: 0, starter: 49, pro: 149 };
 
     // Build per-client cost data
     const clientMap = new Map<string, any>();
@@ -55,12 +57,13 @@ export async function GET(req: Request) {
         if (!clientMap.has(uid)) {
             const user = userMap.get(uid);
             const sub = subMap.get(uid);
-            const planPrice = planPrices[sub?.plan || user?.plan || "free"] || 0;
+            const plan = sub?.plan || "free";
+            const planPrice = planPrices[plan] || 0;
             clientMap.set(uid, {
                 id: uid,
                 name: user?.name || "Unknown",
                 email: user?.email || "",
-                plan: user?.plan || "free",
+                plan,
                 models: {} as Record<string, { queries: number; tokens: number; cost: number }>,
                 totalCost: 0,
                 totalQueries: 0,

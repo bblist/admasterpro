@@ -17,6 +17,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { getSessionDual } from "@/lib/session";
 import { stripeLimiter, checkRateLimit } from "@/lib/rate-limit";
 import {
     isStripeConfigured,
@@ -60,12 +61,15 @@ async function handleCheckout(req: NextRequest) {
     }
 
     try {
-        const body = await req.json();
-        const { action, plan, topUpId, userId, email } = body;
-
-        if (!userId || !email) {
-            return NextResponse.json({ error: "userId and email required" }, { status: 400 });
+        const session = await getSessionDual(req);
+        if (!session?.id || !session?.email) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
+
+        const body = await req.json();
+        const { action, plan, topUpId } = body;
+        const userId = session.id;
+        const email = session.email;
 
         // Get user's existing Stripe customer ID
         const subscription = await prisma.subscription.findUnique({
@@ -161,6 +165,7 @@ async function handleWebhook(req: NextRequest) {
                             campaignsLimit: planConfig?.campaigns || 10,
                             adsAccountsLimit: planConfig?.adsAccounts || 2,
                             currentPeriodStart: new Date(),
+                            trialEndsAt: null,
                         },
                         create: {
                             userId,
@@ -172,6 +177,7 @@ async function handleWebhook(req: NextRequest) {
                             campaignsLimit: planConfig?.campaigns || 10,
                             adsAccountsLimit: planConfig?.adsAccounts || 2,
                             currentPeriodStart: new Date(),
+                            trialEndsAt: null,
                         },
                     });
 

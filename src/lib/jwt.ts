@@ -9,8 +9,13 @@
 
 import { SignJWT, jwtVerify, type JWTPayload } from "jose";
 
-const JWT_SECRET = process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET || "admasterpro-fallback-secret-change-me";
-const secret = new TextEncoder().encode(JWT_SECRET);
+function getJwtSecret(): Uint8Array {
+    const jwtSecret = process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET;
+    if (!jwtSecret) {
+        throw new Error("JWT secret is not configured. Set NEXTAUTH_SECRET or JWT_SECRET.");
+    }
+    return new TextEncoder().encode(jwtSecret);
+}
 
 export interface TokenPayload extends JWTPayload {
     id: string;
@@ -27,6 +32,7 @@ export interface TokenPayload extends JWTPayload {
  * Token expires in 30 days (longer than cookie to survive ITP).
  */
 export async function signToken(payload: Omit<TokenPayload, "iat" | "exp" | "iss">): Promise<string> {
+    const secret = getJwtSecret();
     return new SignJWT({ ...payload })
         .setProtectedHeader({ alg: "HS256" })
         .setIssuedAt()
@@ -41,6 +47,7 @@ export async function signToken(payload: Omit<TokenPayload, "iat" | "exp" | "iss
  */
 export async function verifyToken(token: string): Promise<TokenPayload | null> {
     try {
+        const secret = getJwtSecret();
         const { payload } = await jwtVerify(token, secret, {
             issuer: "admasterpro",
         });

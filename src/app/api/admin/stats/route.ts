@@ -6,7 +6,9 @@ import { getSessionDual } from "@/lib/session";
 async function isAdmin(req: NextRequest): Promise<boolean> {
     const session = await getSessionDual(req);
     if (!session?.email) return false;
-    return session.email === process.env.ADMIN_EMAIL || session.email === "admin@nobleblocks.com";
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (!adminEmail) return false;
+    return session.email === adminEmail;
 }
 
 export async function GET(req: NextRequest) {

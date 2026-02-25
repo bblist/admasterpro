@@ -10,7 +10,9 @@ import { getSessionDual } from "@/lib/session";
 async function isAdmin(req: NextRequest): Promise<boolean> {
     const session = await getSessionDual(req);
     if (!session?.email) return false;
-    return session.email === process.env.ADMIN_EMAIL || session.email === "admin@nobleblocks.com";
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (!adminEmail) return false;
+    return session.email === adminEmail;
 }
 
 export async function GET(req: NextRequest) {
@@ -72,7 +74,7 @@ export async function GET(req: NextRequest) {
             });
         }
 
-        const planPrices: Record<string, number> = { free: 0, starter: 49, pro: 149 };
+        const planPrices: Record<string, number> = { free: 0, trial: 0, starter: 49, pro: 149 };
 
         const result = users.map((user: any) => {
             const sub = user.subscription;
@@ -113,11 +115,12 @@ export async function GET(req: NextRequest) {
         // Summary stats
         const totalUsers = result.length;
         const activeUsers = result.filter((u: any) => u.status === "active").length;
-        const paidUsers = result.filter((u: any) => u.plan !== "free").length;
+        const paidUsers = result.filter((u: any) => u.plan !== "free" && u.plan !== "trial").length;
         const totalMRR = result.reduce((s: number, u: any) => s + u.monthRevenue, 0);
         const totalMonthCost = result.reduce((s: number, u: any) => s + u.monthAiCost, 0);
         const planDist = {
             free: result.filter((u: any) => u.plan === "free").length,
+            trial: result.filter((u: any) => u.plan === "trial").length,
             starter: result.filter((u: any) => u.plan === "starter").length,
             pro: result.filter((u: any) => u.plan === "pro").length,
         };
@@ -141,7 +144,7 @@ export async function GET(req: NextRequest) {
             summary: {
                 totalUsers: 0, activeUsers: 0, paidUsers: 0,
                 totalMRR: 0, totalMonthCost: 0, totalMargin: 0,
-                planDistribution: { free: 0, starter: 0, pro: 0 },
+                planDistribution: { free: 0, trial: 0, starter: 0, pro: 0 },
             },
             dbError: true,
         });

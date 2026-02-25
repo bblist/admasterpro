@@ -29,6 +29,7 @@ export async function GET(req: NextRequest) {
                 aiMessagesLimit: 10,
                 bonusTokens: 0,
                 currentPeriodEnd: null,
+                trialEndsAt: null,
                 userName: user?.name || session.name || "",
                 userPicture: user?.picture || session.picture || null,
             });
@@ -41,6 +42,7 @@ export async function GET(req: NextRequest) {
             aiMessagesLimit: subscription.aiMessagesLimit,
             bonusTokens: subscription.bonusTokens,
             currentPeriodEnd: subscription.currentPeriodEnd?.toISOString() || null,
+            trialEndsAt: subscription.trialEndsAt?.toISOString() || null,
             userName: user?.name || session.name || "",
             userPicture: user?.picture || session.picture || null,
         });
@@ -54,6 +56,7 @@ export async function GET(req: NextRequest) {
             aiMessagesLimit: 10,
             bonusTokens: 0,
             currentPeriodEnd: null,
+            trialEndsAt: null,
             userName: session.name || "",
             userPicture: session.picture || null,
         });

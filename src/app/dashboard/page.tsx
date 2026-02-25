@@ -17,6 +17,7 @@ interface DashboardStats {
         aiMessagesUsed: number;
         aiMessagesLimit: number;
         bonusTokens: number;
+        currentPeriodEnd?: string | null;
     };
     adsConnected: boolean;
     adsSummary: {
@@ -49,6 +50,7 @@ export default function DashboardPage() {
                         aiMessagesUsed: 0,
                         aiMessagesLimit: 10,
                         bonusTokens: 0,
+                        currentPeriodEnd: null,
                     },
                     adsConnected: settingsData.user?.hasAdsAccess || false,
                     adsSummary: null,
@@ -91,6 +93,8 @@ export default function DashboardPage() {
     const messagesUsed = stats?.subscription?.aiMessagesUsed || 0;
     const messagesLimit = stats?.subscription?.aiMessagesLimit || 10;
     const bonusTokens = stats?.subscription?.bonusTokens || 0;
+    const trialEndDate = stats?.subscription?.currentPeriodEnd ? new Date(stats.subscription.currentPeriodEnd) : null;
+    const trialDaysLeft = trialEndDate ? Math.max(0, Math.ceil((trialEndDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : 0;
     const totalAvailable = messagesLimit + bonusTokens - messagesUsed;
     const usagePct = messagesLimit > 0 ? Math.min(100, Math.round((messagesUsed / messagesLimit) * 100)) : 0;
 
@@ -110,6 +114,7 @@ export default function DashboardPage() {
                     <div className="flex items-center justify-between mb-3">
                         <span className="text-sm text-muted">Current Plan</span>
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${plan === "pro" ? "bg-purple-100 text-purple-700"
+                            : plan === "trial" ? "bg-amber-100 text-amber-700"
                                 : plan === "starter" ? "bg-blue-100 text-blue-700"
                                     : "bg-gray-100 text-gray-700"
                             }`}>
@@ -118,8 +123,11 @@ export default function DashboardPage() {
                     </div>
                     <div className="text-3xl font-bold">
                         {plan === "pro" ? "$149" : plan === "starter" ? "$49" : "$0"}
-                        <span className="text-sm font-normal text-muted">/mo</span>
+                        <span className="text-sm font-normal text-muted">{plan === "trial" ? " trial" : "/mo"}</span>
                     </div>
+                    {plan === "trial" && trialDaysLeft > 0 && (
+                        <p className="text-xs text-amber-700 mt-2">{trialDaysLeft} day{trialDaysLeft === 1 ? "" : "s"} left in trial</p>
+                    )}
                     {plan === "free" && (
                         <Link href="/pricing" className="inline-flex items-center gap-1 text-primary text-sm mt-2 hover:underline">
                             Upgrade <ArrowRight className="w-3 h-3" />

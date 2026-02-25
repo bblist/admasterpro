@@ -10,6 +10,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionDual } from "@/lib/session";
+import { checkCSRF } from "@/lib/csrf";
+import { apiLimiter, checkRateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/db";
 import { writeFile, mkdir } from "fs/promises";
 import { existsSync } from "fs";
@@ -19,8 +21,20 @@ import crypto from "crypto";
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+const MIME_EXT: Record<string, string> = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/gif": "gif",
+    "image/webp": "webp",
+};
 
 export async function POST(req: NextRequest) {
+    const csrfError = checkCSRF(req);
+    if (csrfError) return csrfError;
+
+    const rateLimited = checkRateLimit(req, apiLimiter);
+    if (rateLimited) return rateLimited;
+
     const session = await getSessionDual(req);
     if (!session) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -56,7 +70,7 @@ export async function POST(req: NextRequest) {
             }
 
             // Generate unique filename
-            const ext = file.name.split(".").pop() || "jpg";
+            const ext = MIME_EXT[file.type] || "jpg";
             const id = crypto.randomUUID();
             const filename = `${session.id}_${id}.${ext}`;
             const filepath = path.join(UPLOAD_DIR, filename);
@@ -118,6 +132,12 @@ export async function GET(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+    const csrfError = checkCSRF(req);
+    if (csrfError) return csrfError;
+
+    const rateLimited = checkRateLimit(req, apiLimiter);
+    if (rateLimited) return rateLimited;
+
     const session = await getSessionDual(req);
     if (!session) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

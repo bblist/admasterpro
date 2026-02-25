@@ -9,7 +9,11 @@ import { prisma } from "@/lib/db";
 import { isStripeConfigured } from "@/lib/stripe";
 import { isGoogleAdsConfigured } from "@/lib/google-ads";
 
-export async function GET() {
+export async function GET(req: Request) {
+    const healthSecret = process.env.HEALTH_CHECK_SECRET;
+    const suppliedSecret = req.headers.get("x-health-secret");
+    const includeDetails = !healthSecret || suppliedSecret === healthSecret;
+
     const checks: Record<string, { status: string; latency?: number; error?: string }> = {};
 
     // Database
@@ -66,11 +70,19 @@ export async function GET() {
         (key) => checks[key]?.status === "healthy" || checks[key]?.status === "configured"
     );
 
-    return NextResponse.json({
+    const base = {
         status: allHealthy ? "healthy" : "degraded",
         timestamp: new Date().toISOString(),
         version: process.env.npm_package_version || "0.1.0",
         uptime: process.uptime(),
+    };
+
+    if (!includeDetails) {
+        return NextResponse.json(base, { status: allHealthy ? 200 : 503 });
+    }
+
+    return NextResponse.json({
+        ...base,
         checks,
         stats: {
             users: userCount,

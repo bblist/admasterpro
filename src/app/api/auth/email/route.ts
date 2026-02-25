@@ -11,7 +11,16 @@ import { PLANS } from "@/lib/plans";
 import { signToken } from "@/lib/jwt";
 import { authLimiter, checkRateLimit } from "@/lib/rate-limit";
 
+const emailLoginEnabled = process.env.NODE_ENV !== "production" || process.env.ENABLE_EMAIL_LOGIN === "true";
+
 export async function POST(req: NextRequest) {
+    if (!emailLoginEnabled) {
+        return NextResponse.json({
+            error: "Email sign-in is disabled",
+            message: "Please sign in with Google.",
+        }, { status: 403 });
+    }
+
     const rateLimited = checkRateLimit(req, authLimiter);
     if (rateLimited) return rateLimited;
 
@@ -73,12 +82,9 @@ export async function POST(req: NextRequest) {
         const response = NextResponse.json({ success: true, token: jwt });
 
         // Also set session cookie (dual auth — cookie + token)
-        response.cookies.set("session", JSON.stringify({
-            ...sessionData,
-            authenticated: true,
-        }), {
+        response.cookies.set("session", jwt, {
             httpOnly: true,
-            secure: true,
+            secure: process.env.NODE_ENV === "production",
             sameSite: "lax",
             maxAge: 60 * 60 * 24 * 7, // 7 days
             path: "/",

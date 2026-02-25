@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
-const JWT_SECRET = process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET || "admasterpro-fallback-secret-change-me";
-const secret = new TextEncoder().encode(JWT_SECRET);
+const JWT_SECRET = process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET;
+const secret = JWT_SECRET ? new TextEncoder().encode(JWT_SECRET) : null;
 
 async function getSessionFromToken(token: string): Promise<{ id?: string; email?: string; authenticated?: boolean } | null> {
+    if (!secret) return null;
     try {
         const { payload } = await jwtVerify(token, secret, { issuer: "admasterpro" });
         return { id: payload.id as string, email: payload.email as string, authenticated: true };
@@ -25,16 +26,12 @@ function generateCSRFToken(): string {
 export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
-    // 1. Try session cookie first
+    // 1. Try session cookie first (JWT format)
     const sessionCookie = request.cookies.get("session");
     let session: { id?: string; email?: string; authenticated?: boolean } | null = null;
 
     if (sessionCookie?.value) {
-        try {
-            session = JSON.parse(decodeURIComponent(sessionCookie.value));
-        } catch {
-            session = null;
-        }
+        session = await getSessionFromToken(decodeURIComponent(sessionCookie.value));
     }
 
     // 2. Fallback: check Authorization header for JWT token

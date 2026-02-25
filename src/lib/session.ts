@@ -17,56 +17,27 @@ export interface SessionUser {
     authenticated: boolean;
     method: "google" | "email";
     hasAdsAccess: boolean;
+    role?: string;
     adsTokenPresent?: boolean;
 }
 
-export function getSession(): SessionUser | null {
-    try {
-        const cookieStore = cookies();
-        const sessionCookie = cookieStore.get("session");
-        if (!sessionCookie?.value) return null;
-
-        const session = JSON.parse(decodeURIComponent(sessionCookie.value));
-        if (!session?.authenticated) return null;
-
-        return {
-            id: session.id || "",
-            email: session.email || "",
-            name: session.name || "",
-            picture: session.picture || null,
-            authenticated: true,
-            method: session.method || "email",
-            hasAdsAccess: session.hasAdsAccess || false,
-            adsTokenPresent: session.adsTokenPresent || false,
-        };
-    } catch {
-        return null;
-    }
+export async function getSession(): Promise<SessionUser | null> {
+    const cookieStore = cookies();
+    const sessionCookie = cookieStore.get("session");
+    if (!sessionCookie?.value) return null;
+    return getSessionFromToken(decodeURIComponent(sessionCookie.value));
 }
 
 /**
  * Parse session from cookie header string (for API routes using NextRequest)
  */
-export function getSessionFromRequest(cookieHeader: string | null): SessionUser | null {
+export async function getSessionFromRequest(cookieHeader: string | null): Promise<SessionUser | null> {
     if (!cookieHeader) return null;
 
     try {
         const match = cookieHeader.match(/session=([^;]+)/);
         if (!match) return null;
-
-        const session = JSON.parse(decodeURIComponent(match[1]));
-        if (!session?.authenticated) return null;
-
-        return {
-            id: session.id || "",
-            email: session.email || "",
-            name: session.name || "",
-            picture: session.picture || null,
-            authenticated: true,
-            method: session.method || "email",
-            hasAdsAccess: session.hasAdsAccess || false,
-            adsTokenPresent: session.adsTokenPresent || false,
-        };
+        return getSessionFromToken(decodeURIComponent(match[1]));
     } catch {
         return null;
     }
@@ -88,6 +59,7 @@ export async function getSessionFromToken(token: string): Promise<SessionUser | 
         authenticated: true,
         method: payload.method,
         hasAdsAccess: payload.hasAdsAccess,
+        role: (payload as { role?: string }).role,
         adsTokenPresent: payload.adsTokenPresent || false,
     };
 }
@@ -99,7 +71,7 @@ export async function getSessionFromToken(token: string): Promise<SessionUser | 
 export async function getSessionDual(req: { headers: { get(name: string): string | null } }): Promise<SessionUser | null> {
     // 1. Try cookie
     const cookieHeader = req.headers.get("cookie");
-    const cookieSession = getSessionFromRequest(cookieHeader);
+    const cookieSession = await getSessionFromRequest(cookieHeader);
     if (cookieSession) return cookieSession;
 
     // 2. Try Authorization: Bearer <token>

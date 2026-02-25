@@ -14,6 +14,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 import { prisma } from "@/lib/db";
 import { PLANS } from "@/lib/plans";
 import { signToken } from "@/lib/jwt";
@@ -29,10 +30,12 @@ const SCOPES = [
     "profile",
     "https://www.googleapis.com/auth/adwords",
 ].join(" ");
+const OAUTH_STATE_COOKIE = "oauth_state";
 
 export async function GET(req: NextRequest) {
     const code = req.nextUrl.searchParams.get("code");
     const errorParam = req.nextUrl.searchParams.get("error");
+    const stateParam = req.nextUrl.searchParams.get("state");
 
     // Rate limit the token exchange (when code is present), not the initial redirect
     if (code) {
@@ -42,7 +45,15 @@ export async function GET(req: NextRequest) {
 
     if (errorParam) {
         console.error("[Auth] User denied consent:", errorParam);
-        return NextResponse.redirect(new URL("/login?error=auth_failed", req.url));
+        const response = NextResponse.redirect(new URL("/login?error=auth_failed", req.url));
+        response.cookies.set(OAUTH_STATE_COOKIE, "", {
+            path: "/",
+            maxAge: 0,
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+        });
+        return response;
     }
 
     if (!code) {
@@ -58,13 +69,36 @@ export async function GET(req: NextRequest) {
             client_id: GOOGLE_CLIENT_ID,
             redirect_uri: REDIRECT_URI,
             response_type: "code",
+            state: crypto.randomBytes(24).toString("hex"),
             scope: SCOPES,
             access_type: "offline",
             prompt: "consent",
             include_granted_scopes: "true",
         });
 
-        return NextResponse.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params}`);
+        const response = NextResponse.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params}`);
+        response.cookies.set(OAUTH_STATE_COOKIE, params.get("state") as string, {
+            path: "/",
+            maxAge: 60 * 10,
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+        });
+        return response;
+    }
+
+    const stateCookie = req.cookies.get(OAUTH_STATE_COOKIE)?.value;
+    if (!stateParam || !stateCookie || stateParam !== stateCookie) {
+        console.warn("[Auth] Invalid OAuth state");
+        const response = NextResponse.redirect(new URL("/login?error=auth_failed", req.url));
+        response.cookies.set(OAUTH_STATE_COOKIE, "", {
+            path: "/",
+            maxAge: 0,
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+        });
+        return response;
     }
 
     // Step 2: Exchange authorization code for tokens
@@ -88,7 +122,15 @@ export async function GET(req: NextRequest) {
         if (!tokenRes.ok) {
             const err = await tokenRes.text();
             console.error("[Auth] Token exchange failed:", err);
-            return NextResponse.redirect(new URL("/login?error=auth_failed", req.url));
+            const response = NextResponse.redirect(new URL("/login?error=auth_failed", req.url));
+            response.cookies.set(OAUTH_STATE_COOKIE, "", {
+                path: "/",
+                maxAge: 0,
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "lax",
+            });
+            return response;
         }
 
         const tokens = await tokenRes.json();
@@ -171,20 +213,32 @@ export async function GET(req: NextRequest) {
         const response = NextResponse.redirect(redirectUrl);
 
         // Also set session cookie (dual auth — cookie + token)
-        response.cookies.set("session", JSON.stringify({
-            ...sessionData,
-            authenticated: true,
-        }), {
+        response.cookies.set("session", jwt, {
             httpOnly: true,
-            secure: true,
+            secure: process.env.NODE_ENV === "production",
             sameSite: "lax",
             maxAge: 60 * 60 * 24 * 7, // 7 days
             path: "/",
+        });
+        response.cookies.set(OAUTH_STATE_COOKIE, "", {
+            path: "/",
+            maxAge: 0,
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
         });
 
         return response;
     } catch (error) {
         console.error("[Auth] OAuth error:", error);
-        return NextResponse.redirect(new URL("/login?error=auth_error", req.url));
+        const response = NextResponse.redirect(new URL("/login?error=auth_error", req.url));
+        response.cookies.set(OAUTH_STATE_COOKIE, "", {
+            path: "/",
+            maxAge: 0,
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+        });
+        return response;
     }
 }

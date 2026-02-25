@@ -52,7 +52,7 @@ const categories: FAQCategory[] = [
             },
             {
                 q: "Is there a free plan or trial?",
-                a: "Yes! Every account starts with a free plan that includes 10 AI messages per month. This lets you see how the AI works, preview ad drafts, and explore the platform. Upgrade to Starter ($49/mo) for 200 messages or Pro ($149/mo) for unlimited AI usage and all features. All paid plans include a 7-day free trial."
+                a: "Yes. Every new account starts with a 7-day free trial with full feature access (no credit card required). After trial, your account moves to the Free plan with 10 AI messages/month. You can upgrade to Starter ($49/mo) for 200 messages or Pro ($149/mo) for unlimited AI usage and premium features."
             },
             {
                 q: "What industries does AdMaster Pro work for?",
@@ -98,7 +98,7 @@ const categories: FAQCategory[] = [
         items: [
             {
                 q: "How much does AdMaster Pro cost?",
-                a: "AdMaster Pro offers three plans:\n\n• **Free** — $0/month, 10 AI messages, 1 campaign, basic stats\n• **Starter** — $49/month, 200 AI messages, 5 campaigns, display ads, call tracking\n• **Pro** — $149/month, unlimited AI messages, unlimited campaigns, multi-client management, priority support\n\nAll paid plans include a 7-day free trial. You can also purchase additional AI message credits as one-time top-ups."
+                a: "AdMaster Pro offers a 7-day full-access free trial for all new users, then three plans:\n\n• **Free** — $0/month, 10 AI messages, 1 campaign, basic stats\n• **Starter** — $49/month, 200 AI messages, 5 campaigns, display ads, call tracking\n• **Pro** — $149/month, unlimited AI messages, unlimited campaigns, multi-client management, priority support\n\nYou can also purchase additional AI message credits as one-time top-ups."
             },
             {
                 q: "What payment methods are accepted?",

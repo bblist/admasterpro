@@ -11,6 +11,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { chatLimiter, checkRateLimit } from "@/lib/rate-limit";
+import { getSessionDual } from "@/lib/session";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
@@ -614,29 +615,8 @@ export async function POST(req: NextRequest) {
         let messagesLimit = 10;
         let bonusTokens = 0;
 
-        // Dual auth: try cookie first, then JWT token
-        const cookieHeader = req.headers.get("cookie");
-        if (cookieHeader) {
-            const match = cookieHeader.match(/session=([^;]+)/);
-            if (match) {
-                try {
-                    const session = JSON.parse(decodeURIComponent(match[1]));
-                    userId = session.id || null;
-                } catch { /* ignore */ }
-            }
-        }
-
-        // Fallback: check Authorization header for JWT
-        if (!userId) {
-            const authHeader = req.headers.get("authorization");
-            if (authHeader?.startsWith("Bearer ")) {
-                try {
-                    const { verifyToken } = await import("@/lib/jwt");
-                    const payload = await verifyToken(authHeader.slice(7).trim());
-                    if (payload) userId = payload.id;
-                } catch { /* ignore */ }
-            }
-        }
+        const session = await getSessionDual(req);
+        userId = session?.id || null;
 
         if (userId) {
             try {
@@ -654,8 +634,9 @@ export async function POST(req: NextRequest) {
                     bonusTokens = subscription.bonusTokens;
 
                     // Check trial expiration
-                    if (userPlan === "trial" && subscription.currentPeriodEnd) {
-                        const trialEnd = new Date(subscription.currentPeriodEnd);
+                    if (userPlan === "trial" && (subscription.trialEndsAt || subscription.currentPeriodEnd)) {
+                        const trialEndSource = subscription.trialEndsAt || subscription.currentPeriodEnd;
+                        const trialEnd = new Date(trialEndSource as Date);
                         if (trialEnd < new Date()) {
                             // Trial expired — downgrade to free
                             await prisma.subscription.update({
@@ -667,6 +648,8 @@ export async function POST(req: NextRequest) {
                                     aiMessagesUsed: 0, // Reset usage
                                     campaignsLimit: PLANS.free.campaigns,
                                     adsAccountsLimit: PLANS.free.adsAccounts,
+                                    trialEndsAt: null,
+                                    currentPeriodEnd: null,
                                 },
                             });
                             userPlan = "free";

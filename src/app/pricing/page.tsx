@@ -36,13 +36,7 @@ function PricingContent() {
         const user = getAuthUser();
         if (user) return { ...user, authenticated: true };
 
-        // Fallback: try cookie (may work in some browsers)
-        try {
-            const match = document.cookie.match(/session=([^;]+)/);
-            if (!match) return null;
-            const s = JSON.parse(decodeURIComponent(match[1]));
-            return s?.authenticated ? s : null;
-        } catch { return null; }
+        return null;
     };
 
     const handleSubscribe = async (planId: string) => {
@@ -106,7 +100,7 @@ function PricingContent() {
     const faqs = [
         {
             q: "Can I try AdMaster Pro for free?",
-            a: "Yes! The Free plan gives you a complete Google Ads audit plus 10 AI messages per month — no credit card required. Paid plans include a 7-day free trial.",
+            a: "Yes! Every new account gets a 7-day full-access free trial with no credit card required. After trial, your account moves to the Free plan with 10 AI messages per month.",
         },
         {
             q: "What happens when I run out of AI messages?",

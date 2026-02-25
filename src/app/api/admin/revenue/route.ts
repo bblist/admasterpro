@@ -5,7 +5,9 @@ import { getSessionDual } from "@/lib/session";
 async function isAdmin(req: Request): Promise<boolean> {
     const session = await getSessionDual(req);
     if (!session?.email) return false;
-    return session.email === process.env.ADMIN_EMAIL || session.email === "admin@nobleblocks.com";
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (!adminEmail) return false;
+    return session.email === adminEmail;
 }
 
 export async function GET(req: Request) {
@@ -15,7 +17,7 @@ export async function GET(req: Request) {
 
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const planPrices: Record<string, number> = { starter: 49, pro: 149 };
+    const planPrices: Record<string, number> = { free: 0, trial: 0, starter: 49, pro: 149 };
 
     // Current MRR
     const activeSubs = await prisma.subscription.findMany({
@@ -24,18 +26,23 @@ export async function GET(req: Request) {
     });
 
     const currentMRR = activeSubs.reduce((s: number, sub: any) => s + (planPrices[sub.plan] || 0), 0);
-    const paidUsers = activeSubs.length;
+    const paidUsers = activeSubs.filter((sub: any) => sub.plan !== "free" && sub.plan !== "trial").length;
     const totalUsers = await prisma.user.count();
     const freeUsers = totalUsers - paidUsers;
 
     // Plan breakdown
-    const planCounts: Record<string, number> = { free: freeUsers, starter: 0, pro: 0 };
+    const planCounts: Record<string, number> = { free: 0, trial: 0, starter: 0, pro: 0 };
     for (const sub of activeSubs) {
-        planCounts[sub.plan] = (planCounts[sub.plan] || 0) + 1;
+        if (sub.plan in planCounts) {
+            planCounts[sub.plan] = (planCounts[sub.plan] || 0) + 1;
+        }
     }
+    const assignedUsers = planCounts.free + planCounts.trial + planCounts.starter + planCounts.pro;
+    planCounts.free += Math.max(0, totalUsers - assignedUsers);
 
     const planBreakdown = [
         { plan: "Free", users: planCounts.free, revenue: 0, color: "bg-gray-600" },
+        { plan: "Trial", users: planCounts.trial, revenue: 0, color: "bg-amber-600" },
         { plan: "Starter ($49/mo)", users: planCounts.starter, revenue: planCounts.starter * 49, color: "bg-blue-600" },
         { plan: "Pro ($149/mo)", users: planCounts.pro, revenue: planCounts.pro * 149, color: "bg-purple-600" },
     ];
