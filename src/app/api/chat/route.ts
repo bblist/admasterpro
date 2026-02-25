@@ -20,6 +20,7 @@ interface ChatRequest {
     message: string;
     model?: "gpt-4o" | "claude-4.6";
     context?: string;
+    businessId?: string;
     businessName?: string;
     businessIndustry?: string;
     businessServices?: string[];
@@ -700,6 +701,29 @@ export async function POST(req: NextRequest) {
                             usage: { used: messagesUsed, limit: messagesLimit + bonusTokens, plan: userPlan },
                         }, { status: 429 });
                     }
+
+                    // Atomically reserve a message slot to prevent race conditions.
+                    // This increments usage BEFORE the AI call, only if still under limit.
+                    const totalLimit = messagesLimit + bonusTokens;
+                    if (userPlan !== "pro") {
+                        const reserved = await prisma.subscription.updateMany({
+                            where: {
+                                userId,
+                                aiMessagesUsed: { lt: totalLimit },
+                            },
+                            data: { aiMessagesUsed: { increment: 1 } },
+                        });
+                        if (reserved.count === 0) {
+                            // Race condition: another request used the last slot
+                            return NextResponse.json({
+                                error: "message_limit_reached",
+                                content: `\u26A0\uFE0F **Message limit reached.** Upgrade or purchase more messages.`,
+                                model: "system",
+                                limitReached: true,
+                                usage: { used: messagesUsed, limit: totalLimit, plan: userPlan },
+                            }, { status: 429 });
+                        }
+                    }
                 }
             } catch (dbError) {
                 console.warn("[Chat] DB unavailable for usage check:", dbError);
@@ -780,17 +804,20 @@ export async function POST(req: NextRequest) {
                             costUsd,
                         },
                     }),
-                    prisma.subscription.update({
-                        where: { userId },
-                        data: { aiMessagesUsed: { increment: 1 } },
-                    }),
+                    // For pro plan, increment here since we didn't reserve a slot above
+                    userPlan === "pro"
+                        ? prisma.subscription.update({
+                              where: { userId },
+                              data: { aiMessagesUsed: { increment: 1 } },
+                          })
+                        : Promise.resolve(), // Already incremented atomically above
                     prisma.chatMessage.createMany({
                         data: [
                             {
                                 userId,
                                 role: "user",
                                 content: body.message,
-                                businessId: body.businessName || undefined,
+                                businessId: body.businessId || undefined,
                             },
                             {
                                 userId,
@@ -800,7 +827,7 @@ export async function POST(req: NextRequest) {
                                 inputTokens: result.tokens.prompt,
                                 outputTokens: result.tokens.completion,
                                 costUsd,
-                                businessId: body.businessName || undefined,
+                                businessId: body.businessId || undefined,
                             },
                         ],
                     }),

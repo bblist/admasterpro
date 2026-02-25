@@ -5,6 +5,41 @@ import { getSessionDual } from "@/lib/session";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
 
+// ─── GET: Retrieve a stored audit report by ID ─────────────────────────────
+
+export async function GET(req: NextRequest) {
+    const auditId = req.nextUrl.searchParams.get("id");
+    if (!auditId) {
+        return NextResponse.json({ error: "Audit ID is required" }, { status: 400 });
+    }
+
+    try {
+        const { prisma } = await import("@/lib/db");
+        const report = await prisma.auditReport.findUnique({
+            where: { id: auditId },
+        });
+
+        if (!report) {
+            return NextResponse.json({ error: "Audit report not found" }, { status: 404 });
+        }
+
+        return NextResponse.json({
+            auditId: report.id,
+            websiteUrl: report.websiteUrl,
+            businessName: report.businessName,
+            industry: report.industry,
+            email: report.email,
+            monthlySpend: report.monthlySpend,
+            pageTitle: report.pageTitle,
+            result: JSON.parse(report.result),
+            createdAt: report.createdAt.toISOString(),
+        });
+    } catch (err) {
+        console.error("[Audit GET] Error:", err);
+        return NextResponse.json({ error: "Failed to load audit report" }, { status: 500 });
+    }
+}
+
 // SSRF blocklist — block internal/meta IPs
 const BLOCKED_HOST_PATTERNS = [
     /^localhost$/i,
@@ -211,8 +246,31 @@ Return as JSON:
 
         const costEstimate = promptTokens * 0.0000025 + completionTokens * 0.00001;
 
-        // Generate a unique audit ID (no DB storage — results are returned inline)
+        // Generate a unique audit ID and persist to DB
         const auditId = crypto.randomUUID();
+
+        // Store in database for server-side retrieval
+        try {
+            const { prisma } = await import("@/lib/db");
+            await prisma.auditReport.create({
+                data: {
+                    id: auditId,
+                    userId: session.id,
+                    websiteUrl: url,
+                    businessName,
+                    industry: industry || null,
+                    email,
+                    monthlySpend: monthlySpend || null,
+                    pageTitle: pageTitle || null,
+                    result: JSON.stringify(auditResult),
+                    tokensUsed,
+                    costEstimate,
+                },
+            });
+        } catch (dbErr) {
+            console.warn("[Audit] Failed to persist report to DB:", dbErr);
+            // Non-fatal — continue returning the result inline
+        }
 
         return NextResponse.json({
             auditId,

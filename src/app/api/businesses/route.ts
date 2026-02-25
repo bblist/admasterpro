@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-        const { name, website, industry, googleAdsId } = await req.json();
+        const { name, website, industry, location, googleAdsId } = await req.json();
 
         if (!name) {
             return NextResponse.json({ error: "Business name required" }, { status: 400 });
@@ -60,6 +60,9 @@ export async function POST(req: NextRequest) {
         }
         if (industry && industry.length > 200) {
             return NextResponse.json({ error: "Industry too long" }, { status: 400 });
+        }
+        if (location && location.length > 300) {
+            return NextResponse.json({ error: "Location too long" }, { status: 400 });
         }
 
         // Check plan limits
@@ -84,6 +87,7 @@ export async function POST(req: NextRequest) {
                 name,
                 website: website || null,
                 industry: industry || null,
+                location: location || null,
                 googleAdsId: googleAdsId || null,
             },
         });

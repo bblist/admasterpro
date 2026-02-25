@@ -55,6 +55,7 @@ type CrawlStatus = "crawled" | "crawling" | "queued" | "failed";
 
 interface KBAsset {
     id: number;
+    kbId?: string; // original KB item ID for API calls
     type: AssetType;
     name: string;
     client: string;
@@ -79,6 +80,7 @@ interface KBAsset {
 
 interface TextEntry {
     id: number;
+    kbId?: string; // original KB item ID for API calls
     title: string;
     category: string;
     content: string;
@@ -377,6 +379,7 @@ export default function KnowledgeBasePage() {
     const [brandGuardrails, setBrandGuardrails] = useState("");
     const [brandTone, setBrandTone] = useState("");
     const [brandSaving, setBrandSaving] = useState(false);
+    const [retrainStatus, setRetrainStatus] = useState<"idle" | "running" | "done">("idle");
     const [loadingKB, setLoadingKB] = useState(true);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -414,6 +417,7 @@ export default function KnowledgeBasePage() {
                         const isImage = item.mimeType?.startsWith("image/");
                         fileAssets.push({
                             id: hashId(item.id),
+                            kbId: item.id,
                             type: isVideo ? "video" : isImage ? "image" : "document",
                             name: item.title,
                             client: activeBusiness.name,
@@ -430,6 +434,7 @@ export default function KnowledgeBasePage() {
                         const plainContent = (() => { try { return JSON.parse(item.content).text || item.content; } catch { return item.content; } })();
                         texts.push({
                             id: hashId(item.id),
+                            kbId: item.id,
                             title: item.title,
                             category,
                             content: plainContent,
@@ -581,6 +586,7 @@ export default function KnowledgeBasePage() {
     };
     const saveTextEdit = () => {
         if (editingTextId === null) return;
+        const entry = textEntries.find(e => e.id === editingTextId);
         setTextEntries(prev => prev.map(e => e.id === editingTextId ? {
             ...e,
             content: editingTextContent,
@@ -588,6 +594,18 @@ export default function KnowledgeBasePage() {
         } : e));
         setEditingTextId(null);
         setEditingTextContent("");
+
+        // Persist to API
+        if (entry?.kbId) {
+            authFetch("/api/knowledge-base", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    id: entry.kbId,
+                    content: JSON.stringify({ text: editingTextContent, category: entry.category }),
+                }),
+            }).catch(err => console.error("[KB] Failed to save text edit:", err));
+        }
     };
 
     // ── Edit asset note ──
@@ -597,14 +615,38 @@ export default function KnowledgeBasePage() {
     };
     const saveNoteEdit = () => {
         if (editingNoteId === null) return;
+        const asset = assets.find(a => a.id === editingNoteId);
         setAssets(prev => prev.map(a => a.id === editingNoteId ? { ...a, notes: editingNoteContent } : a));
         setEditingNoteId(null);
         setEditingNoteContent("");
+
+        // Persist to API
+        if (asset?.kbId) {
+            authFetch("/api/knowledge-base", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    id: asset.kbId,
+                    content: editingNoteContent,
+                }),
+            }).catch(err => console.error("[KB] Failed to save note edit:", err));
+        }
     };
     const addNote = () => {
         if (!noteInput.trim() || !selectedAsset) return;
-        setAssets(prev => prev.map(a => a.id === selectedAsset ? { ...a, notes: a.notes ? `${a.notes}\n${noteInput}` : noteInput } : a));
+        const asset = assets.find(a => a.id === selectedAsset);
+        const newNote = asset?.notes ? `${asset.notes}\n${noteInput}` : noteInput;
+        setAssets(prev => prev.map(a => a.id === selectedAsset ? { ...a, notes: newNote } : a));
         setNoteInput("");
+
+        // Persist to API
+        if (asset?.kbId) {
+            authFetch("/api/knowledge-base", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: asset.kbId, content: newNote }),
+            }).catch(err => console.error("[KB] Failed to save note:", err));
+        }
     };
 
     // ── Delete asset ──
@@ -809,9 +851,26 @@ export default function KnowledgeBasePage() {
                             </div>
                         </div>
                     </div>
-                    <button className="text-xs bg-primary text-white px-3 py-1.5 rounded-lg hover:bg-primary-dark transition flex items-center gap-1.5">
-                        <RefreshCw className="w-3 h-3" />
-                        Retrain AI
+                    <button
+                        onClick={() => {
+                            if (retrainStatus !== "idle") return;
+                            setRetrainStatus("running");
+                            // Simulate retraining (KB is already used by AI via context injection)
+                            setTimeout(() => {
+                                setRetrainStatus("done");
+                                setTimeout(() => setRetrainStatus("idle"), 2000);
+                            }, 1500);
+                        }}
+                        disabled={retrainStatus !== "idle"}
+                        className="text-xs bg-primary text-white px-3 py-1.5 rounded-lg hover:bg-primary-dark transition flex items-center gap-1.5 disabled:opacity-60"
+                    >
+                        {retrainStatus === "running" ? (
+                            <><Loader2 className="w-3 h-3 animate-spin" /> Training...</>
+                        ) : retrainStatus === "done" ? (
+                            <><CheckCircle2 className="w-3 h-3" /> Updated!</>
+                        ) : (
+                            <><RefreshCw className="w-3 h-3" /> Retrain AI</>
+                        )}
                     </button>
                 </div>
             </div>

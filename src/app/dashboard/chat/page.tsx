@@ -797,6 +797,7 @@ export default function ChatPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     message,
+                    businessId: activeBusiness.id,
                     businessName: activeBusiness.name,
                     businessIndustry: activeBusiness.industry,
                     businessServices: activeBusiness.services,
@@ -1565,7 +1566,7 @@ export default function ChatPage() {
                             className="w-full bg-card border border-border rounded-xl px-3 sm:px-4 py-3 pr-10 sm:pr-12 text-sm focus:outline-none focus:border-primary transition disabled:opacity-50"
                         />
                         <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                            <button className="p-1.5 text-muted hover:text-primary transition rounded-lg touch-compact" title="Attach file">
+                            <button className="p-1.5 text-muted hover:text-primary transition rounded-lg touch-compact opacity-50 cursor-not-allowed" title="File attachments coming soon">
                                 <Paperclip className="w-4 h-4" />
                             </button>
                         </div>

@@ -172,6 +172,13 @@ export default function CampaignsPage() {
 
     return (
         <div className="max-w-6xl mx-auto space-y-6">
+            {/* Demo banner */}
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-2">
+                <span className="text-xs font-bold bg-amber-400 text-amber-900 px-2 py-0.5 rounded-full">DEMO</span>
+                <span className="text-xs text-amber-800">
+                    You&apos;re viewing example campaign data. Your real campaigns will appear once connected to Google Ads.
+                </span>
+            </div>
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold">Your Campaigns</h1>

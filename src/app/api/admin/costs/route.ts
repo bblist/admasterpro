@@ -1,14 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getSessionDual } from "@/lib/session";
-
-async function isAdmin(req: Request): Promise<boolean> {
-    const session = await getSessionDual(req);
-    if (!session?.email) return false;
-    const adminEmail = process.env.ADMIN_EMAIL;
-    if (!adminEmail) return false;
-    return session.email === adminEmail;
-}
+import { isAdmin } from "@/lib/admin-auth";
 
 export async function GET(req: Request) {
     if (!(await isAdmin(req))) {

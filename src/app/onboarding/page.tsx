@@ -11,7 +11,6 @@ import {
     Globe,
     Building2,
     MapPin,
-    Phone,
     Loader2,
     AlertCircle,
 } from "lucide-react";
@@ -46,7 +45,6 @@ export default function OnboardingPage() {
     const [businessName, setBusinessName] = useState("");
     const [businessType, setBusinessType] = useState("");
     const [location, setLocation] = useState("");
-    const [phoneNumber, setPhoneNumber] = useState("");
     const [uploading, setUploading] = useState(false);
     const [uploadedFiles, setUploadedFiles] = useState<{ name: string; size: string }[]>([]);
     const [auditing, setAuditing] = useState(false);
@@ -82,6 +80,10 @@ export default function OnboardingPage() {
             setBusinessError("Please enter your business name.");
             return;
         }
+        if (!businessType) {
+            setBusinessError("Please select your industry.");
+            return;
+        }
         setBusinessSaving(true);
         setBusinessError("");
         try {
@@ -92,6 +94,7 @@ export default function OnboardingPage() {
                     name: businessName.trim(),
                     website: websiteUrl.trim() || undefined,
                     industry: businessType || undefined,
+                    location: location.trim() || undefined,
                 }),
             });
             if (!res.ok) {
@@ -301,7 +304,7 @@ export default function OnboardingPage() {
 
                         <div className="max-w-md mx-auto space-y-4">
                             <div>
-                                <label className="text-sm font-medium mb-1 block">Business Name</label>
+                                <label className="text-sm font-medium mb-1 block">Business Name <span className="text-red-400">*</span></label>
                                 <input
                                     type="text"
                                     value={businessName}
@@ -311,7 +314,7 @@ export default function OnboardingPage() {
                                 />
                             </div>
                             <div>
-                                <label className="text-sm font-medium mb-1 block">What type of business?</label>
+                                <label className="text-sm font-medium mb-1 block">What type of business? <span className="text-red-400">*</span></label>
                                 <select
                                     value={businessType}
                                     onChange={(e) => setBusinessType(e.target.value)}
@@ -342,19 +345,7 @@ export default function OnboardingPage() {
                                     className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary transition"
                                 />
                             </div>
-                            <div>
-                                <label className="text-sm font-medium mb-1 block">
-                                    <Phone className="w-3 h-3 inline mr-1" />
-                                    Business Phone
-                                </label>
-                                <input
-                                    type="tel"
-                                    value={phoneNumber}
-                                    onChange={(e) => setPhoneNumber(e.target.value)}
-                                    placeholder="(305) 555-1234"
-                                    className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary transition"
-                                />
-                            </div>
+
                             <div>
                                 <label className="text-sm font-medium mb-1 block">
                                     <Globe className="w-3 h-3 inline mr-1" />

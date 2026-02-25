@@ -16,6 +16,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
+import { PLANS } from "@/lib/plans";
 
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -259,51 +260,7 @@ export default function LandingPage() {
             <p className="text-muted text-lg">Start free. Upgrade when you&apos;re ready.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              {
-                name: "Free",
-                price: "$0",
-                period: "forever",
-                features: ["Free Google Ads audit", "10 AI messages/month", "1 campaign draft", "Basic keyword research", "Email support"],
-                cta: "Start Free",
-                popular: false,
-                href: "/onboarding",
-              },
-              {
-                name: "Starter",
-                price: "$49",
-                period: "/month",
-                features: [
-                  "Everything in Free",
-                  "200 AI messages/month",
-                  "10 campaign drafts",
-                  "AI ad copy generation",
-                  "Auto-Pilot mode",
-                  "Daily reports",
-                  "Priority support",
-                ],
-                cta: "Start 7-Day Free Trial",
-                popular: true,
-                href: "/pricing",
-              },
-              {
-                name: "Pro",
-                price: "$149",
-                period: "/month",
-                features: [
-                  "Everything in Starter",
-                  "Unlimited AI messages",
-                  "Unlimited campaigns",
-                  "Shopping, Display & Video ads",
-                  "Performance Max campaigns",
-                  "Competitor analysis",
-                  "Dedicated account manager",
-                ],
-                cta: "Start 7-Day Free Trial",
-                popular: false,
-                href: "/pricing",
-              },
-            ].map((plan, i) => (
+            {[PLANS.free, PLANS.starter, PLANS.pro].map((plan, i) => (
               <div
                 key={i}
                 className={`bg-card border rounded-xl p-6 relative ${plan.popular ? "border-primary shadow-lg scale-105" : "border-border"
@@ -316,19 +273,19 @@ export default function LandingPage() {
                 )}
                 <h3 className="font-semibold text-lg mb-2">{plan.name}</h3>
                 <div className="mb-4">
-                  <span className="text-3xl font-bold">{plan.price}</span>
+                  <span className="text-3xl font-bold">{plan.priceLabel}</span>
                   <span className="text-muted text-sm">{plan.period}</span>
                 </div>
                 <ul className="space-y-3 mb-6">
-                  {plan.features.map((f, j) => (
+                  {plan.features.filter(f => f.included).slice(0, 7).map((f, j) => (
                     <li key={j} className="flex items-start gap-2 text-sm">
                       <Check className="w-4 h-4 text-success shrink-0 mt-0.5" />
-                      {f}
+                      {f.text}
                     </li>
                   ))}
                 </ul>
                 <Link
-                  href={plan.href}
+                  href={plan.id === "free" ? "/onboarding" : "/pricing"}
                   className={`block text-center py-2.5 rounded-lg font-medium text-sm transition ${plan.popular
                     ? "bg-primary hover:bg-primary-dark text-white"
                     : "border border-border hover:border-primary text-foreground"

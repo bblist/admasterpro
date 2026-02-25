@@ -127,6 +127,14 @@ export async function PUT(req: NextRequest) {
             return NextResponse.json({ error: "id is required" }, { status: 400 });
         }
 
+        // Limit content size to prevent abuse (500KB max) — same as POST
+        if (typeof content === "string" && content.length > 500_000) {
+            return NextResponse.json(
+                { error: "Content is too large. Maximum 500KB." },
+                { status: 400 }
+            );
+        }
+
         // Verify ownership
         const existing = await prisma.knowledgeBaseItem.findFirst({
             where: { id, userId: session.id },
@@ -139,7 +147,7 @@ export async function PUT(req: NextRequest) {
             where: { id },
             data: {
                 ...(title !== undefined ? { title: title.slice(0, 500) } : {}),
-                ...(content !== undefined ? { content } : {}),
+                ...(content !== undefined ? { content: content.slice(0, 500_000) } : {}),
             },
         });
 

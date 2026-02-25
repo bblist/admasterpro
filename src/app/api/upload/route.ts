@@ -18,7 +18,8 @@ import { existsSync } from "fs";
 import path from "path";
 import crypto from "crypto";
 
-const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
+// Store uploads outside public/ so they require auth to access
+const UPLOAD_DIR = path.join(process.cwd(), "private-uploads");
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 const MIME_EXT: Record<string, string> = {
@@ -98,13 +99,13 @@ export async function POST(req: NextRequest) {
                     originalName: file.name,
                     mimeType: file.type,
                     size: file.size,
-                    url: `/uploads/${filename}`,
+                    url: `/api/uploads/${filename}`,
                 },
             });
 
             uploaded.push({
                 id,
-                url: `/uploads/${filename}`,
+                url: `/api/uploads/${filename}`,
                 filename: file.name,
                 size: file.size,
             });

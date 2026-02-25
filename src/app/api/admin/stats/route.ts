@@ -1,15 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionDual } from "@/lib/session";
+import { isAdmin } from "@/lib/admin-auth";
 
 // Admin API — returns real data from DB when available, demo fallback otherwise
-
-async function isAdmin(req: NextRequest): Promise<boolean> {
-    const session = await getSessionDual(req);
-    if (!session?.email) return false;
-    const adminEmail = process.env.ADMIN_EMAIL;
-    if (!adminEmail) return false;
-    return session.email === adminEmail;
-}
 
 export async function GET(req: NextRequest) {
     if (!(await isAdmin(req))) {

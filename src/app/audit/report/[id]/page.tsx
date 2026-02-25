@@ -119,7 +119,15 @@ export default function AuditReportPage() {
     useEffect(() => {
         async function load() {
             try {
-                // Read audit data from localStorage (stored by the audit landing page)
+                // Try server-side storage first (tamper-proof)
+                const res = await fetch(`/api/audit?id=${encodeURIComponent(auditId)}`);
+                if (res.ok) {
+                    const d = await res.json();
+                    setData(d);
+                    return;
+                }
+
+                // Fall back to localStorage for older reports
                 const stored = localStorage.getItem(`audit_${auditId}`);
                 if (!stored) {
                     throw new Error("Audit not found. Please run a new audit.");

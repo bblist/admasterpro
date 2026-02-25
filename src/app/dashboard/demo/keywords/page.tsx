@@ -379,6 +379,13 @@ export default function KeywordsPage() {
 
     return (
         <div className="max-w-7xl mx-auto space-y-6">
+            {/* Demo banner */}
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-2">
+                <span className="text-xs font-bold bg-amber-400 text-amber-900 px-2 py-0.5 rounded-full">DEMO</span>
+                <span className="text-xs text-amber-800">
+                    You&apos;re viewing example keyword data. Your real keywords will appear once connected to Google Ads.
+                </span>
+            </div>
             {/* \u2500\u2500 Header \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */}
             <div className="flex items-start justify-between">
                 <div>
