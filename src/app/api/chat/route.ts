@@ -41,7 +41,23 @@ function extractUrls(text: string): string[] {
 /**
  * Fetch and extract text content from a URL
  */
+// SSRF blocklist — block internal/meta IPs
+const BLOCKED_HOST_PATTERNS = [
+    /^localhost$/i, /^127\./, /^10\./, /^172\.(1[6-9]|2\d|3[01])\./,
+    /^192\.168\./, /^169\.254\./, /^0\./, /^\[::1\]/,
+    /^\[fc/i, /^\[fd/i, /^\[fe80:/i, /metadata\.google/i, /metadata\.aws/i,
+];
+
+function isBlockedUrl(urlStr: string): boolean {
+    try {
+        const u = new URL(urlStr);
+        if (u.protocol !== "http:" && u.protocol !== "https:") return true;
+        return BLOCKED_HOST_PATTERNS.some(p => p.test(u.hostname));
+    } catch { return true; }
+}
+
 async function scrapeUrl(url: string): Promise<{ title: string; content: string; success: boolean }> {
+    if (isBlockedUrl(url)) return { title: "", content: "", success: false };
     try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 10000);
@@ -55,6 +71,10 @@ async function scrapeUrl(url: string): Promise<{ title: string; content: string;
         clearTimeout(timeout);
 
         if (!res.ok) return { title: "", content: "", success: false };
+
+        // Limit response size to 2MB
+        const contentLength = parseInt(res.headers.get("content-length") || "0");
+        if (contentLength > 2 * 1024 * 1024) return { title: "", content: "", success: false };
 
         const html = await res.text();
 
@@ -617,6 +637,10 @@ export async function POST(req: NextRequest) {
 
         const session = await getSessionDual(req);
         userId = session?.id || null;
+
+        if (!userId) {
+            return NextResponse.json({ error: "Authentication required. Please sign in." }, { status: 401 });
+        }
 
         if (userId) {
             try {

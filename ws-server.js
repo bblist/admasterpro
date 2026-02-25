@@ -70,8 +70,9 @@ const wss = new WebSocketServer({
     maxPayload: MAX_MESSAGE_SIZE,
     verifyClient: (info, cb) => {
         const origin = info.origin || info.req.headers.origin || "";
-        if (ALLOWED_ORIGINS.length && !ALLOWED_ORIGINS.includes(origin) && origin !== "") {
-            console.warn(`[WS] Rejected connection from origin: ${origin}`);
+        // Reject connections with no origin (non-browser clients) and bad origins
+        if (!origin || (ALLOWED_ORIGINS.length && !ALLOWED_ORIGINS.includes(origin))) {
+            console.warn(`[WS] Rejected connection from origin: ${origin || "(empty)"}`);
             cb(false, 403, "Forbidden origin");
             return;
         }

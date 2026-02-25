@@ -136,9 +136,12 @@ export async function POST(req: NextRequest) {
         const updates = await req.json();
 
         // Validate settings
+        const budgetLimit = Number(updates.budgetLimit) || 0;
+        const maxDailyBudget = Number(updates.safetyRules?.maxDailyBudget) || 500;
+
         const settings: UserSettings = {
             autoPilot: Boolean(updates.autoPilot),
-            budgetLimit: Number(updates.budgetLimit) || 0,
+            budgetLimit: Math.max(0, Math.min(1_000_000, budgetLimit)),
             notifications: {
                 email: updates.notifications?.email !== false,
                 budgetAlerts: updates.notifications?.budgetAlerts !== false,
@@ -147,7 +150,7 @@ export async function POST(req: NextRequest) {
             },
             safetyRules: {
                 requireApproval: updates.safetyRules?.requireApproval !== false,
-                maxDailyBudget: Number(updates.safetyRules?.maxDailyBudget) || 500,
+                maxDailyBudget: Math.max(0, Math.min(100_000, maxDailyBudget)),
                 pauseLowPerformers: Boolean(updates.safetyRules?.pauseLowPerformers),
             },
         };

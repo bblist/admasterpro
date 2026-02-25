@@ -51,6 +51,17 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Business name required" }, { status: 400 });
         }
 
+        // Validate input lengths
+        if (name.length > 200) {
+            return NextResponse.json({ error: "Business name too long (max 200 characters)" }, { status: 400 });
+        }
+        if (website && website.length > 500) {
+            return NextResponse.json({ error: "Website URL too long" }, { status: 400 });
+        }
+        if (industry && industry.length > 200) {
+            return NextResponse.json({ error: "Industry too long" }, { status: 400 });
+        }
+
         // Check plan limits
         const subscription = await prisma.subscription.findUnique({
             where: { userId: session.id },

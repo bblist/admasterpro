@@ -1075,18 +1075,23 @@ export default function ChatPage() {
 
     // ─── Render Helpers ─────────────────────────────────────────────────────
 
+    const isSafeHref = (url: string) => /^https?:\/\//i.test(url) || (url.startsWith("/") && !url.startsWith("//"));
+
     const renderMarkdown = (text: string) => {
         return text.split("\n").map((line, i) => (
             <span key={i}>
                 {line.split(/(\*\*[^*]+\*\*)/).map((part, j) =>
                     part.startsWith("**") && part.endsWith("**") ? (
                         <strong key={j} className="font-semibold">{part.slice(2, -2)}</strong>
-                    ) : part.includes("[") && part.includes("](/") ? (
+                    ) : part.includes("[") && part.includes("](") ? (
                         <span key={j}>
                             {part.split(/(\[[^\]]+\]\([^)]+\))/).map((seg, k) => {
                                 const linkMatch = seg.match(/\[([^\]]+)\]\(([^)]+)\)/);
+                                if (linkMatch && isSafeHref(linkMatch[2])) {
+                                    return <a key={k} href={linkMatch[2]} className="text-primary underline hover:text-primary-dark" rel="noopener noreferrer">{linkMatch[1]}</a>;
+                                }
                                 if (linkMatch) {
-                                    return <a key={k} href={linkMatch[2]} className="text-primary underline hover:text-primary-dark">{linkMatch[1]}</a>;
+                                    return <span key={k} className="text-primary">{linkMatch[1]}</span>;
                                 }
                                 return <span key={k}>{seg}</span>;
                             })}

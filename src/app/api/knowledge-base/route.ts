@@ -61,6 +61,14 @@ export async function POST(req: NextRequest) {
             );
         }
 
+        // Limit content size to prevent abuse (500KB max)
+        if (typeof content === "string" && content.length > 500_000) {
+            return NextResponse.json(
+                { error: "Content is too large. Maximum 500KB." },
+                { status: 400 }
+            );
+        }
+
         const validTypes = ["file", "text", "url", "transcript", "brand_profile"];
         if (!validTypes.includes(type)) {
             return NextResponse.json(
@@ -88,7 +96,7 @@ export async function POST(req: NextRequest) {
                 content,
                 fileUrl: fileUrl || null,
                 mimeType: mimeType || null,
-                sizeBytes: sizeBytes ? parseInt(sizeBytes) : null,
+                sizeBytes: sizeBytes ? (parseInt(sizeBytes) || null) : null,
             },
         });
 

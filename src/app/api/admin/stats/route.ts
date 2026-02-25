@@ -35,8 +35,8 @@ export async function GET(req: NextRequest) {
         ] = await Promise.all([
             prisma.user.count(),
             prisma.user.count({ where: { createdAt: { gte: startOfWeek } } }),
-            prisma.subscription.findMany(),
-            prisma.usage.findMany({ where: { createdAt: { gte: startOfMonth } } }),
+            prisma.subscription.findMany({ take: 500 }),
+            prisma.usage.findMany({ where: { createdAt: { gte: startOfMonth } }, take: 5000 }),
             prisma.user.findMany({
                 orderBy: { createdAt: "desc" },
                 take: 10,
@@ -133,6 +133,6 @@ export async function GET(req: NextRequest) {
             recentSignups: [],
             topSpenders: [],
             dbError: true,
-        });
+        }, { status: 500 });
     }
 }

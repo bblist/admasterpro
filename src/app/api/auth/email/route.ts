@@ -27,19 +27,22 @@ export async function POST(req: NextRequest) {
     try {
         const { email } = await req.json();
 
-        if (!email || !email.includes("@")) {
+        if (!email || typeof email !== "string" || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/)) {
             return NextResponse.json({ error: "Valid email is required" }, { status: 400 });
         }
 
+        // Normalize and limit length
+        const normalizedEmail = email.toLowerCase().trim().slice(0, 254);
+
         // Persist user to database
-        let userId = "email_" + email.replace(/[^a-z0-9]/gi, "_");
+        let userId = "email_" + normalizedEmail.replace(/[^a-z0-9]/gi, "_");
         try {
             const user = await prisma.user.upsert({
-                where: { email },
+                where: { email: normalizedEmail },
                 update: { lastActiveAt: new Date() },
                 create: {
-                    email,
-                    name: email.split("@")[0],
+                    email: normalizedEmail,
+                    name: normalizedEmail.split("@")[0],
                     authMethod: "email",
                 },
             });
@@ -71,8 +74,8 @@ export async function POST(req: NextRequest) {
         // Generate JWT token for localStorage-based auth (cookie fallback)
         const sessionData = {
             id: userId,
-            email,
-            name: email.split("@")[0],
+            email: normalizedEmail,
+            name: normalizedEmail.split("@")[0],
             picture: null,
             method: "email" as const,
             hasAdsAccess: false,

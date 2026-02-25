@@ -41,6 +41,7 @@ export default function DashboardPage() {
             try {
                 // Fetch settings (includes subscription + businesses)
                 const settingsRes = await authFetch("/api/settings");
+                if (!settingsRes.ok) throw new Error("Failed to load settings");
                 const settingsData = await settingsRes.json();
 
                 const dashStats: DashboardStats = {
@@ -73,6 +74,7 @@ export default function DashboardPage() {
                 setStats(dashStats);
             } catch (err) {
                 console.error("Failed to load dashboard stats:", err);
+                setStats(null);
             } finally {
                 setLoading(false);
             }
@@ -95,7 +97,7 @@ export default function DashboardPage() {
     const bonusTokens = stats?.subscription?.bonusTokens || 0;
     const trialEndDate = stats?.subscription?.currentPeriodEnd ? new Date(stats.subscription.currentPeriodEnd) : null;
     const trialDaysLeft = trialEndDate ? Math.max(0, Math.ceil((trialEndDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : 0;
-    const totalAvailable = messagesLimit + bonusTokens - messagesUsed;
+    const totalAvailable = Math.max(0, messagesLimit + bonusTokens - messagesUsed);
     const usagePct = messagesLimit > 0 ? Math.min(100, Math.round((messagesUsed / messagesLimit) * 100)) : 0;
 
     return (

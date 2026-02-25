@@ -64,10 +64,11 @@ export default function CampaignsPage() {
     const [mutateError, setMutateError] = useState<string | null>(null);
 
     const toggleCampaign = async (campaignId: string, currentStatus: string) => {
+        const operation = currentStatus === "ENABLED" ? "pause" : "enable";
+        if (!confirm(`${operation === "pause" ? "Pause" : "Enable"} this campaign? This will take effect immediately.`)) return;
         setMutating(campaignId);
         setMutateError(null);
         try {
-            const operation = currentStatus === "ENABLED" ? "pause" : "enable";
             const res = await authFetch("/api/google-ads/campaigns", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

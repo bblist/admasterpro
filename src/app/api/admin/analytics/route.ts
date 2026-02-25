@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { getSessionDual } from "@/lib/session";
 
 async function isAdmin(req: Request): Promise<boolean> {
-    const session = await getSessionDual(req) as { email?: string } | null;
+    const session = await getSessionDual(req);
     if (!session?.email) return false;
     const adminEmail = process.env.ADMIN_EMAIL;
     if (!adminEmail) return false;

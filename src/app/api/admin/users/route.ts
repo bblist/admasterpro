@@ -23,16 +23,24 @@ export async function GET(req: NextRequest) {
     try {
         const { prisma } = await import("@/lib/db");
 
+        // Pagination
+        const page = Math.max(1, parseInt(req.nextUrl.searchParams.get("page") || "1") || 1);
+        const pageSize = Math.min(100, Math.max(1, parseInt(req.nextUrl.searchParams.get("pageSize") || "50") || 50));
+        const skip = (page - 1) * pageSize;
+
         const now = new Date();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-        // Get all users with their subscriptions
-        const users = await prisma.user.findMany({
-            orderBy: { createdAt: "desc" },
-            include: {
-                subscription: true,
-            },
-        });
+        // Get users with pagination
+        const [users, totalCount] = await Promise.all([
+            prisma.user.findMany({
+                orderBy: { createdAt: "desc" },
+                include: { subscription: true },
+                skip,
+                take: pageSize,
+            }),
+            prisma.user.count(),
+        ]);
 
         // Get this month's usage grouped by user
         const usageByUser = await prisma.usage.groupBy({
@@ -127,6 +135,7 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json({
             users: result,
+            pagination: { page, pageSize, totalCount, totalPages: Math.ceil(totalCount / pageSize) },
             summary: {
                 totalUsers,
                 activeUsers,

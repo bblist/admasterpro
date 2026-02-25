@@ -21,8 +21,8 @@ export async function GET(req: Request) {
     try {
         await prisma.$queryRaw`SELECT 1`;
         checks.database = { status: "healthy", latency: Date.now() - dbStart };
-    } catch (err) {
-        checks.database = { status: "unhealthy", latency: Date.now() - dbStart, error: String(err) };
+    } catch {
+        checks.database = { status: "unhealthy", latency: Date.now() - dbStart };
     }
 
     // Stripe

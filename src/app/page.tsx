@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import {
   Zap,
   Shield,
@@ -12,9 +13,12 @@ import {
   ArrowRight,
   Check,
   Star,
+  Menu,
+  X,
 } from "lucide-react";
 
 export default function LandingPage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   return (
     <div className="min-h-screen bg-background">
       {/* Nav */}
@@ -41,8 +45,25 @@ export default function LandingPage() {
             >
               Start Free
             </Link>
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 text-muted hover:text-foreground"
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </div>
+        {/* Mobile menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-border px-4 py-3 space-y-2 bg-background">
+            <a href="#features" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-muted hover:text-foreground py-1">Features</a>
+            <a href="#how-it-works" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-muted hover:text-foreground py-1">How It Works</a>
+            <Link href="/pricing" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-muted hover:text-foreground py-1">Pricing</Link>
+            <Link href="/audit" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-muted hover:text-foreground py-1">Free Audit</Link>
+            <Link href="/faq" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-muted hover:text-foreground py-1">FAQ</Link>
+          </div>
+        )}
       </nav>
 
       {/* Hero */}

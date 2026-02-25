@@ -38,14 +38,14 @@ import {
 // ─── POST: Checkout or Webhook ──────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
-    // Stripe webhook — skip rate limiting (Stripe handles its own)
+    // Rate limit all POST requests including webhooks
+    const rateLimited = checkRateLimit(req, stripeLimiter);
+    if (rateLimited) return rateLimited;
+
+    // Stripe webhook — must check after rate limit
     if (req.headers.get("stripe-signature")) {
         return handleWebhook(req);
     }
-
-    // Rate limit checkout requests
-    const rateLimited = checkRateLimit(req, stripeLimiter);
-    if (rateLimited) return rateLimited;
 
     // Checkout session creation
     return handleCheckout(req);
@@ -68,6 +68,7 @@ async function handleCheckout(req: NextRequest) {
 
         const body = await req.json();
         const { action, plan, topUpId } = body;
+        // Always use server-side session — never trust client-supplied userId
         const userId = session.id;
         const email = session.email;
 

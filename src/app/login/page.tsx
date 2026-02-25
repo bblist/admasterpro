@@ -12,7 +12,9 @@ function LoginForm() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const next = searchParams.get("next") || "/dashboard/chat";
-    const redirectTo = next.startsWith("/") ? next : "/dashboard/chat";
+    // Prevent open redirect: must start with / but not // or /\ and no protocol
+    const isSafeRedirect = /^\/[a-zA-Z]/.test(next) && !next.includes(":");
+    const redirectTo = isSafeRedirect ? next : "/dashboard/chat";
     const error = searchParams.get("error");
 
     const [email, setEmail] = useState("");

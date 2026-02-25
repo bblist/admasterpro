@@ -107,13 +107,25 @@ export function decodeTokenPayload(token: string): AuthUser | null {
 }
 
 /**
- * Capture JWT token from URL hash (after Google OAuth redirect).
+ * Capture JWT token from session_init cookie (set after Google OAuth redirect).
+ * Also supports legacy URL hash for backward compatibility.
  * Call this on page load in the dashboard layout.
- * The hash fragment is never sent to the server, so it's secure.
  */
 export function captureTokenFromHash(): boolean {
     if (typeof window === "undefined") return false;
 
+    // Method 1: Read from session_init cookie (preferred — avoids token in URL)
+    const cookieMatch = document.cookie.match(/session_init=([^;]+)/);
+    if (cookieMatch) {
+        const token = decodeURIComponent(cookieMatch[1]);
+        const user = decodeTokenPayload(token);
+        setAuth(token, user || undefined);
+        // Clear the short-lived cookie
+        document.cookie = "session_init=; path=/; max-age=0";
+        return true;
+    }
+
+    // Method 2: Legacy URL hash fallback
     const hash = window.location.hash;
     if (!hash.includes("token=")) return false;
 

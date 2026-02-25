@@ -26,11 +26,12 @@ export async function GET(req: Request) {
         _count: { id: true },
     });
 
-    // Daily costs for last 14 days
+    // Daily costs for last 14 days (limit to prevent OOM)
     const twoWeeksAgo = new Date(now.getTime() - 14 * 86400000);
     const dailyUsage = await prisma.usage.findMany({
         where: { createdAt: { gte: twoWeeksAgo } },
         select: { createdAt: true, costUsd: true, model: true, totalTokens: true },
+        take: 10000,
     });
 
     // Get user info

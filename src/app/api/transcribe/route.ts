@@ -38,9 +38,9 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Invalid file type. Supported: MP4, MOV, AVI, WebM, MP3, WAV" }, { status: 400 });
         }
 
-        // Check file size (100MB max)
-        if (file.size > 100 * 1024 * 1024) {
-            return NextResponse.json({ error: "File too large. Max 100MB." }, { status: 400 });
+        // Check file size (25MB max for API processing)
+        if (file.size > 25 * 1024 * 1024) {
+            return NextResponse.json({ error: "File too large. Max 25MB." }, { status: 400 });
         }
 
         if (!DEEPGRAM_API_KEY) {

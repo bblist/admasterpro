@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
         const errors: string[] = [];
 
         for (const file of files) {
-            // Validate file type
+            // Validate file type by MIME type
             if (!ALLOWED_TYPES.includes(file.type)) {
                 errors.push(`${file.name}: Invalid file type. Allowed: JPEG, PNG, GIF, WebP`);
                 continue;
@@ -69,14 +69,24 @@ export async function POST(req: NextRequest) {
                 continue;
             }
 
+            // Read file buffer for magic byte validation
+            const buffer = Buffer.from(await file.arrayBuffer());
+
+            // Validate magic bytes match claimed MIME type
+            const isJpeg = buffer[0] === 0xFF && buffer[1] === 0xD8;
+            const isPng = buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47;
+            const isGif = buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46;
+            const isWebp = buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46;
+            if (!isJpeg && !isPng && !isGif && !isWebp) {
+                errors.push(`${file.name}: File content does not match an allowed image format.`);
+                continue;
+            }
+
             // Generate unique filename
             const ext = MIME_EXT[file.type] || "jpg";
             const id = crypto.randomUUID();
             const filename = `${session.id}_${id}.${ext}`;
             const filepath = path.join(UPLOAD_DIR, filename);
-
-            // Write file
-            const buffer = Buffer.from(await file.arrayBuffer());
             await writeFile(filepath, buffer);
 
             // Store in database

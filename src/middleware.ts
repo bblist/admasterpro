@@ -70,7 +70,7 @@ export async function middleware(request: NextRequest) {
             return NextResponse.redirect(new URL("/login", request.url));
         }
         const adminEmail = process.env.ADMIN_EMAIL;
-        if (adminEmail && session?.email !== adminEmail) {
+        if (!adminEmail || session?.email !== adminEmail) {
             return NextResponse.redirect(new URL("/dashboard", request.url));
         }
     }

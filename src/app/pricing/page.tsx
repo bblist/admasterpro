@@ -57,8 +57,7 @@ function PricingContent() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     plan: planId,
-                    userId: session.id,
-                    email: session.email,
+                    // userId and email resolved server-side from session
                 }),
             });
             const data = await res.json();
@@ -86,8 +85,7 @@ function PricingContent() {
                 body: JSON.stringify({
                     action: "topup",
                     topUpId,
-                    userId: session.id,
-                    email: session.email,
+                    // userId and email resolved server-side from session
                 }),
             });
             const data = await res.json();

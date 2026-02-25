@@ -33,12 +33,14 @@ export default function Tooltip({ text, children, position = "top", icon = true 
             className="relative inline-flex items-center"
             onMouseEnter={() => setShow(true)}
             onMouseLeave={() => setShow(false)}
+            onFocus={() => setShow(true)}
+            onBlur={() => setShow(false)}
             ref={tooltipRef}
         >
             {children ? (
                 children
             ) : icon ? (
-                <HelpCircle className="w-3.5 h-3.5 text-muted/50 hover:text-primary cursor-help transition" />
+                <HelpCircle className="w-3.5 h-3.5 text-muted/50 hover:text-primary cursor-help transition" tabIndex={0} aria-label="Help" />
             ) : null}
 
             {show && (

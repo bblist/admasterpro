@@ -73,7 +73,7 @@ export async function createSubscriptionCheckout(params: {
 
     const session = await stripe.checkout.sessions.create({
         ...sessionParams,
-        idempotencyKey: `sub_${params.userId}_${params.plan}_${Date.now()}`,
+        idempotencyKey: `sub_${params.userId}_${params.plan}`,
     } as any);
     return session.url;
 }
@@ -99,7 +99,7 @@ export async function createTopUpCheckout(params: {
         customer: params.stripeCustomerId || undefined,
         metadata: { userId: params.userId, topUpId: params.topUpId },
     }, {
-        idempotencyKey: `topup_${params.userId}_${params.topUpId}_${Date.now()}`,
+        idempotencyKey: `topup_${params.userId}_${params.topUpId}`,
     });
 
     return session.url;

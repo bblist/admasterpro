@@ -221,12 +221,20 @@ export async function GET(req: NextRequest) {
         };
         const jwt = await signToken(sessionData);
 
-        // Redirect with JWT in URL fragment (not sent to server, client reads it)
+        // Redirect to dashboard — JWT passed via short-lived readable cookie (not URL hash)
         const nextCookie = req.cookies.get(OAUTH_NEXT_COOKIE)?.value;
         const redirectPath = (nextCookie && /^\/[a-zA-Z]/.test(nextCookie)) ? nextCookie : "/dashboard/chat";
         const redirectUrl = new URL(redirectPath, req.url);
-        redirectUrl.hash = `token=${jwt}`;
         const response = NextResponse.redirect(redirectUrl);
+
+        // Short-lived cookie for client-side JS to capture token into localStorage
+        response.cookies.set("session_init", jwt, {
+            httpOnly: false, // Client JS reads this
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            maxAge: 60, // 60 seconds — just enough for redirect
+            path: "/",
+        });
 
         // Also set session cookie (dual auth — cookie + token)
         response.cookies.set("session", jwt, {

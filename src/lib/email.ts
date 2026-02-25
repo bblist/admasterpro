@@ -75,7 +75,7 @@ async function sendEmailViaSES(to: string, subject: string, html: string): Promi
 async function sendEmailViaResend(to: string, subject: string, html: string): Promise<EmailResult> {
     const r = getResend();
     if (!r) {
-        console.log(`[Email] Would send to ${to}: ${subject}`);
+        console.warn(`[Email] No email provider configured — dry-run. Would send to ${to}: ${subject}`);
         return { success: true, id: "dry-run" };
     }
 

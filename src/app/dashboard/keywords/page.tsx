@@ -283,7 +283,7 @@ export default function KeywordsPage() {
                                                     {mutating === kw.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> :
                                                         kw.status === "ENABLED" ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
                                                 </button>
-                                                <button onClick={() => mutateKeyword(kw, "remove")}
+                                                <button onClick={() => { if (confirm(`Remove keyword "${kw.keyword}"? This action cannot be undone.`)) mutateKeyword(kw, "remove"); }}
                                                     disabled={mutating === kw.id}
                                                     className="p-1 rounded hover:bg-red-100 text-red-500 transition disabled:opacity-50"
                                                     title="Remove">
