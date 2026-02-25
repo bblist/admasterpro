@@ -16,8 +16,11 @@ import {
     Building2,
     DollarSign,
     Sparkles,
+    Mail,
+    X,
 } from "lucide-react";
 import { useTranslation } from "@/i18n/context";
+import { captureTokenFromHash, decodeTokenPayload, isAuthenticated, setAuth } from "@/lib/auth-client";
 
 const auditFeatures = [
     { icon: BarChart3, title: "Landing Page Analysis", desc: "We analyze your website for conversion-readiness, mobile optimization, and page speed." },
@@ -38,23 +41,53 @@ export default function AuditPage() {
     const [monthlySpend, setMonthlySpend] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [showAuthModal, setShowAuthModal] = useState(false);
+    const [authEmail, setAuthEmail] = useState("");
+    const [authLoading, setAuthLoading] = useState(false);
+    const [authError, setAuthError] = useState("");
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError("");
+    const PENDING_AUDIT_KEY = "amp_pending_audit_form";
 
-        if (!websiteUrl || !businessName || !email) {
-            setError("Please fill in your website URL, business name, and email.");
-            return;
-        }
+    type AuditPayload = {
+        websiteUrl: string;
+        businessName: string;
+        industry: string;
+        email: string;
+        monthlySpend: string;
+    };
 
+    const getPayload = (): AuditPayload => ({
+        websiteUrl,
+        businessName,
+        industry,
+        email,
+        monthlySpend,
+    });
+
+    const savePendingPayload = (payload: AuditPayload) => {
+        localStorage.setItem(PENDING_AUDIT_KEY, JSON.stringify(payload));
+    };
+
+    const clearPendingPayload = () => {
+        localStorage.removeItem(PENDING_AUDIT_KEY);
+    };
+
+    const runAudit = React.useCallback(async (payload: AuditPayload) => {
         setLoading(true);
         try {
             const res = await fetch("/api/audit", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ websiteUrl, businessName, industry, email, monthlySpend }),
+                body: JSON.stringify(payload),
             });
+
+            if (res.status === 401) {
+                localStorage.setItem(PENDING_AUDIT_KEY, JSON.stringify(payload));
+                setAuthEmail(payload.email || "");
+                setShowAuthModal(true);
+                setError("");
+                return;
+            }
 
             if (!res.ok) {
                 const data = await res.json();
@@ -62,13 +95,96 @@ export default function AuditPage() {
             }
 
             const data = await res.json();
-            // Store audit data in localStorage for the report page
+            clearPendingPayload();
             localStorage.setItem(`audit_${data.auditId}`, JSON.stringify(data));
             router.push(`/audit/report/${data.auditId}`);
         } catch (err: any) {
             setError(err.message || "Something went wrong. Please try again.");
         } finally {
             setLoading(false);
+        }
+    }, [router]);
+
+    React.useEffect(() => {
+        captureTokenFromHash();
+
+        const pendingRaw = localStorage.getItem(PENDING_AUDIT_KEY);
+        if (pendingRaw) {
+            try {
+                const pending = JSON.parse(pendingRaw) as AuditPayload;
+                setWebsiteUrl(pending.websiteUrl || "");
+                setBusinessName(pending.businessName || "");
+                setIndustry(pending.industry || "");
+                setEmail(pending.email || "");
+                setMonthlySpend(pending.monthlySpend || "");
+
+                const hasResumeFlag = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("resume") === "1";
+                if (isAuthenticated() && hasResumeFlag) {
+                    runAudit(pending);
+                    router.replace("/audit");
+                }
+            } catch {
+                clearPendingPayload();
+            }
+        }
+    }, [router, runAudit]);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError("");
+
+        const payload = getPayload();
+
+        if (!payload.websiteUrl || !payload.businessName || !payload.email) {
+            setError("Please fill in your website URL, business name, and email.");
+            return;
+        }
+
+        await runAudit(payload);
+    };
+
+    const handleGoogleAuth = () => {
+        savePendingPayload(getPayload());
+        window.location.href = "/api/auth/callback?next=/audit?resume=1";
+    };
+
+    const handleEmailAuth = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!authEmail.trim() || !authEmail.includes("@")) {
+            setAuthError("Enter a valid email address.");
+            return;
+        }
+
+        setAuthError("");
+        setAuthLoading(true);
+
+        try {
+            const res = await fetch("/api/auth/email", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: authEmail.trim() }),
+            });
+
+            if (!res.ok) {
+                throw new Error("Sign in failed. Please try again.");
+            }
+
+            const data = await res.json();
+            if (data.token) {
+                const user = decodeTokenPayload(data.token);
+                setAuth(data.token, user || undefined);
+            }
+
+            setShowAuthModal(false);
+            const pendingRaw = localStorage.getItem(PENDING_AUDIT_KEY);
+            if (pendingRaw) {
+                const pending = JSON.parse(pendingRaw) as AuditPayload;
+                await runAudit(pending);
+            }
+        } catch (err: any) {
+            setAuthError(err.message || "Could not sign in.");
+        } finally {
+            setAuthLoading(false);
         }
     };
 
@@ -241,16 +357,76 @@ export default function AuditPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {auditFeatures.map((f, i) => (
                             <div key={i} className="bg-card border border-border rounded-xl p-6 hover:border-primary/30 transition">
-                                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                                    <f.icon className="w-5 h-5 text-primary" />
+                                <div className="flex items-start gap-3 mb-2">
+                                    <f.icon className="w-5 h-5 text-muted mt-0.5 shrink-0" />
+                                    <h3 className="text-base font-semibold text-foreground">{f.title}</h3>
                                 </div>
-                                <h3 className="text-base font-semibold text-foreground mb-2">{f.title}</h3>
                                 <p className="text-sm text-muted">{f.desc}</p>
                             </div>
                         ))}
                     </div>
                 </div>
             </section>
+
+            {showAuthModal && (
+                <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowAuthModal(false)}>
+                    <div className="w-full max-w-md bg-card border border-border rounded-2xl p-6" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-start justify-between mb-4">
+                            <div>
+                                <h3 className="text-lg font-semibold text-foreground">Sign in to continue your audit</h3>
+                                <p className="text-sm text-muted mt-1">Your form is saved. Sign in and we’ll continue automatically.</p>
+                            </div>
+                            <button onClick={() => setShowAuthModal(false)} className="text-muted hover:text-foreground transition">
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        <button
+                            onClick={handleGoogleAuth}
+                            className="w-full bg-white border border-gray-300 text-gray-700 px-4 py-3 rounded-xl font-medium hover:bg-gray-50 transition flex items-center justify-center gap-3 shadow-sm"
+                        >
+                            <svg className="w-5 h-5" viewBox="0 0 24 24">
+                                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
+                                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                            </svg>
+                            Continue with Google
+                        </button>
+
+                        <div className="relative my-5">
+                            <div className="absolute inset-0 flex items-center">
+                                <div className="w-full border-t border-border"></div>
+                            </div>
+                            <div className="relative flex justify-center text-xs">
+                                <span className="bg-card px-3 text-muted">or continue with email</span>
+                            </div>
+                        </div>
+
+                        <form onSubmit={handleEmailAuth} className="space-y-3">
+                            <div className="relative">
+                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                                <input
+                                    type="email"
+                                    value={authEmail}
+                                    onChange={(e) => { setAuthEmail(e.target.value); setAuthError(""); }}
+                                    placeholder="you@company.com"
+                                    className="w-full bg-background border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-primary transition"
+                                />
+                            </div>
+                            {authError && <p className="text-xs text-red-500">{authError}</p>}
+                            <button
+                                type="submit"
+                                disabled={authLoading}
+                                className="w-full bg-primary hover:bg-primary-dark text-white py-2.5 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                                {authLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                                Continue with Email
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
 
             {/* How it works */}
             <section className="py-16">

@@ -128,7 +128,7 @@ export default function LandingPage() {
               {t("landing.ctaAudit")}
               <ArrowRight className="w-4 h-4" />
             </Link>
-            <Link href="/demo" className="bg-white border border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50 text-neutral-900 px-6 py-2.5 rounded-lg font-medium text-sm transition-all flex items-center justify-center shadow-sm">
+            <Link href="/dashboard/demo/examples" className="bg-white border border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50 text-neutral-900 px-6 py-2.5 rounded-lg font-medium text-sm transition-all flex items-center justify-center shadow-sm">
               {t("landing.ctaDemo")}
             </Link>
           </div>
