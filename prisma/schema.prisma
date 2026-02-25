@@ -49,8 +49,8 @@ model Subscription {
   userId                String    @unique
   user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  plan                  String    @default("free") // "free" | "starter" | "pro"
-  status                String    @default("active") // "active" | "past_due" | "cancelled" | "trialing"
+  plan                  String    @default("trial") // "trial" | "free" | "starter" | "pro"
+  status                String    @default("trialing") // "active" | "past_due" | "cancelled" | "trialing"
 
   // Stripe integration
   stripeCustomerId      String?   @unique
@@ -58,7 +58,7 @@ model Subscription {
   stripePriceId         String?
 
   // Plan limits (populated from plan config)
-  aiMessagesLimit       Int       @default(10) // monthly AI messages
+  aiMessagesLimit       Int       @default(500) // monthly AI messages
   aiMessagesUsed        Int       @default(0)
   campaignsLimit        Int       @default(1)
   adsAccountsLimit      Int       @default(1)
@@ -68,6 +68,9 @@ model Subscription {
   currentPeriodStart    DateTime  @default(now())
   currentPeriodEnd      DateTime?
   cancelAtPeriodEnd     Boolean   @default(false)
+
+  // Trial tracking
+  trialEndsAt           DateTime?
 
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt

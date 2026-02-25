@@ -6,27 +6,27 @@
 import * as Sentry from "@sentry/nextjs";
 
 Sentry.init({
-  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+    dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
-  // Only initialize if DSN is configured
-  enabled: !!process.env.NEXT_PUBLIC_SENTRY_DSN,
+    // Only initialize if DSN is configured
+    enabled: !!process.env.NEXT_PUBLIC_SENTRY_DSN,
 
-  // Adjust this value in production, or use tracesSampler for greater control
-  tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1,
+    // Adjust this value in production, or use tracesSampler for greater control
+    tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1,
 
-  // Setting this option to true will print useful information to the console while you're setting up Sentry.
-  debug: false,
+    // Setting this option to true will print useful information to the console while you're setting up Sentry.
+    debug: false,
 
-  // Capture unhandled promise rejections
-  integrations: [
-    Sentry.captureConsoleIntegration({
-      levels: ["error"],
-    }),
-  ],
+    // Capture unhandled promise rejections
+    integrations: [
+        Sentry.captureConsoleIntegration({
+            levels: ["error"],
+        }),
+    ],
 
-  // Filter out known non-issues
-  ignoreErrors: [
-    "NEXT_NOT_FOUND",
-    "NEXT_REDIRECT",
-  ],
+    // Filter out known non-issues
+    ignoreErrors: [
+        "NEXT_NOT_FOUND",
+        "NEXT_REDIRECT",
+    ],
 });

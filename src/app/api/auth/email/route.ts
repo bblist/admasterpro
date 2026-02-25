@@ -50,6 +50,7 @@ export async function POST(req: NextRequest) {
                     campaignsLimit: PLANS.trial.campaigns,
                     adsAccountsLimit: PLANS.trial.adsAccounts,
                     currentPeriodEnd: trialEndDate,
+                    trialEndsAt: trialEndDate,
                 },
             });
 

@@ -44,7 +44,7 @@ async function scrapeUrl(url: string): Promise<{ title: string; content: string;
     try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 10000);
-        
+
         const res = await fetch(url, {
             signal: controller.signal,
             headers: {
@@ -52,19 +52,19 @@ async function scrapeUrl(url: string): Promise<{ title: string; content: string;
             },
         });
         clearTimeout(timeout);
-        
+
         if (!res.ok) return { title: "", content: "", success: false };
-        
+
         const html = await res.text();
-        
+
         // Extract title
         const titleMatch = html.match(/<title[^>]*>(.*?)<\/title>/i);
         const title = titleMatch ? titleMatch[1].trim() : "";
-        
+
         // Extract meta description
         const metaDescMatch = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i);
         const metaDesc = metaDescMatch ? metaDescMatch[1] : "";
-        
+
         // Strip HTML and extract text (limit to 6000 chars for context window)
         const textContent = html
             .replace(/<script[\s\S]*?<\/script>/gi, "")
@@ -75,7 +75,7 @@ async function scrapeUrl(url: string): Promise<{ title: string; content: string;
             .replace(/\s+/g, " ")
             .trim()
             .slice(0, 6000);
-        
+
         return {
             title,
             content: metaDesc ? `${metaDesc}\n\n${textContent}` : textContent,
@@ -672,7 +672,7 @@ export async function POST(req: NextRequest) {
                             userPlan = "free";
                             messagesLimit = PLANS.free.aiMessages;
                             messagesUsed = 0;
-                            
+
                             return NextResponse.json({
                                 error: "trial_expired",
                                 content: `⏰ **Your 7-day free trial has ended!**\n\nYou've been moved to the Free plan (10 AI messages/month).\n\nTo continue with full access, upgrade to:\n\n- **Starter** ($49/mo) → 200 messages + all core features\n- **Pro** ($149/mo) → Unlimited messages + premium features\n\n[Upgrade Now](/pricing)`,
@@ -702,24 +702,24 @@ export async function POST(req: NextRequest) {
         // ─── Scrape URLs in message for context ─────────────────────────────
         const urls = extractUrls(body.message);
         let scrapedContext = "";
-        
+
         // Also check for business website
         if (body.businessWebsite && !urls.includes(body.businessWebsite)) {
             urls.unshift(body.businessWebsite);
         }
-        
+
         if (urls.length > 0) {
             // Scrape up to 2 URLs to avoid overloading context
             const scrapePromises = urls.slice(0, 2).map(scrapeUrl);
             const results = await Promise.all(scrapePromises);
-            
+
             const scrapedParts: string[] = [];
             results.forEach((result, i) => {
                 if (result.success) {
                     scrapedParts.push(`[Website: ${urls[i]}]\nTitle: ${result.title}\nContent: ${result.content.slice(0, 3000)}`);
                 }
             });
-            
+
             if (scrapedParts.length > 0) {
                 scrapedContext = "\n\n─── SCRAPED WEBSITE CONTENT ───\n" + scrapedParts.join("\n\n───\n\n");
                 // Append to body.context for the AI to use

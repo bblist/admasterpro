@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     try {
         const formData = await req.formData();
         const files = formData.getAll("images") as File[];
-        
+
         if (!files.length) {
             return NextResponse.json({ error: "No images provided" }, { status: 400 });
         }

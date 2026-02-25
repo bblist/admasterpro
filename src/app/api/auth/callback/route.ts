@@ -143,6 +143,7 @@ export async function GET(req: NextRequest) {
                     campaignsLimit: PLANS.trial.campaigns,
                     adsAccountsLimit: PLANS.trial.adsAccounts,
                     currentPeriodEnd: trialEndDate,
+                    trialEndsAt: trialEndDate,
                 },
             });
 
