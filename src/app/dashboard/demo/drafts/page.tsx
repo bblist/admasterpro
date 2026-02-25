@@ -711,7 +711,7 @@ export default function DraftsPage() {
                 >
                     {hasImage && (
                         <NextImage
-                            src={content.imageUrl}
+                            src={content.imageUrl!}
                             alt={content.title}
                             fill
                             unoptimized
@@ -1160,7 +1160,7 @@ export default function DraftsPage() {
                                         >
                                             {dc.imageUrl && (
                                                 <NextImage
-                                                    src={dc.imageUrl}
+                                                    src={dc.imageUrl!}
                                                     alt={dc.title}
                                                     fill
                                                     unoptimized
@@ -1468,7 +1468,7 @@ export default function DraftsPage() {
                                                             <div className={`relative rounded overflow-hidden h-12 ${!(version.content as DisplayAdContent).imageUrl ? `bg-gradient-to-r ${(version.content as DisplayAdContent).previewBg}` : ""}`}>
                                                                 {(version.content as DisplayAdContent).imageUrl && (
                                                                     <NextImage
-                                                                        src={(version.content as DisplayAdContent).imageUrl}
+                                                                        src={(version.content as DisplayAdContent).imageUrl!}
                                                                         alt="Display ad thumbnail"
                                                                         fill
                                                                         unoptimized
