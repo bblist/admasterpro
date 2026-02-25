@@ -107,6 +107,17 @@ async function sendEmail(to: string, subject: string, html: string): Promise<Ema
     return sendEmailViaResend(to, subject, html);
 }
 
+// ─── HTML Escaping ──────────────────────────────────────────────────────────
+
+function escapeHtml(str: string): string {
+    return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
 // ─── Email Templates ────────────────────────────────────────────────────────
 
 function baseTemplate(title: string, body: string): string {
@@ -159,8 +170,9 @@ function baseTemplate(title: string, body: string): string {
 // ─── Welcome Email ──────────────────────────────────────────────────────────
 
 export async function sendWelcomeEmail(to: string, name: string): Promise<EmailResult> {
+    const safeName = escapeHtml(name);
     const html = baseTemplate("Welcome to AdMaster Pro", `
-        <h2>Welcome, ${name}! 🎉</h2>
+        <h2>Welcome, ${safeName}! 🎉</h2>
         <p>Thanks for signing up for AdMaster Pro — your AI-powered Google Ads management platform.</p>
         <p>Here's how to get started:</p>
         <ol>
@@ -187,10 +199,12 @@ export async function sendSubscriptionEmail(
     plan: string,
     amount: number
 ): Promise<EmailResult> {
+    const safeName = escapeHtml(name);
+    const safePlan = escapeHtml(plan);
     const html = baseTemplate("Subscription Confirmed", `
         <h2>Subscription Confirmed! ✅</h2>
-        <p>Hi ${name},</p>
-        <p>Your <strong>${plan}</strong> subscription is now active.</p>
+        <p>Hi ${safeName},</p>
+        <p>Your <strong>${safePlan}</strong> subscription is now active.</p>
         <div class="stats">
             <div class="stats-grid">
                 <div class="stat">
@@ -198,14 +212,14 @@ export async function sendSubscriptionEmail(
                     <div class="stat-label">Per Month</div>
                 </div>
                 <div class="stat">
-                    <div class="stat-value">${plan}</div>
+                    <div class="stat-value">${safePlan}</div>
                     <div class="stat-label">Plan</div>
                 </div>
             </div>
         </div>
         <p>Your plan includes:</p>
         <ul>
-            ${plan === "Starter" ? `
+            ${safePlan === "Starter" ? `
                 <li>100 AI messages per month</li>
                 <li>Campaign creation & management</li>
                 <li>Keyword research & optimization</li>
@@ -236,9 +250,11 @@ export async function sendPaymentReceipt(
     description: string,
     invoiceUrl?: string
 ): Promise<EmailResult> {
+    const safeName = escapeHtml(name);
+    const safeDesc = escapeHtml(description);
     const html = baseTemplate("Payment Receipt", `
         <h2>Payment Receipt</h2>
-        <p>Hi ${name},</p>
+        <p>Hi ${safeName},</p>
         <p>We've received your payment. Here are the details:</p>
         <div class="stats">
             <div class="stats-grid">
@@ -252,7 +268,7 @@ export async function sendPaymentReceipt(
                 </div>
             </div>
         </div>
-        <p><strong>Description:</strong> ${description}</p>
+        <p><strong>Description:</strong> ${safeDesc}</p>
         ${invoiceUrl ? `<p style="text-align: center;"><a href="${invoiceUrl}" class="btn">View Invoice</a></p>` : ""}
         <p style="font-size: 14px; color: #6b7280;">If you have any questions about this charge, reply to this email or contact support.</p>
     `);
@@ -271,10 +287,12 @@ export async function sendUsageLimitWarning(
 ): Promise<EmailResult> {
     const pct = Math.round((used / limit) * 100);
 
+    const safeName = escapeHtml(name);
+    const safePlan = escapeHtml(plan);
     const html = baseTemplate("Usage Alert", `
         <h2>Usage Alert ⚠️</h2>
-        <p>Hi ${name},</p>
-        <p>You've used <strong>${pct}%</strong> of your monthly AI messages on your <strong>${plan}</strong> plan.</p>
+        <p>Hi ${safeName},</p>
+        <p>You've used <strong>${pct}%</strong> of your monthly AI messages on your <strong>${safePlan}</strong> plan.</p>
         <div class="stats">
             <div class="stats-grid">
                 <div class="stat">
@@ -328,9 +346,12 @@ export async function sendWeeklyReport(
     const trend = data.weekOverWeekCost >= 0 ? "📈" : "📉";
     const trendColor = data.weekOverWeekCost <= 0 ? "#22c55e" : "#ef4444";
 
+    const safeName = escapeHtml(name);
+    const safeTopCampaign = escapeHtml(data.topCampaign);
+    const safeTopKeyword = escapeHtml(data.topKeyword);
     const html = baseTemplate("Weekly Performance Report", `
         <h2>Weekly Performance Report ${trend}</h2>
-        <p>Hi ${name}, here's your Google Ads performance for the past 7 days:</p>
+        <p>Hi ${safeName}, here's your Google Ads performance for the past 7 days:</p>
         <div class="stats">
             <div class="stats-grid">
                 <div class="stat">
@@ -366,11 +387,11 @@ export async function sendWeeklyReport(
             </tr>
             <tr style="border-bottom: 1px solid #e5e7eb;">
                 <td style="padding: 8px 0; color: #6b7280;">Top Campaign</td>
-                <td style="padding: 8px 0; text-align: right; font-weight: 600;">${data.topCampaign}</td>
+                <td style="padding: 8px 0; text-align: right; font-weight: 600;">${safeTopCampaign}</td>
             </tr>
             <tr>
                 <td style="padding: 8px 0; color: #6b7280;">Top Keyword</td>
-                <td style="padding: 8px 0; text-align: right; font-weight: 600;">${data.topKeyword}</td>
+                <td style="padding: 8px 0; text-align: right; font-weight: 600;">${safeTopKeyword}</td>
             </tr>
         </table>
         <p style="text-align: center;">
@@ -388,11 +409,13 @@ export async function sendPaymentFailedEmail(
     name: string,
     plan: string
 ): Promise<EmailResult> {
+    const safeName = escapeHtml(name);
+    const safePlan = escapeHtml(plan);
     const html = baseTemplate("Payment Failed", `
         <h2>Payment Failed ⚠️</h2>
-        <p>Hi ${name},</p>
+        <p>Hi ${safeName},</p>
         <div class="alert">
-            We were unable to process your payment for your <strong>${plan}</strong> subscription.
+            We were unable to process your payment for your <strong>${safePlan}</strong> subscription.
         </div>
         <p>Please update your payment method to continue using AdMaster Pro without interruption.</p>
         <p style="text-align: center;">
@@ -412,9 +435,10 @@ export async function sendTopUpEmail(
     tokens: number,
     amount: number
 ): Promise<EmailResult> {
+    const safeName = escapeHtml(name);
     const html = baseTemplate("Token Top-Up Confirmed", `
         <h2>Message Top-Up Confirmed! ✅</h2>
-        <p>Hi ${name},</p>
+        <p>Hi ${safeName},</p>
         <p>Your message top-up has been applied to your account.</p>
         <div class="stats">
             <div class="stats-grid">

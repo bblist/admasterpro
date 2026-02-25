@@ -1,8 +1,37 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { auditLimiter, checkRateLimit } from "@/lib/rate-limit";
+import { getSessionDual } from "@/lib/session";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
+
+// SSRF blocklist — block internal/meta IPs
+const BLOCKED_HOST_PATTERNS = [
+    /^localhost$/i,
+    /^127\./,
+    /^10\./,
+    /^172\.(1[6-9]|2\d|3[01])\./,
+    /^192\.168\./,
+    /^169\.254\./,
+    /^0\./,
+    /^\[::1\]/,
+    /^\[fc/i,
+    /^\[fd/i,
+    /^\[fe80:/i,
+    /metadata\.google/i,
+    /metadata\.aws/i,
+];
+
+function isBlockedUrl(urlStr: string): boolean {
+    try {
+        const u = new URL(urlStr);
+        if (u.protocol !== "http:" && u.protocol !== "https:") return true;
+        const hostname = u.hostname;
+        return BLOCKED_HOST_PATTERNS.some(p => p.test(hostname));
+    } catch {
+        return true;
+    }
+}
 
 interface AuditSection {
     title: string;
@@ -13,9 +42,15 @@ interface AuditSection {
     recommendations: string[];
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
     const rateLimited = checkRateLimit(req, auditLimiter);
     if (rateLimited) return rateLimited;
+
+    // Require authentication to prevent anonymous API abuse
+    const session = await getSessionDual(req);
+    if (!session?.id) {
+        return NextResponse.json({ error: "Please sign in to use the audit tool." }, { status: 401 });
+    }
 
     try {
         const { websiteUrl, businessName, industry, email, monthlySpend } = await req.json();
@@ -28,6 +63,11 @@ export async function POST(req: Request) {
         let url = websiteUrl.trim();
         if (!url.startsWith("http")) url = "https://" + url;
 
+        // SSRF protection — block internal/metadata URLs
+        if (isBlockedUrl(url)) {
+            return NextResponse.json({ error: "Invalid or blocked URL." }, { status: 400 });
+        }
+
         // Fetch the website content
         let pageContent = "";
         let pageTitle = "";
@@ -37,12 +77,20 @@ export async function POST(req: Request) {
             const timeout = setTimeout(() => controller.abort(), 15000);
             const pageRes = await fetch(url, {
                 signal: controller.signal,
+                redirect: "follow",
                 headers: {
                     "User-Agent": "AdMasterPro-AuditBot/1.0 (https://admasterai.nobleblocks.com)",
                 },
             });
             clearTimeout(timeout);
-            const html = await pageRes.text();
+
+            // Limit response size to 2MB to prevent OOM
+            const contentLength = parseInt(pageRes.headers.get("content-length") || "0");
+            if (contentLength > 2 * 1024 * 1024) {
+                fetchError = true;
+                pageContent = "Website response too large. Analyzing based on URL and best practices.";
+            }
+            const html = fetchError ? "" : await pageRes.text();
 
             // Extract basic info from HTML
             const titleMatch = html.match(/<title[^>]*>(.*?)<\/title>/i);
@@ -151,12 +199,13 @@ Return as JSON:
             auditResult = JSON.parse(cleaned);
         } catch {
             auditResult = {
-                overallScore: 65,
-                overallSummary: "We were unable to fully parse the AI analysis. Please try again or contact support.",
+                overallScore: null,
+                overallSummary: "We were unable to parse the AI analysis. Please try again.",
                 sections: [],
                 quickWins: ["Retry the audit for a full analysis"],
                 estimatedSavings: "N/A",
                 competitorInsight: "N/A",
+                parseError: true,
             };
         }
 

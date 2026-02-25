@@ -48,17 +48,10 @@ export async function GET(req: NextRequest) {
         });
     } catch (error) {
         console.error("[Subscription API] Error:", error);
-        // Graceful fallback when DB is unavailable
-        return NextResponse.json({
-            plan: "free",
-            status: "active",
-            aiMessagesUsed: 0,
-            aiMessagesLimit: 10,
-            bonusTokens: 0,
-            currentPeriodEnd: null,
-            trialEndsAt: null,
-            userName: session.name || "",
-            userPicture: session.picture || null,
-        });
+        // Return 503 when DB is unavailable — don't return fake free-plan data
+        return NextResponse.json(
+            { error: "Service temporarily unavailable" },
+            { status: 503 }
+        );
     }
 }

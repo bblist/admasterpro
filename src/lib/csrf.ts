@@ -82,10 +82,10 @@ export function validateCSRFToken(req: { headers: { get(name: string): string | 
  *   - Requests with valid Stripe webhook signature
  *   - API routes that are purely public (e.g., health check)
  */
-export function checkCSRF(
+export async function checkCSRF(
     req: { method?: string; headers: { get(name: string): string | null } },
     options?: { skipMethods?: string[] }
-): Response | null {
+): Promise<Response | null> {
     const method = req.method || "GET";
     const safeMethods = options?.skipMethods || ["GET", "HEAD", "OPTIONS"];
 
@@ -99,11 +99,19 @@ export function checkCSRF(
         return null;
     }
 
-    // Skip CSRF check for requests with valid Bearer token (API clients)
-    // API clients use Authorization header, not cookies
+    // Skip CSRF check for requests with a verified Bearer token.
+    // We import verifyToken lazily to avoid circular deps and only
+    // skip CSRF when the token is actually valid (not just present).
     const authHeader = req.headers.get("authorization");
     if (authHeader?.startsWith("Bearer ")) {
-        return null;
+        try {
+            const { verifyToken } = require("@/lib/jwt");
+            const token = authHeader.slice(7).trim();
+            const payload = await verifyToken(token);
+            if (payload?.id) return null; // Token is valid — skip CSRF
+        } catch {
+            // Token invalid — fall through to CSRF check
+        }
     }
 
     // Validate CSRF token

@@ -50,6 +50,7 @@ export default function KeywordsPage() {
     const [matchFilter, setMatchFilter] = useState<string>("all");
     const [sortField, setSortField] = useState<string>("cost");
     const [mutating, setMutating] = useState<string | null>(null);
+    const [mutateError, setMutateError] = useState<string | null>(null);
 
     const fetchKeywords = useCallback(async () => {
         setLoading(true);
@@ -89,8 +90,9 @@ export default function KeywordsPage() {
                 }),
             });
             if (res.ok) await fetchKeywords();
+            else setMutateError("Failed to update keyword. Please try again.");
         } catch {
-            // ignore
+            setMutateError("Network error. Please try again.");
         } finally {
             setMutating(null);
         }
@@ -185,6 +187,13 @@ export default function KeywordsPage() {
                     <AlertCircle className="w-5 h-5 flex-shrink-0" />
                     <p className="text-sm">{error}</p>
                     <button onClick={fetchKeywords} className="ml-auto text-sm underline">Retry</button>
+                </div>
+            )}
+            {mutateError && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-3 text-amber-700">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <p className="text-sm">{mutateError}</p>
+                    <button onClick={() => setMutateError(null)} className="ml-auto text-xs underline">Dismiss</button>
                 </div>
             )}
 

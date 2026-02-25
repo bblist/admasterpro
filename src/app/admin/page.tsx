@@ -18,6 +18,7 @@ import {
     Database,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
+import { authFetch } from "@/lib/auth-client";
 
 interface AdminStats {
     overview: {
@@ -31,18 +32,18 @@ interface AdminStats {
         avgCostPerQuery: number;
         margin: number;
     };
-    planDistribution: { free: number; starter: number; pro: number };
+    planDistribution: { free: number; trial: number; starter: number; pro: number };
     recentSignups: Array<{ name: string; email: string; plan: string; joined: string; status: string }>;
     topSpenders: Array<{ name: string; email: string; plan: string; aiCost: number; queries: number; totalTokens: number; platformFee: number; margin: number }>;
     dbError?: boolean;
 }
 
 const platformHealth = [
-    { label: "API Uptime", value: "99.97%", status: "good" },
-    { label: "Avg Response Time", value: "142ms", status: "good" },
+    { label: "API Uptime", value: "—", status: "good" },
+    { label: "Avg Response Time", value: "—", status: "good" },
     { label: "Google Ads API", value: "Pending", status: "warning" },
-    { label: "AI Primary (GPT-4o)", value: "Operational", status: "good" },
-    { label: "AI Fallback (Claude)", value: "Operational", status: "good" },
+    { label: "AI Primary (GPT-4o)", value: "—", status: "good" },
+    { label: "AI Fallback (Claude)", value: "—", status: "good" },
     { label: "Database", value: "Connected", status: "good" },
 ];
 
@@ -54,7 +55,7 @@ export default function AdminOverview() {
     const fetchStats = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await fetch("/api/admin/stats");
+            const res = await authFetch("/api/admin/stats");
             if (res.ok) {
                 setData(await res.json());
             }
@@ -70,7 +71,7 @@ export default function AdminOverview() {
 
     const o = data?.overview;
     const pd = data?.planDistribution;
-    const totalPlanUsers = pd ? pd.free + pd.starter + pd.pro : 0;
+    const totalPlanUsers = pd ? pd.free + (pd.trial || 0) + pd.starter + pd.pro : 0;
 
     const stats = [
         {

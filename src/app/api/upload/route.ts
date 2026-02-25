@@ -29,7 +29,7 @@ const MIME_EXT: Record<string, string> = {
 };
 
 export async function POST(req: NextRequest) {
-    const csrfError = checkCSRF(req);
+    const csrfError = await checkCSRF(req);
     if (csrfError) return csrfError;
 
     const rateLimited = checkRateLimit(req, apiLimiter);
@@ -132,7 +132,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-    const csrfError = checkCSRF(req);
+    const csrfError = await checkCSRF(req);
     if (csrfError) return csrfError;
 
     const rateLimited = checkRateLimit(req, apiLimiter);

@@ -266,7 +266,7 @@ export default function DashboardPage() {
                             </div>
                             <h3 className="font-semibold mb-1">Train Your AI</h3>
                             <p className="text-xs text-muted mb-3">Add your business details to the Knowledge Base so the AI understands your brand, products, and target audience.</p>
-                            <Link href="/dashboard/knowledge" className="text-primary text-sm hover:underline inline-flex items-center gap-1">
+                            <Link href="/dashboard/knowledge-base" className="text-primary text-sm hover:underline inline-flex items-center gap-1">
                                 Knowledge Base <ArrowRight className="w-3 h-3" />
                             </Link>
                         </div>

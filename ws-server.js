@@ -17,8 +17,33 @@
 
 const { WebSocketServer, WebSocket } = require("ws");
 const http = require("http");
+const { jwtVerify } = require("jose");
 
 const PORT = parseInt(process.env.WS_PORT || "3001", 10);
+const MAX_MESSAGE_SIZE = 64 * 1024; // 64KB max message
+const ALLOWED_ORIGINS = (process.env.WS_ALLOWED_ORIGINS || "https://admasterai.nobleblocks.com,http://localhost:3000").split(",");
+
+// JWT verification for WebSocket auth
+function getJwtSecret() {
+    const secret = process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET;
+    if (!secret) return null;
+    return new TextEncoder().encode(secret);
+}
+
+async function verifyWsSession(cookieHeader) {
+    if (!cookieHeader) return null;
+    const secret = getJwtSecret();
+    if (!secret) return null;
+    try {
+        const sessionMatch = cookieHeader.match(/session=([^;]+)/);
+        if (!sessionMatch) return null;
+        const token = decodeURIComponent(sessionMatch[1]);
+        const { payload } = await jwtVerify(token, secret, { issuer: "admasterpro" });
+        return { id: payload.id, email: payload.email, authenticated: true };
+    } catch {
+        return null;
+    }
+}
 
 // ─── HTTP server (for health checks) ────────────────────────────────────────
 
@@ -39,37 +64,44 @@ const server = http.createServer((req, res) => {
 
 // ─── WebSocket server ───────────────────────────────────────────────────────
 
-const wss = new WebSocketServer({ server, path: "/ws" });
+const wss = new WebSocketServer({
+    server,
+    path: "/ws",
+    maxPayload: MAX_MESSAGE_SIZE,
+    verifyClient: (info, cb) => {
+        const origin = info.origin || info.req.headers.origin || "";
+        if (ALLOWED_ORIGINS.length && !ALLOWED_ORIGINS.includes(origin) && origin !== "") {
+            console.warn(`[WS] Rejected connection from origin: ${origin}`);
+            cb(false, 403, "Forbidden origin");
+            return;
+        }
+        cb(true);
+    },
+});
 
 // Track connected clients with metadata
 const clients = new Map();
 
-wss.on("connection", (ws, req) => {
+wss.on("connection", async (ws, req) => {
     const clientId = `client_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const clientIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
 
-    // Parse session from cookie if available
-    let userEmail = "anonymous";
-    const cookies = req.headers.cookie || "";
-    try {
-        const sessionMatch = cookies.match(/session=([^;]+)/);
-        if (sessionMatch) {
-            const session = JSON.parse(decodeURIComponent(sessionMatch[1]));
-            userEmail = session.email || "anonymous";
-        }
-    } catch {
-        // ignore parse errors
+    // Verify JWT session from cookie
+    const session = await verifyWsSession(req.headers.cookie || "");
+    if (!session?.authenticated) {
+        ws.close(4001, "Authentication required");
+        return;
     }
 
     clients.set(ws, {
         id: clientId,
         ip: clientIp,
-        email: userEmail,
+        email: session.email,
         connectedAt: new Date().toISOString(),
         subscriptions: new Set(),
     });
 
-    console.log(`[WS] Connected: ${clientId} (${userEmail}) — ${wss.clients.size} total`);
+    console.log(`[WS] Connected: ${clientId} (${session.email}) — ${wss.clients.size} total`);
 
     // Send welcome message
     send(ws, {

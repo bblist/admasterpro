@@ -8,6 +8,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionDual } from "@/lib/session";
+import { checkCSRF } from "@/lib/csrf";
+import { apiLimiter, checkRateLimit } from "@/lib/rate-limit";
 import { getKeywords, mutateKeyword, isGoogleAdsConfigured } from "@/lib/google-ads";
 
 export async function GET(req: NextRequest) {
@@ -69,6 +71,12 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+    const csrfError = await checkCSRF(req);
+    if (csrfError) return csrfError;
+
+    const rateLimited = checkRateLimit(req, apiLimiter);
+    if (rateLimited) return rateLimited;
+
     const session = await getSessionDual(req);
     if (!session) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

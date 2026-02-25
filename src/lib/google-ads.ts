@@ -18,6 +18,31 @@ const DEVELOPER_TOKEN = process.env.GOOGLE_ADS_DEVELOPER_TOKEN || "";
 const ADS_API_VERSION = "v18";
 const ADS_BASE = `https://googleads.googleapis.com/${ADS_API_VERSION}`;
 
+// Allowed GAQL date range values — whitelist to prevent injection
+const VALID_DATE_RANGES = new Set([
+    "TODAY", "YESTERDAY", "LAST_7_DAYS", "LAST_14_DAYS", "LAST_30_DAYS",
+    "LAST_BUSINESS_WEEK", "THIS_MONTH", "LAST_MONTH", "THIS_WEEK_SUN_TODAY",
+    "THIS_WEEK_MON_TODAY", "LAST_WEEK_SUN_SAT", "LAST_WEEK_MON_SUN",
+]);
+
+function sanitizeDateRange(input: string): string {
+    const clean = input.trim().toUpperCase();
+    if (VALID_DATE_RANGES.has(clean)) return clean;
+    return "LAST_30_DAYS"; // safe default
+}
+
+function sanitizeNumericId(input: string | undefined): string | null {
+    if (!input) return null;
+    const clean = input.replace(/[^0-9]/g, "");
+    return clean.length > 0 ? clean : null;
+}
+
+function sanitizeDays(input: number): number {
+    const n = Math.floor(input);
+    if (isNaN(n) || n < 1 || n > 90) return 30;
+    return n;
+}
+
 // ─── Token Management ───────────────────────────────────────────────────────
 
 interface AccessTokenResult {
@@ -25,11 +50,17 @@ interface AccessTokenResult {
     expires_in: number;
 }
 
-// Simple in-memory cache (per-process). Key = refreshToken hash.
+import crypto from "crypto";
+
+// Simple in-memory cache (per-process). Key = SHA-256 hash of refreshToken.
 const tokenCache = new Map<string, { token: string; expiresAt: number }>();
 
+function hashToken(token: string): string {
+    return crypto.createHash("sha256").update(token).digest("hex").slice(0, 32);
+}
+
 export async function getAccessToken(refreshToken: string): Promise<string> {
-    const cacheKey = refreshToken.slice(-16); // last 16 chars as key
+    const cacheKey = hashToken(refreshToken);
     const cached = tokenCache.get(cacheKey);
     if (cached && Date.now() < cached.expiresAt - 60_000) {
         return cached.token;
@@ -201,6 +232,7 @@ export async function getCampaigns(
     customerId: string,
     dateRange: string = "LAST_30_DAYS"
 ): Promise<CampaignData[]> {
+    const safeDateRange = sanitizeDateRange(dateRange);
     const query = `
         SELECT
             campaign.id,
@@ -219,7 +251,7 @@ export async function getCampaigns(
             metrics.cost_per_conversion
         FROM campaign
         WHERE campaign.status != 'REMOVED'
-            AND segments.date DURING ${dateRange}
+            AND segments.date DURING ${safeDateRange}
         ORDER BY metrics.cost_micros DESC
         LIMIT 50
     `;
@@ -275,8 +307,10 @@ export async function getKeywords(
     dateRange: string = "LAST_30_DAYS",
     campaignId?: string
 ): Promise<KeywordData[]> {
-    let filter = `ad_group_criterion.status != 'REMOVED' AND segments.date DURING ${dateRange}`;
-    if (campaignId) filter += ` AND campaign.id = ${campaignId}`;
+    const safeDateRange = sanitizeDateRange(dateRange);
+    let filter = `ad_group_criterion.status != 'REMOVED' AND segments.date DURING ${safeDateRange}`;
+    const safeCampaignId = sanitizeNumericId(campaignId);
+    if (safeCampaignId) filter += ` AND campaign.id = ${safeCampaignId}`;
 
     const query = `
         SELECT
@@ -345,6 +379,7 @@ export async function getDailyPerformance(
     customerId: string,
     days: number = 30
 ): Promise<DailyPerformance[]> {
+    const safeDays = sanitizeDays(days);
     const query = `
         SELECT
             segments.date,
@@ -354,7 +389,7 @@ export async function getDailyPerformance(
             metrics.conversions,
             metrics.ctr
         FROM customer
-        WHERE segments.date DURING LAST_${days}_DAYS
+        WHERE segments.date DURING LAST_${safeDays}_DAYS
         ORDER BY segments.date ASC
     `;
 
@@ -390,6 +425,7 @@ export async function getCallDetails(
     customerId: string,
     dateRange: string = "LAST_30_DAYS"
 ): Promise<CallData[]> {
+    const safeDateRange = sanitizeDateRange(dateRange);
     const query = `
         SELECT
             segments.date,
@@ -399,7 +435,7 @@ export async function getCallDetails(
             call_view.call_tracking_display_location,
             call_view.call_status
         FROM call_view
-        WHERE segments.date DURING ${dateRange}
+        WHERE segments.date DURING ${safeDateRange}
         ORDER BY segments.date DESC
         LIMIT 100
     `;
@@ -444,6 +480,7 @@ export async function getAccountSummary(
     customerId: string,
     dateRange: string = "LAST_30_DAYS"
 ): Promise<AccountSummary> {
+    const safeDateRange = sanitizeDateRange(dateRange);
     const query = `
         SELECT
             metrics.impressions,
@@ -455,7 +492,7 @@ export async function getAccountSummary(
             metrics.average_cpc,
             metrics.cost_per_conversion
         FROM customer
-        WHERE segments.date DURING ${dateRange}
+        WHERE segments.date DURING ${safeDateRange}
     `;
 
     const rows = await queryGoogleAds(refreshToken, customerId, query);
@@ -597,6 +634,7 @@ export async function getSearchTerms(
     customerId: string,
     dateRange: string = "LAST_30_DAYS"
 ): Promise<SearchTermData[]> {
+    const safeDateRange = sanitizeDateRange(dateRange);
     const query = `
         SELECT
             search_term_view.search_term,
@@ -608,7 +646,7 @@ export async function getSearchTerms(
             metrics.conversions,
             metrics.ctr
         FROM search_term_view
-        WHERE segments.date DURING ${dateRange}
+        WHERE segments.date DURING ${safeDateRange}
         ORDER BY metrics.cost_micros DESC
         LIMIT 100
     `;

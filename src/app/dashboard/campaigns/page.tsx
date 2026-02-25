@@ -61,8 +61,11 @@ export default function CampaignsPage() {
         fetchCampaigns();
     }, [fetchCampaigns]);
 
+    const [mutateError, setMutateError] = useState<string | null>(null);
+
     const toggleCampaign = async (campaignId: string, currentStatus: string) => {
         setMutating(campaignId);
+        setMutateError(null);
         try {
             const operation = currentStatus === "ENABLED" ? "pause" : "enable";
             const res = await authFetch("/api/google-ads/campaigns", {
@@ -72,9 +75,11 @@ export default function CampaignsPage() {
             });
             if (res.ok) {
                 await fetchCampaigns();
+            } else {
+                setMutateError("Failed to update campaign. Please try again.");
             }
         } catch {
-            // ignore
+            setMutateError("Network error. Please try again.");
         } finally {
             setMutating(null);
         }
@@ -183,6 +188,13 @@ export default function CampaignsPage() {
                     <AlertCircle className="w-5 h-5 flex-shrink-0" />
                     <p className="text-sm">{error}</p>
                     <button onClick={fetchCampaigns} className="ml-auto text-sm underline">Retry</button>
+                </div>
+            )}
+            {mutateError && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-3 text-amber-700">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <p className="text-sm">{mutateError}</p>
+                    <button onClick={() => setMutateError(null)} className="ml-auto text-xs underline">Dismiss</button>
                 </div>
             )}
 

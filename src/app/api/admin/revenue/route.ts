@@ -80,7 +80,8 @@ export async function GET(req: Request) {
     });
 
     const recentTransactions = recentUsers.map((u: any) => ({
-        date: new Date(u.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        date: u.createdAt.toISOString(),
+        dateLabel: new Date(u.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
         description: `New ${u.subscription?.plan || "free"} signup — ${u.name}`,
         amount: planPrices[u.subscription?.plan] || 0,
         type: "subscription",
@@ -89,7 +90,8 @@ export async function GET(req: Request) {
     // Add token purchase transactions
     for (const tp of tokenPurchases.slice(0, 5)) {
         recentTransactions.push({
-            date: new Date(tp.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+            date: tp.createdAt.toISOString(),
+            dateLabel: new Date(tp.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
             description: `Token top-up — ${tp.user?.name || "Unknown"}`,
             amount: tp.amount || 0,
             type: "topup",

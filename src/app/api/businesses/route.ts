@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    const csrfError = checkCSRF(req);
+    const csrfError = await checkCSRF(req);
     if (csrfError) return csrfError;
 
     const rateLimited = checkRateLimit(req, apiLimiter);
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-    const csrfError = checkCSRF(req);
+    const csrfError = await checkCSRF(req);
     if (csrfError) return csrfError;
 
     const rateLimited = checkRateLimit(req, apiLimiter);
@@ -130,7 +130,7 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-    const csrfError = checkCSRF(req);
+    const csrfError = await checkCSRF(req);
     if (csrfError) return csrfError;
 
     const rateLimited = checkRateLimit(req, apiLimiter);

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
     Shield,
     LayoutDashboard,
@@ -15,7 +15,8 @@ import {
     Settings,
     Cpu,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { authFetch } from "@/lib/auth-client";
 
 const adminNav = [
     { href: "/admin", label: "Overview", icon: LayoutDashboard },
@@ -31,7 +32,30 @@ export default function AdminLayout({
     children: React.ReactNode;
 }) {
     const pathname = usePathname();
+    const router = useRouter();
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [authorized, setAuthorized] = useState(false);
+
+    useEffect(() => {
+        // Quick auth check — if the admin stats endpoint rejects, redirect away
+        authFetch("/api/admin/stats")
+            .then((res) => {
+                if (res.ok) {
+                    setAuthorized(true);
+                } else {
+                    router.replace("/dashboard");
+                }
+            })
+            .catch(() => router.replace("/dashboard"));
+    }, [router]);
+
+    if (!authorized) {
+        return (
+            <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+                <div className="text-gray-400">Verifying access...</div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-950 flex">

@@ -23,6 +23,8 @@ function LoginForm() {
         setLoading(true);
         // Redirect to our OAuth callback which initiates the Google flow
         window.location.href = "/api/auth/callback";
+        // Reset loading if redirect doesn't complete (e.g. popup blocked)
+        setTimeout(() => setLoading(false), 5000);
     };
 
     const handleEmailSignIn = async (e: React.FormEvent) => {

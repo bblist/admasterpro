@@ -19,9 +19,8 @@ Sentry.init({
 
     replaysOnErrorSampleRate: 1.0,
 
-    // This sets the sample rate to be 10%. You may want this to be 100% while
-    // in development and sample at a lower rate in production
-    replaysSessionSampleRate: 0.1,
+    // Session replay sample rate — keep low in production (privacy + bandwidth)
+    replaysSessionSampleRate: process.env.NODE_ENV === "production" ? 0.01 : 0.1,
 
     // You can remove this option if you're not planning to use the Sentry Session Replay feature:
     integrations: [

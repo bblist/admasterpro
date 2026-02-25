@@ -10,12 +10,19 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { transcribeLimiter, checkRateLimit } from "@/lib/rate-limit";
+import { getSessionDual } from "@/lib/session";
 
 const DEEPGRAM_API_KEY = process.env.DEEPGRAM_API_KEY;
 
 export async function POST(req: NextRequest) {
     const rateLimited = checkRateLimit(req, transcribeLimiter);
     if (rateLimited) return rateLimited;
+
+    // Require authentication
+    const session = await getSessionDual(req);
+    if (!session?.id) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     try {
         const formData = await req.formData();
@@ -27,7 +34,7 @@ export async function POST(req: NextRequest) {
 
         // Check file type
         const validTypes = ["video/mp4", "video/quicktime", "video/x-msvideo", "video/webm", "audio/mpeg", "audio/wav", "audio/mp4"];
-        if (!validTypes.some(t => file.type.startsWith(t.split("/")[0]))) {
+        if (!validTypes.includes(file.type)) {
             return NextResponse.json({ error: "Invalid file type. Supported: MP4, MOV, AVI, WebM, MP3, WAV" }, { status: 400 });
         }
 

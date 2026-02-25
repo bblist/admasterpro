@@ -121,7 +121,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    const csrfError = checkCSRF(req);
+    const csrfError = await checkCSRF(req);
     if (csrfError) return csrfError;
 
     const rateLimited = checkRateLimit(req, apiLimiter);
@@ -152,14 +152,26 @@ export async function POST(req: NextRequest) {
             },
         };
 
-        // Store settings as a Usage record (repurposing the model)
-        await prisma.usage.create({
-            data: {
-                userId: session.id,
-                type: "settings",
-                metadata: JSON.stringify(settings),
-            },
+        // Upsert settings — find existing or create, preventing row accumulation
+        const existing = await prisma.usage.findFirst({
+            where: { userId: session.id, type: "settings" },
+            select: { id: true },
         });
+
+        if (existing) {
+            await prisma.usage.update({
+                where: { id: existing.id },
+                data: { metadata: JSON.stringify(settings) },
+            });
+        } else {
+            await prisma.usage.create({
+                data: {
+                    userId: session.id,
+                    type: "settings",
+                    metadata: JSON.stringify(settings),
+                },
+            });
+        }
 
         return NextResponse.json({ success: true, settings });
     } catch (error) {
