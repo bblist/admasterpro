@@ -534,10 +534,10 @@ export default function OnboardingPage() {
                                             <div
                                                 key={i}
                                                 className={`rounded-xl p-4 ${section.score >= 70
-                                                        ? "bg-success/5 border border-success/20"
-                                                        : section.score >= 40
-                                                            ? "bg-warning/5 border border-warning/20"
-                                                            : "bg-danger/5 border border-danger/20"
+                                                    ? "bg-success/5 border border-success/20"
+                                                    : section.score >= 40
+                                                        ? "bg-warning/5 border border-warning/20"
+                                                        : "bg-danger/5 border border-danger/20"
                                                     }`}
                                             >
                                                 <div className="flex items-center gap-2 mb-2">

@@ -27,6 +27,8 @@ import {
 import { useState, useRef, useEffect, useCallback } from "react";
 import { BusinessProvider, useBusiness } from "@/lib/business-context";
 import { captureTokenFromHash, authFetch, clearAuth } from "@/lib/auth-client";
+import { useTranslation } from "@/i18n/context";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 // ─── Notification System ────────────────────────────────────────────────────
 
@@ -67,18 +69,18 @@ const notificationIcons: Record<NotificationType, { bg: string; text: string; ic
 // ─── Nav items ─────────────────────────────────────────────────────────────
 
 const mainNavItems = [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/dashboard/chat", label: "AI Assistant", icon: MessageCircle },
-    { href: "/dashboard/campaigns", label: "Campaigns", icon: FileText },
-    { href: "/dashboard/keywords", label: "Keywords", icon: Search },
-    { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
-    { href: "/dashboard/calls", label: "Call Tracking", icon: Phone },
-    { href: "/dashboard/drafts", label: "Ad Drafts", icon: FileText },
-    { href: "/dashboard/shopping", label: "Shopping Ads", icon: ShoppingBag, shoppingOnly: true },
-    { href: "/dashboard/knowledge-base", label: "Knowledge Base", icon: BookOpen },
-    { href: "/dashboard/demo/examples", label: "AI Examples", icon: Lightbulb },
-    { href: "/dashboard/faq", label: "FAQ", icon: HelpCircle },
-    { href: "/dashboard/settings", label: "Settings", icon: Settings },
+    { href: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard },
+    { href: "/dashboard/chat", labelKey: "nav.aiAssistant", icon: MessageCircle },
+    { href: "/dashboard/campaigns", labelKey: "nav.campaigns", icon: FileText },
+    { href: "/dashboard/keywords", labelKey: "nav.keywords", icon: Search },
+    { href: "/dashboard/analytics", labelKey: "nav.analytics", icon: BarChart3 },
+    { href: "/dashboard/calls", labelKey: "nav.callTracking", icon: Phone },
+    { href: "/dashboard/drafts", labelKey: "nav.adDrafts", icon: FileText },
+    { href: "/dashboard/shopping", labelKey: "nav.shoppingAds", icon: ShoppingBag, shoppingOnly: true },
+    { href: "/dashboard/knowledge-base", labelKey: "nav.knowledgeBase", icon: BookOpen },
+    { href: "/dashboard/demo/examples", labelKey: "nav.aiExamples", icon: Lightbulb },
+    { href: "/dashboard/faq", labelKey: "nav.faq", icon: HelpCircle },
+    { href: "/dashboard/settings", labelKey: "nav.settings", icon: Settings },
 ];
 
 // Industries that can use shopping ads
@@ -88,6 +90,7 @@ const shoppingIndustries = ["Retail", "Fashion", "E-commerce", "Boutique"];
 
 function BusinessSwitcher() {
     const { businesses, activeBusiness, setActiveBusiness } = useBusiness();
+    const { t } = useTranslation();
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
 
@@ -115,10 +118,10 @@ function BusinessSwitcher() {
                 </div>
                 <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium truncate flex items-center gap-1.5">
-                        {activeBusiness?.name || "No Business"}
-                        <div className={`w-1.5 h-1.5 rounded-full ${kbColor} shrink-0`} title={activeBusiness?.googleAdsId ? "Ads Connected" : "No Ads"} />
+                        {activeBusiness?.name || t("business.noBusiness")}
+                        <div className={`w-1.5 h-1.5 rounded-full ${kbColor} shrink-0`} title={activeBusiness?.googleAdsId ? t("business.adsConnected") : t("business.noAds")} />
                     </div>
-                    <div className="text-[11px] text-muted truncate">{activeBusiness?.industry || "Add a business"}</div>
+                    <div className="text-[11px] text-muted truncate">{activeBusiness?.industry || t("business.add")}</div>
                 </div>
                 <ChevronDown className={`w-4 h-4 text-muted shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
             </button>
@@ -126,7 +129,7 @@ function BusinessSwitcher() {
             {open && (
                 <div className="absolute left-2 right-2 top-full mt-1 bg-card border border-border rounded-xl shadow-xl z-50 py-1 max-h-80 overflow-y-auto">
                     <div className="px-3 py-1.5 text-[10px] font-semibold text-muted uppercase tracking-wider">
-                        Your Businesses
+                        {t("business.yours")}
                     </div>
                     {businesses.map((biz) => {
                         const isActive = biz.id === activeBusiness?.id;
@@ -134,8 +137,8 @@ function BusinessSwitcher() {
                             ? "text-green-600"
                             : "text-gray-400";
                         const statusLabel = biz.googleAdsId
-                            ? "Ads Connected"
-                            : "No Ads";
+                            ? t("business.adsConnected")
+                            : t("business.noAds");
                         return (
                             <button
                                 key={biz.id}
@@ -170,7 +173,7 @@ function BusinessSwitcher() {
                             className="w-full flex items-center gap-2 px-3 py-2 text-xs text-primary hover:bg-primary/5 transition rounded-lg"
                         >
                             <Plus className="w-3.5 h-3.5" />
-                            Add New Business
+                            {t("business.addNew")}
                         </Link>
                     </div>
                 </div>
@@ -185,9 +188,22 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const { activeBusiness } = useBusiness();
+    const { t } = useTranslation();
 
-    // Notification state
-    const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS);
+    // Notification state — use translations
+    const initialNotifications: Notification[] = [
+        {
+            id: "welcome",
+            type: "info",
+            title: t("notifications.welcome.title"),
+            message: t("notifications.welcome.message"),
+            time: "Just now",
+            read: false,
+            action: t("notifications.welcome.action"),
+            actionHref: "/dashboard/knowledge-base",
+        },
+    ];
+    const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
     const [notifOpen, setNotifOpen] = useState(false);
     const notifRef = useRef<HTMLDivElement>(null);
 
@@ -291,7 +307,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                                             }`}
                                     >
                                         <item.icon className="w-4 h-4" />
-                                        {item.label}
+                                        {t(item.labelKey)}
                                     </Link>
                                 );
                             })}
@@ -303,21 +319,21 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                     <div className="p-3 border-t border-border">
                         <div className="bg-primary-light rounded-lg p-3 mb-3">
                             <div className="text-xs font-medium text-primary mb-1">
-                                {userPlan === "pro" ? "Pro Plan" : userPlan === "starter" ? "Starter Plan" : "Free Plan"}
+                                {userPlan === "pro" ? t("plan.pro") : userPlan === "starter" ? t("plan.starter") : t("plan.free")}
                             </div>
                             <div className="text-xs text-primary/70">
                                 {userPlan === "pro"
-                                    ? "Unlimited AI messages + all features"
+                                    ? t("plan.pro.desc")
                                     : userPlan === "starter"
-                                        ? "200 AI messages/mo + display ads"
-                                        : "Upgrade for more AI messages + features"}
+                                        ? t("plan.starter.desc")
+                                        : t("plan.free.desc")}
                             </div>
                             {userPlan !== "pro" && (
                                 <Link
                                     href="/pricing"
                                     className="text-xs font-medium text-primary hover:underline mt-1 inline-block"
                                 >
-                                    {userPlan === "free" ? "View Plans →" : "Upgrade →"}
+                                    {userPlan === "free" ? `${t("common.upgrade")} →` : `${t("common.upgrade")} →`}
                                 </Link>
                             )}
                         </div>
@@ -330,7 +346,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                             className="flex items-center gap-2 px-3 py-2 text-sm text-muted hover:text-danger transition w-full"
                         >
                             <LogOut className="w-4 h-4" />
-                            Sign Out
+                            {t("common.signOut")}
                         </button>
                     </div>
                 </div>
@@ -347,7 +363,9 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                         <Menu className="w-5 h-5" />
                     </button>
                     <div className="hidden lg:block" />
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5">
+                        {/* Language Switcher */}
+                        <LanguageSwitcher compact />
                         {/* Notification Bell */}
                         <div ref={notifRef} className="relative">
                             <button
@@ -367,7 +385,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                                     {/* Header */}
                                     <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card">
                                         <div className="flex items-center gap-2">
-                                            <h3 className="font-semibold text-sm">Notifications</h3>
+                                            <h3 className="font-semibold text-sm">{t("notifications.title")}</h3>
                                             {unreadCount > 0 && (
                                                 <span className="bg-danger text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{unreadCount}</span>
                                             )}
@@ -377,7 +395,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                                                 onClick={markAllAsRead}
                                                 className="text-[11px] text-primary hover:underline font-medium"
                                             >
-                                                Mark all as read
+                                                {t("notifications.markAllRead")}
                                             </button>
                                         )}
                                     </div>
@@ -387,7 +405,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                                         {notifications.length === 0 ? (
                                             <div className="py-12 text-center">
                                                 <Bell className="w-8 h-8 text-muted mx-auto mb-2 opacity-40" />
-                                                <p className="text-sm text-muted">No notifications</p>
+                                                <p className="text-sm text-muted">{t("notifications.empty")}</p>
                                             </div>
                                         ) : (
                                             notifications.map((n) => {
@@ -445,7 +463,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                                                 onClick={() => { setNotifications([]); setNotifOpen(false); }}
                                                 className="text-[11px] text-muted hover:text-foreground transition font-medium"
                                             >
-                                                Clear all notifications
+                                                {t("notifications.clear")}
                                             </button>
                                         </div>
                                     )}

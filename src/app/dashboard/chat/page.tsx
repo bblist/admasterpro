@@ -41,6 +41,7 @@ import {
 } from "lucide-react";
 import { useBusiness, type BusinessProfile } from "@/lib/business-context";
 import { authFetch } from "@/lib/auth-client";
+import { useTranslation } from "@/i18n/context";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -232,18 +233,18 @@ const matchIntent = (text: string): IntentMatch => {
     return { intent: "unknown", params: {} };
 };
 
-// ─── Quick Actions ──────────────────────────────────────────────────────────
+// ─── Quick Actions (icons only — labels come from t()) ─────────────────────
 
-const quickActions = [
-    { label: "Show my stats", icon: BarChart3 },
-    { label: "Find money leaks", icon: AlertTriangle },
-    { label: "Create new ads", icon: PenTool },
-    { label: "Check my competitors", icon: Users },
+const quickActionKeys = [
+    { key: "chat.quick.stats", icon: BarChart3 },
+    { key: "chat.quick.leaks", icon: AlertTriangle },
+    { key: "chat.quick.ads", icon: PenTool },
+    { key: "chat.quick.competitors", icon: Users },
 ];
 
 // ─── Initial Messages ───────────────────────────────────────────────────────
 
-const getInitialMessages = (bizIn: BusinessProfile | null): Message[] => {
+const getInitialMessages = (bizIn: BusinessProfile | null, t: (key: string, params?: Record<string, string | number>) => string): Message[] => {
     const biz: BusinessProfile = bizIn || {
         id: "default", name: "My Business", industry: "General", website: null,
         googleAdsId: null, initials: "MB", color: "from-blue-500 to-blue-700",
@@ -257,7 +258,7 @@ const getInitialMessages = (bizIn: BusinessProfile | null): Message[] => {
         {
             id: 1,
             role: "system",
-            content: `AI Assistant connected \u2022 Managing: ${name} \u2022 Voice enabled \ud83c\udf99\ufe0f`,
+            content: t("chat.greeting.connected", { name }),
             timestamp: "Session started",
         },
         {
@@ -265,19 +266,13 @@ const getInitialMessages = (bizIn: BusinessProfile | null): Message[] => {
             role: "ai",
             model: "gpt-4o",
             content:
-                `Hey! \ud83d\udc4b I\u2019m your AI ad assistant for **${name}**. Just **speak or type** what you need \u2014 I\u2019ll handle everything.\n\n` +
-                `Here\u2019s what I can do for you:\n` +
-                `\u2022 **Show real stats** from your Google Ads account\n` +
-                `\u2022 **Find wasted spend** and money leaks\n` +
-                `\u2022 **Create ad copy** tailored to your business\n` +
-                `\u2022 **Check competitors** and market position\n` +
-                `\u2022 **Manage keywords** \u2014 pause, add, or optimize\n\n` +
-                `What would you like to start with?`,
+                `${t("chat.greeting.hello", { name })} **${t("chat.status")}**\n\n` +
+                `${t("chat.greeting.actions")}`,
             timestamp: timeNow(),
             actions: [
-                { label: "Show my stats", type: "primary" },
-                { label: "Find money leaks", type: "secondary" },
-                { label: "What else can you do?", type: "secondary" },
+                { label: t("chat.quick.stats"), type: "primary" },
+                { label: t("chat.quick.leaks"), type: "secondary" },
+                { label: t("chat.quick.whatElse"), type: "secondary" },
             ],
         },
     ];
@@ -375,10 +370,11 @@ const getMicInstructions = (browser: string, platform: Platform): { steps: strin
 
 export default function ChatPage() {
     const { activeBusiness, businesses, setActiveBusiness } = useBusiness();
+    const { t, locale } = useTranslation();
     // getOffTopicBusiness was removed — stub it to always return null
     const getOffTopicBusiness = (_text: string): BusinessProfile | null => null;
     const chatHistoryRef = useRef<Map<string, Message[]>>(new Map());
-    const [messages, setMessages] = useState<Message[]>(() => getInitialMessages(activeBusiness));
+    const [messages, setMessages] = useState<Message[]>(() => getInitialMessages(activeBusiness, t));
     const [input, setInput] = useState("");
     const [isTyping, setIsTyping] = useState(false);
     const [copiedId, setCopiedId] = useState<number | null>(null);
@@ -428,7 +424,7 @@ export default function ChatPage() {
             if (saved && saved.length > 0) {
                 setMessages(saved);
             } else {
-                setMessages(getInitialMessages(activeBusiness));
+                setMessages(getInitialMessages(activeBusiness, t));
             }
             setInput("");
             setIsTyping(false);
@@ -640,11 +636,17 @@ export default function ChatPage() {
             const recognition = new SpeechRecognition();
             recognition.continuous = true;
             recognition.interimResults = true;
-            recognition.lang = "en-US";
+            // Map locale to BCP-47 speech recognition language codes
+            const speechLangMap: Record<string, string> = {
+                en: "en-US", es: "es-ES", fr: "fr-FR", de: "de-DE",
+                it: "it-IT", pt: "pt-PT", nl: "nl-NL", sv: "sv-SE",
+                no: "nb-NO", da: "da-DK", fi: "fi-FI", pl: "pl-PL",
+            };
+            recognition.lang = speechLangMap[locale] || "en-US";
 
             recognition.onstart = () => {
                 setIsListening(true);
-                setVoiceText("Speak now...");
+                setVoiceText(t("chat.voice.speakNow"));
                 // Start audio level monitoring if analyser is available
                 if (hasAnalyserRef.current) {
                     startAudioLevelMonitoring();
@@ -665,7 +667,7 @@ export default function ChatPage() {
 
                 voiceTranscriptRef.current = finalText;
                 const display = (finalText + (interimText ? interimText : "")).trim();
-                setVoiceText(display || "Speak now...");
+                setVoiceText(display || t("chat.voice.speakNow"));
 
                 // If we DON'T have the AnalyserNode, fall back to SpeechRecognition-based silence
                 if (!hasAnalyserRef.current) {
@@ -759,13 +761,13 @@ export default function ChatPage() {
 
         // Load or create history for new business
         const saved = chatHistoryRef.current.get(bizId);
-        const baseHistory = saved && saved.length > 0 ? saved : getInitialMessages(biz);
+        const baseHistory = saved && saved.length > 0 ? saved : getInitialMessages(biz, t);
 
         // Add a context-switch system message + greeting
         const switchMsg: Message = {
             id: Date.now(),
             role: "system",
-            content: `Switched to ${biz.name} \u2022 ${biz.industry} \u2022 KB: ${biz.kbStatus === "trained" ? "Trained \u2705" : biz.kbStatus === "training" ? "Training\u2026" : "Empty"}`,
+            content: t("chat.switchedTo", { name: biz.name }),
             timestamp: timeNow(),
         };
 
@@ -773,14 +775,14 @@ export default function ChatPage() {
             id: Date.now() + 1,
             role: "ai",
             model: "gpt-4o",
-            content: `\ud83d\udd04 Switched to **${biz.name}** (${biz.industry}).\n\n` +
-                `I\u2019m now using **${biz.name}\u2019s Knowledge Base** \u2014 all my responses, ad copy, and insights are based on this account\u2019s data, brand voice, and campaign history.\n\n` +
-                `What would you like to do for **${biz.name}**?`,
+            content: `🔄 ${t("chat.switchedTo", { name: biz.name })} (${biz.industry}).\n\n` +
+                `${t("chat.switchedUsing", { name: biz.name })}\n\n` +
+                `${t("chat.switchedQuestion", { name: biz.name })}`,
             timestamp: timeNow(),
             actions: [
-                { label: "Show my stats", type: "primary" },
-                { label: "Create new ads", type: "secondary" },
-                { label: "Find money leaks", type: "secondary" },
+                { label: t("chat.quick.stats"), type: "primary" },
+                { label: t("chat.quick.ads"), type: "secondary" },
+                { label: t("chat.quick.leaks"), type: "secondary" },
             ],
         };
 
@@ -797,6 +799,7 @@ export default function ChatPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     message,
+                    locale,
                     businessId: activeBusiness.id,
                     businessName: activeBusiness.name,
                     businessIndustry: activeBusiness.industry,
@@ -818,7 +821,7 @@ export default function ChatPage() {
             console.error("AI call failed:", err);
             return null;
         }
-    }, [activeBusiness]);
+    }, [activeBusiness, locale]);
 
     // ─── Send Message ───────────────────────────────────────────────────────
 
@@ -1071,7 +1074,7 @@ export default function ChatPage() {
     };
 
     const handleClear = () => {
-        setMessages(getInitialMessages(activeBusiness));
+        setMessages(getInitialMessages(activeBusiness, t));
     };
 
     // ─── Render Helpers ─────────────────────────────────────────────────────
@@ -1214,9 +1217,9 @@ export default function ChatPage() {
                                     <AlertCircle className="w-5 h-5 text-danger" />
                                 )}
                                 <h3 className="font-semibold text-sm">
-                                    {micPermission === "unsupported" ? "Voice Not Available"
-                                        : micPermission === "not-found" ? "No Microphone Found"
-                                            : "Microphone Blocked"}
+                                    {micPermission === "unsupported" ? t("chat.voice.notAvailable")
+                                        : micPermission === "not-found" ? t("chat.voice.noMic")
+                                            : t("chat.voice.blocked")}
                                 </h3>
                             </div>
                             <button onClick={() => setShowMicModal(false)} className="p-1 text-muted hover:text-foreground transition touch-compact">
@@ -1488,7 +1491,7 @@ export default function ChatPage() {
                             <div className={`text-xs font-medium ${voicePaused ? "text-amber-600" : "text-primary"}`}>
                                 {voicePaused ? "Paused \u2014 will send automatically..." : "Listening..."}
                             </div>
-                            <div className="text-sm mt-0.5 truncate">{voiceText || "Speak now..."}</div>
+                            <div className="text-sm mt-0.5 truncate">{voiceText || t("chat.voice.speakNow")}</div>
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
                             {voicePaused && voiceTranscriptRef.current.trim() && (
@@ -1561,7 +1564,7 @@ export default function ChatPage() {
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={(e) => e.key === "Enter" && sendMessage(input)}
-                            placeholder='Type a command or tap mic...'
+                            placeholder={t("chat.placeholder")}
                             disabled={isTyping || isListening}
                             className="w-full bg-card border border-border rounded-xl px-3 sm:px-4 py-3 pr-10 sm:pr-12 text-sm focus:outline-none focus:border-primary transition disabled:opacity-50"
                         />
@@ -1583,18 +1586,18 @@ export default function ChatPage() {
 
                 {/* Quick actions — horizontally scrollable on mobile */}
                 <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
-                    {quickActions.map((action) => (
+                    {quickActionKeys.map((action) => (
                         <button
-                            key={action.label}
-                            onClick={() => sendMessage(action.label)}
+                            key={action.key}
+                            onClick={() => sendMessage(t(action.key))}
                             disabled={isTyping}
                             className="text-xs border border-border rounded-lg px-3 py-1.5 text-muted hover:border-primary hover:text-primary transition flex items-center gap-1.5 disabled:opacity-50 whitespace-nowrap shrink-0"
                         >
                             <action.icon className="w-3 h-3" />
-                            {action.label}
+                            {t(action.key)}
                         </button>
                     ))}
-                    <span className="text-[10px] text-muted ml-auto hidden sm:inline whitespace-nowrap">Press mic \ud83c\udf99\ufe0f to speak</span>
+                    <span className="text-[10px] text-muted ml-auto hidden sm:inline whitespace-nowrap">{t("chat.micHint")}</span>
                 </div>
             </div>
         </div>

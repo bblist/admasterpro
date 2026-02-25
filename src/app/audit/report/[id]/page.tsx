@@ -326,7 +326,7 @@ export default function AuditReportPage() {
                                         {section.findings.map((f, j) => (
                                             <div key={j} className="flex items-start gap-2 text-sm">
                                                 <span className={`mt-1 w-1.5 h-1.5 rounded-full shrink-0 ${section.status === "excellent" || section.status === "good" ? "bg-green-400" :
-                                                        section.status === "needs-work" ? "bg-amber-400" : "bg-red-400"
+                                                    section.status === "needs-work" ? "bg-amber-400" : "bg-red-400"
                                                     }`} />
                                                 <span className="text-muted">{f}</span>
                                             </div>

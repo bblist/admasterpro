@@ -819,19 +819,19 @@ export default function KnowledgeBasePage() {
 
             {/* Getting Started Tip */}
             {!loadingKB && assets.length === 0 && textEntries.length === 0 && (
-            <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
-                <div className="flex items-start gap-3">
-                    <div className="bg-amber-100 dark:bg-amber-900/30 rounded-lg p-2 shrink-0">
-                        <Sparkles className="w-4 h-4 text-amber-600" />
-                    </div>
-                    <div>
-                        <div className="text-sm font-medium text-amber-800 dark:text-amber-400">Get Started</div>
-                        <p className="text-xs text-amber-700/80 dark:text-amber-500/80 mt-0.5">
-                            Upload your brand assets, enter your business details, and add website URLs. The AI will learn your brand for better ad copy and recommendations.
-                        </p>
+                <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+                    <div className="flex items-start gap-3">
+                        <div className="bg-amber-100 dark:bg-amber-900/30 rounded-lg p-2 shrink-0">
+                            <Sparkles className="w-4 h-4 text-amber-600" />
+                        </div>
+                        <div>
+                            <div className="text-sm font-medium text-amber-800 dark:text-amber-400">Get Started</div>
+                            <p className="text-xs text-amber-700/80 dark:text-amber-500/80 mt-0.5">
+                                Upload your brand assets, enter your business details, and add website URLs. The AI will learn your brand for better ad copy and recommendations.
+                            </p>
+                        </div>
                     </div>
                 </div>
-            </div>
             )}
 
             {/* AI Training Status */}
@@ -1424,42 +1424,42 @@ export default function KnowledgeBasePage() {
                     </div>
 
                     {(brandUSPs || brandVoice || brandAvoid) && (
-                    <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-                        <div className="flex items-center gap-2">
-                            <Sparkles className="w-4 h-4 text-primary" />
-                            <h3 className="text-sm font-semibold">AI Brand Understanding</h3>
-                            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Active</span>
+                        <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+                            <div className="flex items-center gap-2">
+                                <Sparkles className="w-4 h-4 text-primary" />
+                                <h3 className="text-sm font-semibold">AI Brand Understanding</h3>
+                                <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Active</span>
+                            </div>
+                            <p className="text-xs text-muted">Based on your brand profile, the AI will use these guidelines when creating ads:</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {brandUSPs && (
+                                    <div className="bg-sidebar border border-border rounded-lg p-3">
+                                        <div className="text-xs font-medium mb-1">Unique Selling Points</div>
+                                        <ul className="text-xs text-muted space-y-1">
+                                            {brandUSPs.split(",").map((usp, i) => <li key={i}>&bull; {usp.trim()}</li>)}
+                                        </ul>
+                                    </div>
+                                )}
+                                {brandVoice && (
+                                    <div className="bg-sidebar border border-border rounded-lg p-3">
+                                        <div className="text-xs font-medium mb-1">Brand Voice</div>
+                                        <p className="text-xs text-muted">{brandVoice}</p>
+                                    </div>
+                                )}
+                                {brandAudience && (
+                                    <div className="bg-sidebar border border-border rounded-lg p-3">
+                                        <div className="text-xs font-medium mb-1">Target Audience</div>
+                                        <p className="text-xs text-muted">{brandAudience}</p>
+                                    </div>
+                                )}
+                                {brandAvoid && (
+                                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                                        <div className="text-xs font-medium mb-1 text-red-700">Guardrails Active</div>
+                                        <p className="text-xs text-red-600">{brandAvoid}</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                        <p className="text-xs text-muted">Based on your brand profile, the AI will use these guidelines when creating ads:</p>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {brandUSPs && (
-                            <div className="bg-sidebar border border-border rounded-lg p-3">
-                                <div className="text-xs font-medium mb-1">Unique Selling Points</div>
-                                <ul className="text-xs text-muted space-y-1">
-                                    {brandUSPs.split(",").map((usp, i) => <li key={i}>&bull; {usp.trim()}</li>)}
-                                </ul>
-                            </div>
-                            )}
-                            {brandVoice && (
-                            <div className="bg-sidebar border border-border rounded-lg p-3">
-                                <div className="text-xs font-medium mb-1">Brand Voice</div>
-                                <p className="text-xs text-muted">{brandVoice}</p>
-                            </div>
-                            )}
-                            {brandAudience && (
-                            <div className="bg-sidebar border border-border rounded-lg p-3">
-                                <div className="text-xs font-medium mb-1">Target Audience</div>
-                                <p className="text-xs text-muted">{brandAudience}</p>
-                            </div>
-                            )}
-                            {brandAvoid && (
-                            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                                <div className="text-xs font-medium mb-1 text-red-700">Guardrails Active</div>
-                                <p className="text-xs text-red-600">{brandAvoid}</p>
-                            </div>
-                            )}
-                        </div>
-                    </div>
                     )}
                 </div>
             )}

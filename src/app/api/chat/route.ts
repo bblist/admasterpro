@@ -20,6 +20,7 @@ interface ChatRequest {
     message: string;
     model?: "gpt-4o" | "claude-4.6";
     context?: string;
+    locale?: string;
     businessId?: string;
     businessName?: string;
     businessIndustry?: string;
@@ -508,6 +509,29 @@ FORMAT:
 - Keep it scannable — busy business owners need to get the point fast
 - End with a clear next step or question when appropriate`;
 
+// Language names for locale codes
+const LOCALE_NAMES: Record<string, string> = {
+    en: "English", es: "Spanish", fr: "French", de: "German",
+    it: "Italian", pt: "Portuguese", nl: "Dutch", sv: "Swedish",
+    no: "Norwegian", da: "Danish", fi: "Finnish", pl: "Polish",
+};
+
+/** Build a language instruction to inject into the system prompt based on the user's locale */
+function getLanguageInstruction(locale?: string): string {
+    if (!locale || locale === "en") return "";
+    const langName = LOCALE_NAMES[locale];
+    if (!langName) return "";
+    return `\n\n═══ LANGUAGE INSTRUCTION (CRITICAL — ALWAYS FOLLOW) ═══\n` +
+        `The user's interface language is set to ${langName} (${locale}).\n` +
+        `You MUST respond ENTIRELY in ${langName}. Every word of your response must be in ${langName}.\n` +
+        `This includes: greetings, explanations, ad copy, keyword suggestions, campaign names, action labels, everything.\n` +
+        `When creating Google Ads content (headlines, descriptions, keywords), create them in ${langName} by default.\n` +
+        `If the user explicitly requests ads in a different language (e.g., "create ads in Swedish"), use that language instead.\n` +
+        `When suggesting keywords, provide them in the target ad language (${langName} by default).\n` +
+        `Keep Google Ads technical terms in English only when they have no standard translation (e.g., "CPC", "CTR", "ROAS").\n` +
+        `═══════════════════════════════════════════════════════\n`;
+}
+
 async function callOpenAI(body: ChatRequest) {
     if (!OPENAI_API_KEY) return null;
 
@@ -518,8 +542,10 @@ async function callOpenAI(body: ChatRequest) {
     if (body.businessLocation) contextParts.push(`Location: ${body.businessLocation}`);
     if (body.context) contextParts.push(body.context);
 
+    const langInstruction = getLanguageInstruction(body.locale);
+
     const messages = [
-        { role: "system", content: SYSTEM_PROMPT },
+        { role: "system", content: SYSTEM_PROMPT + langInstruction },
         ...(contextParts.length ? [{ role: "system", content: `Client context: ${contextParts.join(" | ")}` }] : []),
         ...(body.history || []),
         { role: "user", content: body.message },
@@ -571,7 +597,7 @@ async function callAnthropic(body: ChatRequest) {
     if (body.businessLocation) contextParts.push(`Location: ${body.businessLocation}`);
     if (body.context) contextParts.push(body.context);
 
-    const systemText = SYSTEM_PROMPT + (contextParts.length ? `\n\nClient context: ${contextParts.join(" | ")}` : "");
+    const systemText = SYSTEM_PROMPT + getLanguageInstruction(body.locale) + (contextParts.length ? `\n\nClient context: ${contextParts.join(" | ")}` : "");
 
     const messages = [
         ...(body.history || []).map((m) => ({
@@ -807,9 +833,9 @@ export async function POST(req: NextRequest) {
                     // For pro plan, increment here since we didn't reserve a slot above
                     userPlan === "pro"
                         ? prisma.subscription.update({
-                              where: { userId },
-                              data: { aiMessagesUsed: { increment: 1 } },
-                          })
+                            where: { userId },
+                            data: { aiMessagesUsed: { increment: 1 } },
+                        })
                         : Promise.resolve(), // Already incremented atomically above
                     prisma.chatMessage.createMany({
                         data: [

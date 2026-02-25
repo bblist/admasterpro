@@ -233,80 +233,80 @@ export default function CampaignsPage() {
                             {campaigns.map((c) => {
                                 const TypeIcon = typeIcons[c.type];
                                 return (
-                                <tr key={c.id} className="hover:bg-sidebar/50 transition">
-                                    <td className="px-5 py-4">
-                                        <div className="font-medium">{c.name}</div>
-                                        <div className="text-xs text-muted mt-0.5">{c.client}</div>
-                                    </td>
-                                    <td className="px-5 py-4">
-                                        <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${typeColors[c.type]}`}>
-                                            <TypeIcon className="w-3 h-3" />
-                                            {typeLabels[c.type]}
-                                        </span>
-                                    </td>
-                                    <td className="px-5 py-4">
-                                        <span
-                                            className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-full ${c.status === "active"
+                                    <tr key={c.id} className="hover:bg-sidebar/50 transition">
+                                        <td className="px-5 py-4">
+                                            <div className="font-medium">{c.name}</div>
+                                            <div className="text-xs text-muted mt-0.5">{c.client}</div>
+                                        </td>
+                                        <td className="px-5 py-4">
+                                            <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${typeColors[c.type]}`}>
+                                                <TypeIcon className="w-3 h-3" />
+                                                {typeLabels[c.type]}
+                                            </span>
+                                        </td>
+                                        <td className="px-5 py-4">
+                                            <span
+                                                className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-full ${c.status === "active"
                                                     ? "bg-success/10 text-success"
                                                     : "bg-muted/10 text-muted"
-                                                }`}
-                                        >
-                                            {c.status === "active" ? (
-                                                <Play className="w-3 h-3" />
+                                                    }`}
+                                            >
+                                                {c.status === "active" ? (
+                                                    <Play className="w-3 h-3" />
+                                                ) : (
+                                                    <Pause className="w-3 h-3" />
+                                                )}
+                                                {c.status === "active" ? "Active" : "Paused"}
+                                            </span>
+                                        </td>
+                                        <td className="px-5 py-4 text-right">
+                                            <div className="flex items-center justify-end gap-1 text-muted">
+                                                <DollarSign className="w-3 h-3" />
+                                                {c.dailyBudget}
+                                            </div>
+                                        </td>
+                                        <td className="px-5 py-4 text-right font-medium">${c.spent.toFixed(2)}</td>
+                                        <td className="px-5 py-4 text-right">
+                                            <div className="flex items-center justify-end gap-1">
+                                                <MousePointer className="w-3 h-3 text-muted" />
+                                                {c.clicks}
+                                            </div>
+                                        </td>
+                                        <td className="px-5 py-4 text-right">
+                                            <div className="flex items-center justify-end gap-1">
+                                                {c.type === "shopping" ? (
+                                                    <>
+                                                        <ShoppingBag className="w-3 h-3 text-muted" />
+                                                        {c.purchases || 0} sales
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Phone className="w-3 h-3 text-muted" />
+                                                        {c.calls} calls
+                                                    </>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="px-5 py-4 text-right font-medium">
+                                            {c.type === "shopping"
+                                                ? (c.roas ? `${c.roas}x ROAS` : "—")
+                                                : (c.costPerCall > 0 ? `$${c.costPerCall.toFixed(2)}` : "—")}
+                                        </td>
+                                        <td className="px-5 py-4 text-right">
+                                            {c.trend === "up" ? (
+                                                <TrendingUp className="w-4 h-4 text-success inline" />
+                                            ) : c.trend === "down" ? (
+                                                <TrendingDown className="w-4 h-4 text-danger inline" />
                                             ) : (
-                                                <Pause className="w-3 h-3" />
+                                                <span className="text-xs text-muted">—</span>
                                             )}
-                                            {c.status === "active" ? "Active" : "Paused"}
-                                        </span>
-                                    </td>
-                                    <td className="px-5 py-4 text-right">
-                                        <div className="flex items-center justify-end gap-1 text-muted">
-                                            <DollarSign className="w-3 h-3" />
-                                            {c.dailyBudget}
-                                        </div>
-                                    </td>
-                                    <td className="px-5 py-4 text-right font-medium">${c.spent.toFixed(2)}</td>
-                                    <td className="px-5 py-4 text-right">
-                                        <div className="flex items-center justify-end gap-1">
-                                            <MousePointer className="w-3 h-3 text-muted" />
-                                            {c.clicks}
-                                        </div>
-                                    </td>
-                                    <td className="px-5 py-4 text-right">
-                                        <div className="flex items-center justify-end gap-1">
-                                            {c.type === "shopping" ? (
-                                                <>
-                                                    <ShoppingBag className="w-3 h-3 text-muted" />
-                                                    {c.purchases || 0} sales
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Phone className="w-3 h-3 text-muted" />
-                                                    {c.calls} calls
-                                                </>
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td className="px-5 py-4 text-right font-medium">
-                                        {c.type === "shopping" 
-                                            ? (c.roas ? `${c.roas}x ROAS` : "—")
-                                            : (c.costPerCall > 0 ? `$${c.costPerCall.toFixed(2)}` : "—")}
-                                    </td>
-                                    <td className="px-5 py-4 text-right">
-                                        {c.trend === "up" ? (
-                                            <TrendingUp className="w-4 h-4 text-success inline" />
-                                        ) : c.trend === "down" ? (
-                                            <TrendingDown className="w-4 h-4 text-danger inline" />
-                                        ) : (
-                                            <span className="text-xs text-muted">—</span>
-                                        )}
-                                    </td>
-                                    <td className="px-5 py-4 text-right">
-                                        <button className="p-1 text-muted hover:text-foreground transition">
-                                            <MoreVertical className="w-4 h-4" />
-                                        </button>
-                                    </td>
-                                </tr>
+                                        </td>
+                                        <td className="px-5 py-4 text-right">
+                                            <button className="p-1 text-muted hover:text-foreground transition">
+                                                <MoreVertical className="w-4 h-4" />
+                                            </button>
+                                        </td>
+                                    </tr>
                                 );
                             })}
                         </tbody>
@@ -317,8 +317,8 @@ export default function CampaignsPage() {
             {/* AI Tip */}
             <div className="bg-primary-light border border-primary/20 rounded-xl p-4">
                 <p className="text-sm">
-                    <strong>💡 Tip:</strong> Bella Fashion&apos;s &quot;Summer Collection&quot; shopping campaign 
-                    has a 4.2x ROAS — consider increasing its daily budget. The &quot;Designer Handbags&quot; 
+                    <strong>💡 Tip:</strong> Bella Fashion&apos;s &quot;Summer Collection&quot; shopping campaign
+                    has a 4.2x ROAS — consider increasing its daily budget. The &quot;Designer Handbags&quot;
                     campaign (1.9x ROAS) may need better product images or pricing adjustments before restarting.
                 </p>
             </div>
