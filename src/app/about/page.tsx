@@ -15,6 +15,7 @@ import {
     MessageCircle,
     CheckCircle2,
 } from "lucide-react";
+import { useTranslation } from "@/i18n/context";
 
 const values = [
     {
@@ -48,6 +49,7 @@ const milestones = [
 ];
 
 export default function AboutPage() {
+    const { t } = useTranslation();
     return (
         <div className="min-h-screen bg-background">
             {/* Nav */}
@@ -67,9 +69,9 @@ export default function AboutPage() {
                         <Link href="/audit" className="hover:text-foreground transition">Free Audit</Link>
                     </div>
                     <div className="flex items-center gap-3">
-                        <Link href="/login" className="text-sm text-muted hover:text-foreground transition">Log In</Link>
+                        <Link href="/login" className="text-sm text-muted hover:text-foreground transition">{t("common.logIn")}</Link>
                         <Link href="/onboarding" className="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg text-sm font-medium transition">
-                            Start Free
+                            {t("common.startFree")}
                         </Link>
                     </div>
                 </div>
@@ -80,16 +82,14 @@ export default function AboutPage() {
                 <div className="max-w-4xl mx-auto text-center">
                     <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-1.5 rounded-full text-sm font-medium mb-6">
                         <Users className="w-4 h-4" />
-                        About AdMaster Pro
+                        {t("about.badge")}
                     </div>
                     <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
-                        Google Ads shouldn&apos;t be
-                        <span className="text-primary"> this hard</span>
+                        {t("about.heroTitle1")}
+                        <span className="text-primary"> {t("about.heroTitle2")}</span>
                     </h1>
                     <p className="text-lg md:text-xl text-muted max-w-3xl mx-auto leading-relaxed">
-                        We built AdMaster Pro because small business owners deserve the same AI-powered
-                        advertising tools that big companies use — without the complexity, the jargon,
-                        or the $5,000/month agency fees.
+                        {t("about.heroDesc")}
                     </p>
                 </div>
             </section>
@@ -101,7 +101,7 @@ export default function AboutPage() {
                         <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
                             <Globe className="w-5 h-5 text-primary" />
                         </div>
-                        <h2 className="text-2xl md:text-3xl font-bold text-foreground">Our Story</h2>
+                        <h2 className="text-2xl md:text-3xl font-bold text-foreground">{t("about.ourStory")}</h2>
                     </div>
                     <div className="space-y-6 text-muted leading-relaxed">
                         <p>
@@ -140,7 +140,7 @@ export default function AboutPage() {
                         <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
                             <Zap className="w-5 h-5 text-primary" />
                         </div>
-                        <h2 className="text-2xl md:text-3xl font-bold text-foreground">What AdMaster Pro Does</h2>
+                        <h2 className="text-2xl md:text-3xl font-bold text-foreground">{t("about.whatWeDo")}</h2>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {[
@@ -184,7 +184,7 @@ export default function AboutPage() {
                         <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
                             <Heart className="w-5 h-5 text-primary" />
                         </div>
-                        <h2 className="text-2xl md:text-3xl font-bold text-foreground">Our Values</h2>
+                        <h2 className="text-2xl md:text-3xl font-bold text-foreground">{t("about.ourValues")}</h2>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         {values.map((v, i) => (
@@ -209,7 +209,7 @@ export default function AboutPage() {
                         <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
                             <TrendingUp className="w-5 h-5 text-primary" />
                         </div>
-                        <h2 className="text-2xl md:text-3xl font-bold text-foreground">Our Journey</h2>
+                        <h2 className="text-2xl md:text-3xl font-bold text-foreground">{t("about.ourJourney")}</h2>
                     </div>
                     <div className="space-y-0">
                         {milestones.map((m, i) => (
@@ -258,24 +258,24 @@ export default function AboutPage() {
             <section className="py-20 px-4">
                 <div className="max-w-3xl mx-auto text-center">
                     <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-                        Ready to take control of your Google Ads?
+                        {t("about.ctaTitle")}
                     </h2>
                     <p className="text-muted text-lg mb-8">
-                        Start with a free audit or sign up for our free plan. No credit card required.
+                        {t("about.ctaDesc")}
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
                         <Link
                             href="/audit"
                             className="bg-primary hover:bg-primary-dark text-white px-8 py-3 rounded-lg font-medium text-lg transition inline-flex items-center justify-center gap-2"
                         >
-                            Get Your Free Audit
+                            {t("about.getFreeAudit")}
                             <ArrowRight className="w-5 h-5" />
                         </Link>
                         <Link
                             href="/pricing"
                             className="border border-border hover:border-primary text-foreground px-8 py-3 rounded-lg font-medium text-lg transition inline-flex items-center justify-center"
                         >
-                            View Pricing
+                            {t("about.viewPricing")}
                         </Link>
                     </div>
                 </div>

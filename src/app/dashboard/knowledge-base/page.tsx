@@ -46,6 +46,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import Tooltip from "@/components/Tooltip";
 import { useBusiness } from "@/lib/business-context";
 import { authFetch } from "@/lib/auth-client";
+import { useTranslation } from "@/i18n/context";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -348,6 +349,7 @@ const quickActions = [
 // ─── Component ──────────────────────────────────────────────────────────────
 
 export default function KnowledgeBasePage() {
+    const { t } = useTranslation();
     const { activeBusiness } = useBusiness();
     const [activeTab, setActiveTab] = useState<TabId>("assets");
     const [selectedAsset, setSelectedAsset] = useState<number | null>(null);
@@ -784,10 +786,10 @@ export default function KnowledgeBasePage() {
     };
 
     const tabs: { id: TabId; label: string; icon: React.ReactNode; count: number }[] = [
-        { id: "assets", label: "Files & Media", icon: <Upload className="w-4 h-4" />, count: assets.length },
-        { id: "text", label: "Text Content", icon: <Type className="w-4 h-4" />, count: textEntries.length },
-        { id: "urls", label: "Website URLs", icon: <Globe className="w-4 h-4" />, count: crawledURLs.length },
-        { id: "brand", label: "Brand Profile", icon: <Building2 className="w-4 h-4" />, count: 0 },
+        { id: "assets", label: t("kb.tabFiles"), icon: <Upload className="w-4 h-4" />, count: assets.length },
+        { id: "text", label: t("kb.tabText"), icon: <Type className="w-4 h-4" />, count: textEntries.length },
+        { id: "urls", label: t("kb.tabUrls"), icon: <Globe className="w-4 h-4" />, count: crawledURLs.length },
+        { id: "brand", label: t("kb.tabBrand"), icon: <Building2 className="w-4 h-4" />, count: 0 },
     ];
 
     return (
@@ -797,7 +799,7 @@ export default function KnowledgeBasePage() {
                 <div>
                     <h1 className="text-2xl font-bold flex items-center gap-2">
                         <Brain className="w-6 h-6 text-primary" />
-                        Knowledge Base
+                        {t("kb.title")}
                         <Tooltip text="Everything you add here teaches the AI about your business. The more context you provide, the more accurate your AI-generated ads will be. No hallucinations!" />
                     </h1>
                     <div className="flex items-center gap-2 mt-1">
@@ -810,7 +812,7 @@ export default function KnowledgeBasePage() {
                             {activeBusiness.industry}
                             <span className="mx-1.5">&bull;</span>
                             <span className={activeBusiness.kbStatus === "trained" ? "text-green-600" : activeBusiness.kbStatus === "training" ? "text-amber-600" : "text-gray-400"}>
-                                {activeBusiness.kbStatus === "trained" ? "KB Trained \u2705" : activeBusiness.kbStatus === "training" ? "Training\u2026" : "Not yet trained"}
+                                {activeBusiness.kbStatus === "trained" ? t("kb.statusTrained") : activeBusiness.kbStatus === "training" ? t("kb.statusTraining") : t("kb.statusNotTrained")}
                             </span>
                         </p>
                     </div>
@@ -825,9 +827,9 @@ export default function KnowledgeBasePage() {
                             <Sparkles className="w-4 h-4 text-amber-600" />
                         </div>
                         <div>
-                            <div className="text-sm font-medium text-amber-800 dark:text-amber-400">Get Started</div>
+                            <div className="text-sm font-medium text-amber-800 dark:text-amber-400">{t("kb.getStarted")}</div>
                             <p className="text-xs text-amber-700/80 dark:text-amber-500/80 mt-0.5">
-                                Upload your brand assets, enter your business details, and add website URLs. The AI will learn your brand for better ad copy and recommendations.
+                                {t("kb.getStartedDesc")}
                             </p>
                         </div>
                     </div>
@@ -844,7 +846,7 @@ export default function KnowledgeBasePage() {
                         <div>
                             <div className="text-sm font-semibold flex items-center gap-2">
                                 AI Knowledge Status
-                                <span className={`text-xs px-2 py-0.5 rounded-full ${(assets.length + textEntries.length) > 0 ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>{(assets.length + textEntries.length) > 0 ? "Active" : "Empty"}</span>
+                                <span className={`text-xs px-2 py-0.5 rounded-full ${(assets.length + textEntries.length) > 0 ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>{(assets.length + textEntries.length) > 0 ? t("kb.active") : t("kb.empty")}</span>
                             </div>
                             <div className="text-xs text-muted mt-0.5">
                                 {assets.length} files &bull; {textEntries.reduce((sum, t) => sum + t.wordCount, 0).toLocaleString()} words indexed &bull; {crawledURLs.filter(u => u.status === "crawled").reduce((sum, u) => sum + u.pagesFound, 0)} web pages crawled
@@ -865,11 +867,11 @@ export default function KnowledgeBasePage() {
                         className="text-xs bg-primary text-white px-3 py-1.5 rounded-lg hover:bg-primary-dark transition flex items-center gap-1.5 disabled:opacity-60"
                     >
                         {retrainStatus === "running" ? (
-                            <><Loader2 className="w-3 h-3 animate-spin" /> Training...</>
+                            <><Loader2 className="w-3 h-3 animate-spin" /> {t("kb.training")}</>
                         ) : retrainStatus === "done" ? (
-                            <><CheckCircle2 className="w-3 h-3" /> Updated!</>
+                            <><CheckCircle2 className="w-3 h-3" /> {t("kb.updated")}</>
                         ) : (
-                            <><RefreshCw className="w-3 h-3" /> Retrain AI</>
+                            <><RefreshCw className="w-3 h-3" /> {t("kb.retrainAi")}</>
                         )}
                     </button>
                 </div>
@@ -887,11 +889,11 @@ export default function KnowledgeBasePage() {
                 </div>
                 <div className="bg-card border border-border rounded-xl p-3 text-center">
                     <div className="text-lg font-bold">{assets.filter(a => a.type === "video").length}</div>
-                    <div className="text-xs text-muted">Videos</div>
+                    <div className="text-xs text-muted">{t("kb.videos")}</div>
                 </div>
                 <div className="bg-card border border-border rounded-xl p-3 text-center">
                     <div className="text-lg font-bold">{assets.filter(a => a.type === "document").length}</div>
-                    <div className="text-xs text-muted">Documents</div>
+                    <div className="text-xs text-muted">{t("kb.documents")}</div>
                 </div>
                 <div className="bg-card border border-border rounded-xl p-3 text-center">
                     <div className="text-lg font-bold">{crawledURLs.filter(u => u.status === "crawled").reduce((sum, u) => sum + u.pagesFound, 0)}</div>
@@ -962,7 +964,7 @@ export default function KnowledgeBasePage() {
                                 <div className="w-16 h-16 bg-gradient-to-br from-primary to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/20">
                                     <Upload className="w-7 h-7 text-white" />
                                 </div>
-                                <div className="text-base font-semibold mb-1">Drag & drop files here, or click to browse</div>
+                                <div className="text-base font-semibold mb-1">{t("kb.dragDrop")}</div>
                                 <div className="text-sm text-muted mb-5 max-w-lg mx-auto leading-relaxed">
                                     <span className="font-medium text-foreground/70">Images:</span> JPG, PNG, GIF, WebP, SVG{" "}
                                     <span className="text-border mx-1">&bull;</span>{" "}
@@ -994,7 +996,7 @@ export default function KnowledgeBasePage() {
                     <div className="flex gap-3">
                         <div className="flex-1 relative">
                             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-                            <input type="text" placeholder="Search assets by name or client..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-primary transition" />
+                            <input type="text" placeholder={t("kb.searchAssets")} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-primary transition" />
                         </div>
                         <div className="relative">
                             <select value={filterType} onChange={(e) => setFilterType(e.target.value as AssetType | "all")} className="appearance-none bg-card border border-border rounded-lg pl-3 pr-8 py-2 text-sm focus:outline-none focus:border-primary transition cursor-pointer">
@@ -1057,7 +1059,7 @@ export default function KnowledgeBasePage() {
                                     </div>
                                 </div>
                             ))}
-                            {filteredAssets.length === 0 && <div className="text-center text-sm text-muted py-12">No assets match your search.</div>}
+                            {filteredAssets.length === 0 && <div className="text-center text-sm text-muted py-12">{t("kb.noAssetsMatch")}</div>}
                         </div>
 
                         {/* Detail Panel */}
@@ -1161,8 +1163,8 @@ export default function KnowledgeBasePage() {
                             ) : (
                                 <div className="bg-card border border-border rounded-xl p-8 text-center">
                                     <BookOpen className="w-8 h-8 text-muted mx-auto mb-3" />
-                                    <div className="text-sm font-medium mb-1">Select an asset</div>
-                                    <div className="text-xs text-muted">Click any item to see AI analysis, detected faces, text extraction, and add notes.</div>
+                                    <div className="text-sm font-medium mb-1">{t("kb.selectAsset")}</div>
+                                    <div className="text-xs text-muted">{t("kb.selectAssetDesc")}</div>
                                 </div>
                             )}
                         </div>
@@ -1176,7 +1178,7 @@ export default function KnowledgeBasePage() {
                     <div className="bg-card border border-border rounded-xl p-5 space-y-4">
                         <div className="flex items-center gap-2">
                             <Type className="w-4 h-4 text-primary" />
-                            <h3 className="text-sm font-semibold">Add Text Content</h3>
+                            <h3 className="text-sm font-semibold">{t("kb.addTextContent")}</h3>
                             <Tooltip text="Paste any text about your business: about us, services, pricing, FAQs, testimonials, product descriptions, anything! The AI will learn from it." />
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -1204,13 +1206,13 @@ export default function KnowledgeBasePage() {
                         <textarea placeholder="Paste your text content here... About your business, services, pricing, FAQs, testimonials, product info, anything the AI should know to create accurate ads." value={textContent} onChange={(e) => setTextContent(e.target.value)} rows={6} className="w-full bg-sidebar border border-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-primary transition resize-y leading-relaxed" />
                         <div className="flex items-center justify-between">
                             <div className="text-xs text-muted">{textContent.split(/\s+/).filter(Boolean).length} words</div>
-                            <button onClick={addTextEntry} className="bg-primary text-white text-sm px-4 py-2 rounded-lg hover:bg-primary-dark transition flex items-center gap-2"><Plus className="w-4 h-4" />Add to Knowledge Base</button>
+                            <button onClick={addTextEntry} className="bg-primary text-white text-sm px-4 py-2 rounded-lg hover:bg-primary-dark transition flex items-center gap-2"><Plus className="w-4 h-4" />{t("kb.addToKb")}</button>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div className="lg:col-span-2 space-y-3">
-                            <div className="text-sm font-medium text-muted flex items-center gap-2">Saved Text Content <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">{textEntries.length}</span></div>
+                            <div className="text-sm font-medium text-muted flex items-center gap-2">{t("kb.savedTextContent")} <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">{textEntries.length}</span></div>
                             {textEntries.map((entry) => (
                                 <div key={entry.id} onClick={() => setSelectedText(entry.id)} className={`bg-card border rounded-xl p-4 cursor-pointer transition hover:border-primary/50 ${selectedText === entry.id ? "border-primary ring-1 ring-primary/20" : "border-border"}`}>
                                     <div className="flex items-start justify-between gap-3">
@@ -1277,8 +1279,8 @@ export default function KnowledgeBasePage() {
                             ) : (
                                 <div className="bg-card border border-border rounded-xl p-8 text-center">
                                     <Type className="w-8 h-8 text-muted mx-auto mb-3" />
-                                    <div className="text-sm font-medium mb-1">Select a text entry</div>
-                                    <div className="text-xs text-muted">Click any entry to see the full content and AI summary.</div>
+                                    <div className="text-sm font-medium mb-1">{t("kb.selectTextEntry")}</div>
+                                    <div className="text-xs text-muted">{t("kb.selectTextEntryDesc")}</div>
                                 </div>
                             )}
                         </div>
@@ -1292,7 +1294,7 @@ export default function KnowledgeBasePage() {
                     <div className="bg-card border border-border rounded-xl p-5 space-y-4">
                         <div className="flex items-center gap-2">
                             <Globe className="w-4 h-4 text-primary" />
-                            <h3 className="text-sm font-semibold">Add Website URL</h3>
+                            <h3 className="text-sm font-semibold">{t("kb.addWebsiteUrl")}</h3>
                             <Tooltip text="Enter your website URL and the AI will crawl it to learn about your business. It uses this to write accurate, factual ad copy instead of guessing." />
                         </div>
                         <p className="text-xs text-muted -mt-1">
@@ -1304,7 +1306,7 @@ export default function KnowledgeBasePage() {
                                 <input type="url" placeholder="https://www.yourbusiness.com" value={urlInput} onChange={(e) => setUrlInput(e.target.value)} className="w-full bg-sidebar border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-primary transition" />
                             </div>
                             <div className="bg-sidebar border border-border rounded-lg px-3 py-2.5 text-sm text-muted shrink-0">{activeBusiness.name}</div>
-                            <button onClick={addURLEntry} className="bg-primary text-white text-sm px-5 py-2.5 rounded-lg hover:bg-primary-dark transition flex items-center gap-2 whitespace-nowrap"><Plus className="w-4 h-4" />Add Website</button>
+                            <button onClick={addURLEntry} className="bg-primary text-white text-sm px-5 py-2.5 rounded-lg hover:bg-primary-dark transition flex items-center gap-2 whitespace-nowrap"><Plus className="w-4 h-4" />{t("kb.addWebsite")}</button>
                         </div>
                         <div className="flex items-center gap-4 text-xs text-muted pt-1 border-t border-border flex-wrap">
                             <label className="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" defaultChecked className="rounded border-border text-primary focus:ring-primary" />Follow internal links</label>
@@ -1321,7 +1323,7 @@ export default function KnowledgeBasePage() {
                     </div>
 
                     <div className="space-y-3">
-                        <div className="text-sm font-medium text-muted flex items-center gap-2">Crawled Websites <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">{crawledURLs.length}</span></div>
+                        <div className="text-sm font-medium text-muted flex items-center gap-2">{t("kb.crawledWebsites")} <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">{crawledURLs.length}</span></div>
                         {crawledURLs.map((url) => (
                             <div key={url.id} className="bg-card border border-border rounded-xl p-4 hover:border-primary/30 transition">
                                 <div className="flex items-start justify-between gap-4">
@@ -1375,10 +1377,10 @@ export default function KnowledgeBasePage() {
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <Building2 className="w-4 h-4 text-primary" />
-                                <h3 className="text-sm font-semibold">Brand Profile</h3>
+                                <h3 className="text-sm font-semibold">{t("kb.brandProfile")}</h3>
                                 <Tooltip text="Define your brand voice, target audience, and guardrails. This ensures the AI always writes on-brand." />
                             </div>
-                            <button onClick={saveBrandProfile} disabled={brandSaving} className="text-xs bg-primary text-white px-3 py-1.5 rounded-lg hover:bg-primary-dark transition disabled:opacity-50 flex items-center gap-1.5">{brandSaving ? <><Loader2 className="w-3 h-3 animate-spin" />Saving...</> : "Save Changes"}</button>
+                            <button onClick={saveBrandProfile} disabled={brandSaving} className="text-xs bg-primary text-white px-3 py-1.5 rounded-lg hover:bg-primary-dark transition disabled:opacity-50 flex items-center gap-1.5">{brandSaving ? <><Loader2 className="w-3 h-3 animate-spin" />{t("common.saving")}</> : t("kb.saveChanges")}</button>
                         </div>
                         <p className="text-xs text-muted -mt-2">This profile guides the AI&#39;s tone, language, and accuracy. The more detail you provide, the better your ads will sound.</p>
 
@@ -1427,7 +1429,7 @@ export default function KnowledgeBasePage() {
                         <div className="bg-card border border-border rounded-xl p-5 space-y-4">
                             <div className="flex items-center gap-2">
                                 <Sparkles className="w-4 h-4 text-primary" />
-                                <h3 className="text-sm font-semibold">AI Brand Understanding</h3>
+                                <h3 className="text-sm font-semibold">{t("kb.aiBrandUnderstanding")}</h3>
                                 <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Active</span>
                             </div>
                             <p className="text-xs text-muted">Based on your brand profile, the AI will use these guidelines when creating ads:</p>

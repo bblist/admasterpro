@@ -15,12 +15,13 @@ import {
     AlertCircle,
 } from "lucide-react";
 import { captureTokenFromHash, isAuthenticated, authFetch, getAuthUser } from "@/lib/auth-client";
+import { useTranslation } from "@/i18n/context";
 
-const steps = [
-    { id: 1, title: "Connect Google Ads" },
-    { id: 2, title: "Your Business" },
-    { id: 3, title: "Knowledge Base" },
-    { id: 4, title: "Free Audit" },
+const stepKeys = [
+    { id: 1, titleKey: "onboarding.step1" },
+    { id: 2, titleKey: "onboarding.step2" },
+    { id: 3, titleKey: "onboarding.step3" },
+    { id: 4, titleKey: "onboarding.step4" },
 ];
 
 interface AuditSection {
@@ -39,6 +40,7 @@ interface AuditResult {
 }
 
 export default function OnboardingPage() {
+    const { t } = useTranslation();
     const [currentStep, setCurrentStep] = useState(1);
     const [connected, setConnected] = useState(false);
     const [websiteUrl, setWebsiteUrl] = useState("");
@@ -77,11 +79,11 @@ export default function OnboardingPage() {
 
     const handleSaveBusiness = async () => {
         if (!businessName.trim()) {
-            setBusinessError("Please enter your business name.");
+            setBusinessError(t("onboarding.business.nameRequired"));
             return;
         }
         if (!businessType) {
-            setBusinessError("Please select your industry.");
+            setBusinessError(t("onboarding.business.industryRequired"));
             return;
         }
         setBusinessSaving(true);
@@ -177,7 +179,7 @@ export default function OnboardingPage() {
                         <span className="font-bold text-lg">AdMaster Pro</span>
                     </Link>
                     <Link href="/login" className="text-sm text-muted hover:text-foreground">
-                        Already have an account?
+                        {t("onboarding.haveAccount")}
                     </Link>
                 </div>
             </div>
@@ -185,7 +187,7 @@ export default function OnboardingPage() {
             {/* Progress */}
             <div className="max-w-3xl mx-auto w-full px-4 py-6">
                 <div className="flex items-center justify-between mb-8">
-                    {steps.map((step, i) => (
+                    {stepKeys.map((step, i) => (
                         <div key={step.id} className="flex items-center">
                             <div className="flex items-center gap-2">
                                 <div
@@ -206,10 +208,10 @@ export default function OnboardingPage() {
                                     className={`text-sm hidden sm:block ${currentStep === step.id ? "font-medium" : "text-muted"
                                         }`}
                                 >
-                                    {step.title}
+                                    {t(step.titleKey)}
                                 </span>
                             </div>
-                            {i < steps.length - 1 && (
+                            {i < stepKeys.length - 1 && (
                                 <div
                                     className={`w-12 sm:w-24 h-0.5 mx-2 ${currentStep > step.id ? "bg-success" : "bg-border"
                                         }`}
@@ -225,10 +227,9 @@ export default function OnboardingPage() {
                         <div className="w-16 h-16 bg-primary-light rounded-2xl flex items-center justify-center mx-auto mb-6">
                             <Globe className="w-8 h-8 text-primary" />
                         </div>
-                        <h2 className="text-2xl font-bold mb-2">Connect Your Google Ads Account</h2>
+                        <h2 className="text-2xl font-bold mb-2">{t("onboarding.connect.title")}</h2>
                         <p className="text-muted mb-8 max-w-md mx-auto">
-                            Sign in with Google to let me see your ad account. I&apos;ll only access your ad data —
-                            nothing else.
+                            {t("onboarding.connect.desc")}
                         </p>
 
                         {!connected ? (
@@ -255,26 +256,26 @@ export default function OnboardingPage() {
                                             d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                                         />
                                     </svg>
-                                    Sign in with Google
+                                    {t("onboarding.connect.google")}
                                 </button>
                                 <div>
                                     <button
                                         onClick={handleSkipConnect}
                                         className="text-sm text-muted hover:text-foreground transition underline"
                                     >
-                                        Skip for now — I&apos;ll connect later
+                                        {t("onboarding.connect.skip")}
                                     </button>
                                 </div>
                             </div>
                         ) : (
                             <div className="inline-flex items-center gap-2 text-success bg-success/10 px-4 py-2 rounded-lg">
                                 <CheckCircle className="w-5 h-5" />
-                                Connected successfully!
+                                {t("onboarding.connect.success")}
                             </div>
                         )}
 
                         <p className="text-xs text-muted mt-6">
-                            We use read-only access by default. You can revoke access anytime from your Google account settings.
+                            {t("onboarding.connect.readOnly")}
                         </p>
 
                         {connected && (
@@ -283,7 +284,7 @@ export default function OnboardingPage() {
                                     onClick={() => setCurrentStep(2)}
                                     className="bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-lg font-medium transition inline-flex items-center gap-2"
                                 >
-                                    Continue
+                                    {t("common.continue")}
                                     <ArrowRight className="w-4 h-4" />
                                 </button>
                             </div>
@@ -297,14 +298,14 @@ export default function OnboardingPage() {
                         <div className="w-16 h-16 bg-primary-light rounded-2xl flex items-center justify-center mx-auto mb-6">
                             <Building2 className="w-8 h-8 text-primary" />
                         </div>
-                        <h2 className="text-2xl font-bold mb-2 text-center">Tell Me About Your Business</h2>
+                        <h2 className="text-2xl font-bold mb-2 text-center">{t("onboarding.business.title")}</h2>
                         <p className="text-muted mb-8 text-center max-w-md mx-auto">
-                            This helps me write ads that sound exactly like you — not generic.
+                            {t("onboarding.business.desc")}
                         </p>
 
                         <div className="max-w-md mx-auto space-y-4">
                             <div>
-                                <label className="text-sm font-medium mb-1 block">Business Name <span className="text-red-400">*</span></label>
+                                <label className="text-sm font-medium mb-1 block">{t("onboarding.business.name")} <span className="text-red-400">*</span></label>
                                 <input
                                     type="text"
                                     value={businessName}
@@ -314,28 +315,28 @@ export default function OnboardingPage() {
                                 />
                             </div>
                             <div>
-                                <label className="text-sm font-medium mb-1 block">What type of business? <span className="text-red-400">*</span></label>
+                                <label className="text-sm font-medium mb-1 block">{t("onboarding.business.type")} <span className="text-red-400">*</span></label>
                                 <select
                                     value={businessType}
                                     onChange={(e) => setBusinessType(e.target.value)}
                                     className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary transition"
                                 >
-                                    <option value="">Select...</option>
-                                    <option value="plumber">Plumber</option>
-                                    <option value="electrician">Electrician</option>
-                                    <option value="hvac">HVAC</option>
-                                    <option value="dentist">Dentist</option>
-                                    <option value="lawyer">Lawyer</option>
-                                    <option value="restaurant">Restaurant</option>
-                                    <option value="retail">Retail Store</option>
-                                    <option value="ecommerce">Online Store</option>
-                                    <option value="other">Other</option>
+                                    <option value="">{t("onboarding.business.select")}</option>
+                                    <option value="plumber">{t("industry.plumber")}</option>
+                                    <option value="electrician">{t("industry.electrician")}</option>
+                                    <option value="hvac">{t("industry.hvac")}</option>
+                                    <option value="dentist">{t("industry.dentist")}</option>
+                                    <option value="lawyer">{t("industry.lawyer")}</option>
+                                    <option value="restaurant">{t("industry.restaurant")}</option>
+                                    <option value="retail">{t("industry.retail")}</option>
+                                    <option value="ecommerce">{t("industry.ecommerce")}</option>
+                                    <option value="other">{t("industry.other")}</option>
                                 </select>
                             </div>
                             <div>
                                 <label className="text-sm font-medium mb-1 block">
                                     <MapPin className="w-3 h-3 inline mr-1" />
-                                    Service Area
+                                    {t("onboarding.business.serviceArea")}
                                 </label>
                                 <input
                                     type="text"
@@ -349,7 +350,7 @@ export default function OnboardingPage() {
                             <div>
                                 <label className="text-sm font-medium mb-1 block">
                                     <Globe className="w-3 h-3 inline mr-1" />
-                                    Website URL
+                                    {t("onboarding.business.website")}
                                 </label>
                                 <input
                                     type="url"
@@ -374,7 +375,7 @@ export default function OnboardingPage() {
                                 className="border border-border text-foreground px-4 py-2.5 rounded-lg text-sm transition hover:border-primary flex items-center gap-2"
                             >
                                 <ArrowLeft className="w-4 h-4" />
-                                Back
+                                {t("common.back")}
                             </button>
                             <button
                                 onClick={handleSaveBusiness}
@@ -384,11 +385,11 @@ export default function OnboardingPage() {
                                 {businessSaving ? (
                                     <>
                                         <Loader2 className="w-4 h-4 animate-spin" />
-                                        Saving...
+                                        {t("onboarding.business.saving")}
                                     </>
                                 ) : (
                                     <>
-                                        Continue
+                                        {t("common.continue")}
                                         <ArrowRight className="w-4 h-4" />
                                     </>
                                 )}
@@ -403,10 +404,9 @@ export default function OnboardingPage() {
                         <div className="w-16 h-16 bg-primary-light rounded-2xl flex items-center justify-center mx-auto mb-6">
                             <Upload className="w-8 h-8 text-primary" />
                         </div>
-                        <h2 className="text-2xl font-bold mb-2 text-center">Build Your Knowledge Base</h2>
+                        <h2 className="text-2xl font-bold mb-2 text-center">{t("onboarding.kb.title")}</h2>
                         <p className="text-muted mb-8 text-center max-w-md mx-auto">
-                            The more I know about your business, the better ads I can write. Upload anything —
-                            menus, price lists, brochures, photos.
+                            {t("onboarding.kb.desc")}
                         </p>
 
                         <div className="max-w-md mx-auto">
@@ -431,25 +431,25 @@ export default function OnboardingPage() {
                                 {uploading ? (
                                     <div className="flex flex-col items-center gap-2">
                                         <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                                        <p className="text-sm text-muted">Uploading your files...</p>
+                                        <p className="text-sm text-muted">{t("onboarding.kb.uploading")}</p>
                                     </div>
                                 ) : uploadedFiles.length > 0 ? (
                                     <div className="flex flex-col items-center gap-2">
                                         <CheckCircle className="w-8 h-8 text-success" />
-                                        <p className="text-sm font-medium">{uploadedFiles.length} file{uploadedFiles.length > 1 ? "s" : ""} uploaded!</p>
+                                        <p className="text-sm font-medium">{t("onboarding.kb.uploaded", { count: uploadedFiles.length })}</p>
                                         <div className="text-xs text-muted space-y-0.5">
                                             {uploadedFiles.map((f, i) => (
                                                 <p key={i}>{f.name} ({f.size})</p>
                                             ))}
                                         </div>
-                                        <p className="text-xs text-primary mt-2">Click to upload more</p>
+                                        <p className="text-xs text-primary mt-2">{t("onboarding.kb.uploadMore")}</p>
                                     </div>
                                 ) : (
                                     <div className="flex flex-col items-center gap-2">
                                         <Upload className="w-8 h-8 text-muted" />
-                                        <p className="text-sm font-medium">Drop files here or click to upload</p>
+                                        <p className="text-sm font-medium">{t("onboarding.kb.dropFiles")}</p>
                                         <p className="text-xs text-muted">
-                                            JPEG, PNG, GIF, WebP images (max 5 MB each)
+                                            {t("onboarding.kb.fileTypes")}
                                         </p>
                                     </div>
                                 )}
@@ -463,7 +463,7 @@ export default function OnboardingPage() {
                             )}
 
                             <div className="mt-4 text-center text-sm text-muted">
-                                <p>You can also add more files later from your dashboard.</p>
+                                <p>{t("onboarding.kb.addLater")}</p>
                             </div>
                         </div>
 
@@ -473,7 +473,7 @@ export default function OnboardingPage() {
                                 className="border border-border text-foreground px-4 py-2.5 rounded-lg text-sm transition hover:border-primary flex items-center gap-2"
                             >
                                 <ArrowLeft className="w-4 h-4" />
-                                Back
+                                {t("common.back")}
                             </button>
                             <button
                                 onClick={() => {
@@ -482,7 +482,7 @@ export default function OnboardingPage() {
                                 }}
                                 className="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg text-sm font-medium transition flex items-center gap-2"
                             >
-                                Run Free Audit
+                                {t("onboarding.kb.runAudit")}
                                 <ArrowRight className="w-4 h-4" />
                             </button>
                         </div>
@@ -495,9 +495,9 @@ export default function OnboardingPage() {
                         {auditing ? (
                             <div className="text-center py-12">
                                 <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
-                                <h2 className="text-xl font-bold mb-2">Analyzing your website...</h2>
+                                <h2 className="text-xl font-bold mb-2">{t("onboarding.audit.analyzing")}</h2>
                                 <p className="text-muted text-sm">
-                                    Using GPT-4o to audit your site for ad opportunities, SEO gaps, and more...
+                                    {t("onboarding.audit.usingAI")}
                                 </p>
                             </div>
                         ) : auditDone ? (
@@ -506,26 +506,26 @@ export default function OnboardingPage() {
                                     <div className="w-16 h-16 bg-success/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
                                         <CheckCircle className="w-8 h-8 text-success" />
                                     </div>
-                                    <h2 className="text-2xl font-bold mb-2">Your Free Audit Is Ready!</h2>
-                                    <p className="text-muted">Here&apos;s what our AI found:</p>
+                                    <h2 className="text-2xl font-bold mb-2">{t("onboarding.audit.ready")}</h2>
+                                    <p className="text-muted">{t("onboarding.audit.found")}</p>
                                 </div>
 
                                 {auditError ? (
                                     <div className="max-w-lg mx-auto p-4 bg-danger/10 border border-danger/20 rounded-xl">
                                         <div className="flex items-center gap-2 mb-2">
                                             <AlertCircle className="w-5 h-5 text-danger" />
-                                            <h3 className="font-semibold text-sm">Audit couldn&apos;t complete</h3>
+                                            <h3 className="font-semibold text-sm">{t("onboarding.audit.failed")}</h3>
                                         </div>
                                         <p className="text-xs text-muted">{auditError}</p>
                                         <p className="text-xs text-muted mt-2">
-                                            Don&apos;t worry — you can still use the AI assistant to get recommendations.
+                                            {t("onboarding.audit.failedDesc")}
                                         </p>
                                     </div>
                                 ) : auditResult ? (
                                     <div className="space-y-4 max-w-lg mx-auto">
                                         <div className="bg-primary-light border border-primary/20 rounded-xl p-4">
                                             <div className="font-semibold text-sm mb-1">
-                                                Overall Score: {auditResult.overallScore}/100
+                                                {t("onboarding.audit.overallScore", { score: auditResult.overallScore })}
                                             </div>
                                             <p className="text-xs text-muted">{auditResult.overallSummary}</p>
                                         </div>
@@ -559,7 +559,7 @@ export default function OnboardingPage() {
 
                                         {auditResult.quickWins?.length > 0 && (
                                             <div className="bg-primary-light border border-primary/20 rounded-xl p-4">
-                                                <h3 className="font-semibold text-sm mb-2">💡 Quick Wins</h3>
+                                                <h3 className="font-semibold text-sm mb-2">💡 {t("onboarding.audit.quickWins")}</h3>
                                                 <ul className="space-y-1">
                                                     {auditResult.quickWins.slice(0, 5).map((win, i) => (
                                                         <li key={i} className="text-xs text-muted">• {win}</li>
@@ -571,7 +571,7 @@ export default function OnboardingPage() {
                                         {auditResult.estimatedSavings && (
                                             <div className="bg-success/5 border border-success/20 rounded-xl p-4">
                                                 <div className="font-semibold text-sm mb-1">
-                                                    Estimated Savings: {auditResult.estimatedSavings}
+                                                    {t("onboarding.audit.savings")}: {auditResult.estimatedSavings}
                                                 </div>
                                                 <p className="text-xs text-muted">
                                                     Implementing these recommendations could significantly improve your ad performance.
@@ -586,14 +586,14 @@ export default function OnboardingPage() {
                                         href="/dashboard/chat"
                                         className="bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-lg font-medium transition flex items-center justify-center gap-2"
                                     >
-                                        Go to Dashboard
+                                        {t("onboarding.audit.goDashboard")}
                                         <ArrowRight className="w-4 h-4" />
                                     </Link>
                                     <Link
                                         href="/dashboard/chat"
                                         className="border border-border hover:border-primary px-6 py-3 rounded-lg font-medium transition text-center"
                                     >
-                                        Start Chatting with AI
+                                        {t("onboarding.audit.startChat")}
                                     </Link>
                                 </div>
                             </div>

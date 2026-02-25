@@ -9,6 +9,7 @@ import {
 import Link from "next/link";
 import { authFetch } from "@/lib/auth-client";
 import { useBusiness } from "@/lib/business-context";
+import { useTranslation } from "@/i18n/context";
 
 interface DashboardStats {
     subscription: {
@@ -32,6 +33,7 @@ interface DashboardStats {
 }
 
 export default function DashboardPage() {
+    const { t } = useTranslation();
     const { activeBusiness } = useBusiness();
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [loading, setLoading] = useState(true);
@@ -104,9 +106,9 @@ export default function DashboardPage() {
         <div className="max-w-6xl mx-auto space-y-6">
             {/* Welcome Header */}
             <div>
-                <h1 className="text-2xl font-bold">Dashboard</h1>
+                <h1 className="text-2xl font-bold">{t("dashboard.title")}</h1>
                 <p className="text-muted text-sm mt-1">
-                    Welcome back! Here&apos;s your AdMaster Pro overview.
+                    {t("dashboard.welcome")}
                 </p>
             </div>
 
@@ -114,7 +116,7 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-card border border-border rounded-xl p-5">
                     <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm text-muted">Current Plan</span>
+                        <span className="text-sm text-muted">{t("dashboard.currentPlan")}</span>
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${plan === "pro" ? "bg-purple-100 text-purple-700"
                             : plan === "trial" ? "bg-amber-100 text-amber-700"
                                 : plan === "starter" ? "bg-blue-100 text-blue-700"
@@ -128,23 +130,23 @@ export default function DashboardPage() {
                         <span className="text-sm font-normal text-muted">{plan === "trial" ? " trial" : "/mo"}</span>
                     </div>
                     {plan === "trial" && trialDaysLeft > 0 && (
-                        <p className="text-xs text-amber-700 mt-2">{trialDaysLeft} day{trialDaysLeft === 1 ? "" : "s"} left in trial</p>
+                        <p className="text-xs text-amber-700 mt-2">{t("dashboard.trialDaysLeft", { days: trialDaysLeft })}</p>
                     )}
                     {plan === "free" && (
                         <Link href="/pricing" className="inline-flex items-center gap-1 text-primary text-sm mt-2 hover:underline">
-                            Upgrade <ArrowRight className="w-3 h-3" />
+                            {t("dashboard.upgrade")} <ArrowRight className="w-3 h-3" />
                         </Link>
                     )}
                 </div>
 
                 <div className="bg-card border border-border rounded-xl p-5">
                     <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm text-muted">AI Messages</span>
+                        <span className="text-sm text-muted">{t("dashboard.aiMessages")}</span>
                         <MessageSquare className="w-4 h-4 text-muted" />
                     </div>
                     <div className="text-3xl font-bold">
                         {totalAvailable > 999 ? "\u221e" : totalAvailable}
-                        <span className="text-sm font-normal text-muted"> remaining</span>
+                        <span className="text-sm font-normal text-muted"> {t("dashboard.remaining")}</span>
                     </div>
                     <div className="mt-2">
                         <div className="h-2 bg-muted/30 rounded-full overflow-hidden">
@@ -154,30 +156,30 @@ export default function DashboardPage() {
                                 style={{ width: `${usagePct}%` }}
                             />
                         </div>
-                        <p className="text-xs text-muted mt-1">{messagesUsed}/{messagesLimit} used{bonusTokens > 0 ? ` (+${bonusTokens} bonus)` : ""}</p>
+                        <p className="text-xs text-muted mt-1">{messagesUsed}/{messagesLimit} {t("dashboard.used")}{bonusTokens > 0 ? ` (+${bonusTokens} ${t("dashboard.bonus")})` : ""}</p>
                     </div>
                 </div>
 
                 <div className="bg-card border border-border rounded-xl p-5">
                     <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm text-muted">Google Ads</span>
+                        <span className="text-sm text-muted">{t("dashboard.googleAds")}</span>
                         <Settings className="w-4 h-4 text-muted" />
                     </div>
                     {stats?.adsConnected ? (
                         <>
                             <div className="text-lg font-bold text-green-600 flex items-center gap-2">
                                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                                Connected
+                                {t("dashboard.connected")}
                             </div>
                             <p className="text-xs text-muted mt-1">
-                                {stats.businesses.filter(b => b.googleAdsId).length} account{stats.businesses.filter(b => b.googleAdsId).length !== 1 ? "s" : ""} linked
+                                {t("dashboard.accountsLinked", { count: stats.businesses.filter(b => b.googleAdsId).length })}
                             </p>
                         </>
                     ) : (
                         <>
-                            <div className="text-lg font-bold text-muted">Not Connected</div>
+                            <div className="text-lg font-bold text-muted">{t("dashboard.notConnected")}</div>
                             <Link href="/dashboard/settings" className="inline-flex items-center gap-1 text-primary text-sm mt-1 hover:underline">
-                                Connect <ArrowRight className="w-3 h-3" />
+                                {t("dashboard.connect")} <ArrowRight className="w-3 h-3" />
                             </Link>
                         </>
                     )}
@@ -187,29 +189,29 @@ export default function DashboardPage() {
             {/* Ads Performance - only show if connected */}
             {stats?.adsSummary && (
                 <div>
-                    <h2 className="text-lg font-semibold mb-3">Last 7 Days Performance</h2>
+                    <h2 className="text-lg font-semibold mb-3">{t("dashboard.last7Days")}</h2>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="bg-card border border-border rounded-xl p-4">
                             <div className="flex items-center gap-2 text-sm text-muted mb-1">
-                                <DollarSign className="w-4 h-4" /> Spend
+                                <DollarSign className="w-4 h-4" /> {t("dashboard.spend")}
                             </div>
                             <div className="text-2xl font-bold">${stats.adsSummary.cost.toFixed(2)}</div>
                         </div>
                         <div className="bg-card border border-border rounded-xl p-4">
                             <div className="flex items-center gap-2 text-sm text-muted mb-1">
-                                <MousePointer className="w-4 h-4" /> Clicks
+                                <MousePointer className="w-4 h-4" /> {t("dashboard.clicks")}
                             </div>
                             <div className="text-2xl font-bold">{stats.adsSummary.clicks.toLocaleString()}</div>
                         </div>
                         <div className="bg-card border border-border rounded-xl p-4">
                             <div className="flex items-center gap-2 text-sm text-muted mb-1">
-                                <Eye className="w-4 h-4" /> Impressions
+                                <Eye className="w-4 h-4" /> {t("dashboard.impressions")}
                             </div>
                             <div className="text-2xl font-bold">{stats.adsSummary.impressions.toLocaleString()}</div>
                         </div>
                         <div className="bg-card border border-border rounded-xl p-4">
                             <div className="flex items-center gap-2 text-sm text-muted mb-1">
-                                <Target className="w-4 h-4" /> Conversions
+                                <Target className="w-4 h-4" /> {t("dashboard.conversions")}
                             </div>
                             <div className="text-2xl font-bold">{stats.adsSummary.conversions.toFixed(1)}</div>
                         </div>
@@ -219,39 +221,39 @@ export default function DashboardPage() {
 
             {/* Quick Actions */}
             <div>
-                <h2 className="text-lg font-semibold mb-3">Quick Actions</h2>
+                <h2 className="text-lg font-semibold mb-3">{t("dashboard.quickActions")}</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                     <Link href="/dashboard/chat"
                         className="bg-card border border-border rounded-xl p-5 hover:border-primary hover:shadow-md transition group">
                         <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mb-3 group-hover:bg-primary/20 transition">
                             <Zap className="w-5 h-5 text-primary" />
                         </div>
-                        <h3 className="font-semibold text-sm">AI Assistant</h3>
-                        <p className="text-xs text-muted mt-1">Chat with your Google Ads expert</p>
+                        <h3 className="font-semibold text-sm">{t("dashboard.aiAssistant")}</h3>
+                        <p className="text-xs text-muted mt-1">{t("dashboard.aiAssistantDesc")}</p>
                     </Link>
                     <Link href="/dashboard/campaigns"
                         className="bg-card border border-border rounded-xl p-5 hover:border-primary hover:shadow-md transition group">
                         <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center mb-3 group-hover:bg-green-100 transition">
                             <Target className="w-5 h-5 text-green-600" />
                         </div>
-                        <h3 className="font-semibold text-sm">Campaigns</h3>
-                        <p className="text-xs text-muted mt-1">View and manage campaigns</p>
+                        <h3 className="font-semibold text-sm">{t("dashboard.campaigns")}</h3>
+                        <p className="text-xs text-muted mt-1">{t("dashboard.campaignsDesc")}</p>
                     </Link>
                     <Link href="/dashboard/analytics"
                         className="bg-card border border-border rounded-xl p-5 hover:border-primary hover:shadow-md transition group">
                         <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center mb-3 group-hover:bg-blue-100 transition">
                             <BarChart3 className="w-5 h-5 text-blue-600" />
                         </div>
-                        <h3 className="font-semibold text-sm">Analytics</h3>
-                        <p className="text-xs text-muted mt-1">Performance charts & insights</p>
+                        <h3 className="font-semibold text-sm">{t("dashboard.analytics")}</h3>
+                        <p className="text-xs text-muted mt-1">{t("dashboard.analyticsDesc")}</p>
                     </Link>
                     <Link href="/dashboard/keywords"
                         className="bg-card border border-border rounded-xl p-5 hover:border-primary hover:shadow-md transition group">
                         <div className="w-10 h-10 bg-yellow-50 rounded-lg flex items-center justify-center mb-3 group-hover:bg-yellow-100 transition">
                             <Key className="w-5 h-5 text-yellow-600" />
                         </div>
-                        <h3 className="font-semibold text-sm">Keywords</h3>
-                        <p className="text-xs text-muted mt-1">Keyword performance & management</p>
+                        <h3 className="font-semibold text-sm">{t("dashboard.keywords")}</h3>
+                        <p className="text-xs text-muted mt-1">{t("dashboard.keywordsDesc")}</p>
                     </Link>
                 </div>
             </div>
@@ -259,17 +261,17 @@ export default function DashboardPage() {
             {/* Getting Started Guide - show for users without ads connected */}
             {!stats?.adsConnected && (
                 <div>
-                    <h2 className="text-lg font-semibold mb-3">Get Started</h2>
+                    <h2 className="text-lg font-semibold mb-3">{t("dashboard.getStarted")}</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="bg-card border border-border rounded-xl p-5 relative overflow-hidden">
                             <div className="absolute top-3 right-3 w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold text-sm">1</div>
                             <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mb-3">
                                 <BookOpen className="w-5 h-5 text-primary" />
                             </div>
-                            <h3 className="font-semibold mb-1">Train Your AI</h3>
-                            <p className="text-xs text-muted mb-3">Add your business details to the Knowledge Base so the AI understands your brand, products, and target audience.</p>
+                            <h3 className="font-semibold mb-1">{t("dashboard.trainAI")}</h3>
+                            <p className="text-xs text-muted mb-3">{t("dashboard.trainAIDesc")}</p>
                             <Link href="/dashboard/knowledge-base" className="text-primary text-sm hover:underline inline-flex items-center gap-1">
-                                Knowledge Base <ArrowRight className="w-3 h-3" />
+                                {t("dashboard.knowledgeBase")} <ArrowRight className="w-3 h-3" />
                             </Link>
                         </div>
                         <div className="bg-card border border-border rounded-xl p-5 relative overflow-hidden">
@@ -277,10 +279,10 @@ export default function DashboardPage() {
                             <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center mb-3">
                                 <MessageSquare className="w-5 h-5 text-green-600" />
                             </div>
-                            <h3 className="font-semibold mb-1">Chat with AI</h3>
-                            <p className="text-xs text-muted mb-3">Ask for help with campaign strategy, keyword research, ad copy, or audit your current account.</p>
+                            <h3 className="font-semibold mb-1">{t("dashboard.chatWithAI")}</h3>
+                            <p className="text-xs text-muted mb-3">{t("dashboard.chatWithAIDesc")}</p>
                             <Link href="/dashboard/chat" className="text-primary text-sm hover:underline inline-flex items-center gap-1">
-                                Open Chat <ArrowRight className="w-3 h-3" />
+                                {t("dashboard.openChat")} <ArrowRight className="w-3 h-3" />
                             </Link>
                         </div>
                         <div className="bg-card border border-border rounded-xl p-5 relative overflow-hidden">
@@ -288,10 +290,10 @@ export default function DashboardPage() {
                             <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center mb-3">
                                 <Plus className="w-5 h-5 text-blue-600" />
                             </div>
-                            <h3 className="font-semibold mb-1">Connect Google Ads</h3>
-                            <p className="text-xs text-muted mb-3">Link your Google Ads account for live campaign management, analytics, and AI-powered optimization.</p>
+                            <h3 className="font-semibold mb-1">{t("dashboard.connectGoogleAds")}</h3>
+                            <p className="text-xs text-muted mb-3">{t("dashboard.connectGoogleAdsDesc")}</p>
                             <Link href="/dashboard/settings" className="text-primary text-sm hover:underline inline-flex items-center gap-1">
-                                Settings <ArrowRight className="w-3 h-3" />
+                                {t("dashboard.settings")} <ArrowRight className="w-3 h-3" />
                             </Link>
                         </div>
                     </div>
@@ -306,8 +308,8 @@ export default function DashboardPage() {
                         <Phone className="w-5 h-5 text-green-600" />
                     </div>
                     <div>
-                        <h3 className="font-semibold text-sm">Call Tracking</h3>
-                        <p className="text-xs text-muted">Monitor calls from ads</p>
+                        <h3 className="font-semibold text-sm">{t("dashboard.callTracking")}</h3>
+                        <p className="text-xs text-muted">{t("dashboard.callTrackingDesc")}</p>
                     </div>
                 </Link>
                 <Link href="/dashboard/drafts"
@@ -316,8 +318,8 @@ export default function DashboardPage() {
                         <TrendingUp className="w-5 h-5 text-orange-600" />
                     </div>
                     <div>
-                        <h3 className="font-semibold text-sm">Ad Drafts</h3>
-                        <p className="text-xs text-muted">Review AI-created ads</p>
+                        <h3 className="font-semibold text-sm">{t("dashboard.adDrafts")}</h3>
+                        <p className="text-xs text-muted">{t("dashboard.adDraftsDesc")}</p>
                     </div>
                 </Link>
                 <Link href="/audit"
@@ -326,8 +328,8 @@ export default function DashboardPage() {
                         <BarChart3 className="w-5 h-5 text-red-600" />
                     </div>
                     <div>
-                        <h3 className="font-semibold text-sm">Free Audit</h3>
-                        <p className="text-xs text-muted">Get a free account audit</p>
+                        <h3 className="font-semibold text-sm">{t("dashboard.freeAudit")}</h3>
+                        <p className="text-xs text-muted">{t("dashboard.freeAuditDesc")}</p>
                     </div>
                 </Link>
             </div>

@@ -8,6 +8,7 @@ import {
 import Link from "next/link";
 import { authFetch } from "@/lib/auth-client";
 import { useBusiness } from "@/lib/business-context";
+import { useTranslation } from "@/i18n/context";
 
 interface Campaign {
     id: string;
@@ -27,6 +28,7 @@ interface Campaign {
 }
 
 export default function CampaignsPage() {
+    const { t } = useTranslation();
     const { activeBusiness } = useBusiness();
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
     const [loading, setLoading] = useState(true);
@@ -101,21 +103,21 @@ export default function CampaignsPage() {
     if (!loading && !connected) {
         return (
             <div className="max-w-4xl mx-auto space-y-6">
-                <h1 className="text-2xl font-bold">Campaigns</h1>
+                <h1 className="text-2xl font-bold">{t("campaigns.title")}</h1>
                 <div className="bg-card border border-border rounded-2xl p-12 text-center">
                     <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
                         <Target className="w-8 h-8 text-primary" />
                     </div>
-                    <h2 className="text-xl font-bold mb-2">Connect Google Ads</h2>
+                    <h2 className="text-xl font-bold mb-2">{t("campaigns.connectTitle")}</h2>
                     <p className="text-muted text-sm max-w-md mx-auto mb-8">
-                        Sign in with Google and link your Google Ads account to see your live campaigns here.
+                        {t("campaigns.connectDesc")}
                     </p>
                     <div className="flex flex-col sm:flex-row gap-3 justify-center">
                         <Link href="/dashboard/settings" className="inline-flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-xl font-medium transition">
-                            Connect Account <ArrowRight className="w-4 h-4" />
+                            {t("campaigns.connectAccount")} <ArrowRight className="w-4 h-4" />
                         </Link>
                         <Link href="/dashboard/chat" className="inline-flex items-center gap-2 bg-card border border-border hover:border-primary px-6 py-3 rounded-xl font-medium transition">
-                            <Zap className="w-4 h-4" /> Plan Campaigns with AI
+                            <Zap className="w-4 h-4" /> {t("campaigns.planWithAI")}
                         </Link>
                     </div>
                 </div>
@@ -128,9 +130,9 @@ export default function CampaignsPage() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold">Campaigns</h1>
+                    <h1 className="text-2xl font-bold">{t("campaigns.title")}</h1>
                     <p className="text-muted text-sm mt-1">
-                        {campaigns.length} campaign{campaigns.length !== 1 ? "s" : ""} found
+                        {t("campaigns.found", { count: campaigns.length })}
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -139,11 +141,11 @@ export default function CampaignsPage() {
                         onChange={(e) => setDateRange(e.target.value)}
                         className="bg-card border border-border rounded-lg px-3 py-2 text-sm"
                     >
-                        <option value="LAST_7_DAYS">Last 7 days</option>
-                        <option value="LAST_14_DAYS">Last 14 days</option>
-                        <option value="LAST_30_DAYS">Last 30 days</option>
-                        <option value="THIS_MONTH">This month</option>
-                        <option value="LAST_MONTH">Last month</option>
+                        <option value="LAST_7_DAYS">{t("campaigns.last7")}</option>
+                        <option value="LAST_14_DAYS">{t("campaigns.last14")}</option>
+                        <option value="LAST_30_DAYS">{t("campaigns.last30")}</option>
+                        <option value="THIS_MONTH">{t("campaigns.thisMonth")}</option>
+                        <option value="LAST_MONTH">{t("campaigns.lastMonth")}</option>
                     </select>
                     <button
                         onClick={fetchCampaigns}
@@ -159,25 +161,25 @@ export default function CampaignsPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-card border border-border rounded-xl p-4">
                     <div className="flex items-center gap-2 text-sm text-muted mb-1">
-                        <DollarSign className="w-4 h-4" /> Total Spend
+                        <DollarSign className="w-4 h-4" /> {t("campaigns.totalSpend")}
                     </div>
                     <div className="text-2xl font-bold">${totals.cost.toFixed(2)}</div>
                 </div>
                 <div className="bg-card border border-border rounded-xl p-4">
                     <div className="flex items-center gap-2 text-sm text-muted mb-1">
-                        <MousePointer className="w-4 h-4" /> Total Clicks
+                        <MousePointer className="w-4 h-4" /> {t("campaigns.totalClicks")}
                     </div>
                     <div className="text-2xl font-bold">{totals.clicks.toLocaleString()}</div>
                 </div>
                 <div className="bg-card border border-border rounded-xl p-4">
                     <div className="flex items-center gap-2 text-sm text-muted mb-1">
-                        <Eye className="w-4 h-4" /> Impressions
+                        <Eye className="w-4 h-4" /> {t("campaigns.impressions")}
                     </div>
                     <div className="text-2xl font-bold">{totals.impressions.toLocaleString()}</div>
                 </div>
                 <div className="bg-card border border-border rounded-xl p-4">
                     <div className="flex items-center gap-2 text-sm text-muted mb-1">
-                        <Target className="w-4 h-4" /> Conversions
+                        <Target className="w-4 h-4" /> {t("campaigns.conversions")}
                     </div>
                     <div className="text-2xl font-bold">{totals.conversions.toFixed(1)}</div>
                 </div>
@@ -188,14 +190,14 @@ export default function CampaignsPage() {
                 <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3 text-red-700">
                     <AlertCircle className="w-5 h-5 flex-shrink-0" />
                     <p className="text-sm">{error}</p>
-                    <button onClick={fetchCampaigns} className="ml-auto text-sm underline">Retry</button>
+                    <button onClick={fetchCampaigns} className="ml-auto text-sm underline">{t("common.retry")}</button>
                 </div>
             )}
             {mutateError && (
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-3 text-amber-700">
                     <AlertCircle className="w-4 h-4 flex-shrink-0" />
                     <p className="text-sm">{mutateError}</p>
-                    <button onClick={() => setMutateError(null)} className="ml-auto text-xs underline">Dismiss</button>
+                    <button onClick={() => setMutateError(null)} className="ml-auto text-xs underline">{t("common.dismiss")}</button>
                 </div>
             )}
 
@@ -211,7 +213,7 @@ export default function CampaignsPage() {
                             : "bg-card border border-border hover:border-primary"
                             }`}
                     >
-                        {s === "all" ? "All" : s === "ENABLED" ? "Active" : "Paused"}
+                        {s === "all" ? t("campaigns.all") : s === "ENABLED" ? t("campaigns.active") : t("campaigns.paused")}
                     </button>
                 ))}
             </div>
@@ -230,17 +232,17 @@ export default function CampaignsPage() {
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b border-border bg-muted/30">
-                                    <th className="text-left p-3 font-medium">Campaign</th>
-                                    <th className="text-left p-3 font-medium">Status</th>
-                                    <th className="text-left p-3 font-medium">Type</th>
-                                    <th className="text-right p-3 font-medium">Budget</th>
-                                    <th className="text-right p-3 font-medium">Spend</th>
-                                    <th className="text-right p-3 font-medium">Clicks</th>
-                                    <th className="text-right p-3 font-medium">CTR</th>
-                                    <th className="text-right p-3 font-medium">CPC</th>
-                                    <th className="text-right p-3 font-medium">Conv.</th>
-                                    <th className="text-right p-3 font-medium">CPA</th>
-                                    <th className="text-center p-3 font-medium">Action</th>
+                                    <th className="text-left p-3 font-medium">{t("campaigns.campaign")}</th>
+                                    <th className="text-left p-3 font-medium">{t("campaigns.status")}</th>
+                                    <th className="text-left p-3 font-medium">{t("campaigns.type")}</th>
+                                    <th className="text-right p-3 font-medium">{t("campaigns.budget")}</th>
+                                    <th className="text-right p-3 font-medium">{t("campaigns.spend")}</th>
+                                    <th className="text-right p-3 font-medium">{t("campaigns.clicks")}</th>
+                                    <th className="text-right p-3 font-medium">{t("campaigns.ctr")}</th>
+                                    <th className="text-right p-3 font-medium">{t("campaigns.cpc")}</th>
+                                    <th className="text-right p-3 font-medium">{t("campaigns.conv")}</th>
+                                    <th className="text-right p-3 font-medium">{t("campaigns.cpa")}</th>
+                                    <th className="text-center p-3 font-medium">{t("campaigns.action")}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -252,7 +254,7 @@ export default function CampaignsPage() {
                                                 ? "bg-green-100 text-green-700"
                                                 : "bg-yellow-100 text-yellow-700"
                                                 }`}>
-                                                {c.status === "ENABLED" ? "Active" : "Paused"}
+                                                {c.status === "ENABLED" ? t("campaigns.active") : t("campaigns.paused")}
                                             </span>
                                         </td>
                                         <td className="p-3 text-muted">{c.type}</td>
@@ -301,13 +303,12 @@ export default function CampaignsPage() {
                     <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
                         <Target className="w-8 h-8 text-primary" />
                     </div>
-                    <h2 className="text-xl font-bold mb-2">No campaigns found</h2>
+                    <h2 className="text-xl font-bold mb-2">{t("campaigns.noCampaigns")}</h2>
                     <p className="text-muted text-sm max-w-md mx-auto mb-8">
-                        Your Google Ads account doesn&apos;t have any campaigns yet.
-                        Ask the AI to help you create your first campaign!
+                        {t("campaigns.noCampaignsDesc")}
                     </p>
                     <Link href="/dashboard/chat" className="inline-flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-xl font-medium transition">
-                        <Zap className="w-4 h-4" /> Create Campaign with AI <ArrowRight className="w-4 h-4" />
+                        <Zap className="w-4 h-4" /> {t("campaigns.createWithAI")} <ArrowRight className="w-4 h-4" />
                     </Link>
                 </div>
             )}
@@ -316,8 +317,7 @@ export default function CampaignsPage() {
             {campaigns.length > 0 && (
                 <div className="bg-primary-light border border-primary/20 rounded-xl p-4">
                     <p className="text-sm">
-                        <strong>\ud83d\udca1 Pro tip:</strong> Ask the AI &mdash; &ldquo;Analyze my campaign performance and suggest optimizations&rdquo;
-                        to get specific recommendations for improving your ROAS.
+                        <strong>\ud83d\udca1 {t("campaigns.proTip")}:</strong> {t("campaigns.proTipText")}
                     </p>
                 </div>
             )}

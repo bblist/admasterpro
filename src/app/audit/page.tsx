@@ -17,6 +17,7 @@ import {
     DollarSign,
     Sparkles,
 } from "lucide-react";
+import { useTranslation } from "@/i18n/context";
 
 const auditFeatures = [
     { icon: BarChart3, title: "Landing Page Analysis", desc: "We analyze your website for conversion-readiness, mobile optimization, and page speed." },
@@ -28,6 +29,7 @@ const auditFeatures = [
 ];
 
 export default function AuditPage() {
+    const { t } = useTranslation();
     const router = useRouter();
     const [websiteUrl, setWebsiteUrl] = useState("");
     const [businessName, setBusinessName] = useState("");
@@ -84,7 +86,7 @@ export default function AuditPage() {
                         </span>
                     </Link>
                     <Link href="/login" className="text-sm text-muted hover:text-foreground transition">
-                        Sign In
+                        {t("common.signIn")}
                     </Link>
                 </div>
             </header>
@@ -94,22 +96,21 @@ export default function AuditPage() {
                 <div className="max-w-6xl mx-auto px-4 text-center">
                     <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-1.5 rounded-full text-sm font-medium mb-6">
                         <Sparkles className="w-4 h-4" />
-                        Free AI-Powered Analysis — No Credit Card Required
+                        {t("audit.badge")}
                     </div>
                     <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
-                        Get Your Free<br />
-                        <span className="text-primary">Ad Performance Audit</span>
+                        {t("audit.heroTitle1")}<br />
+                        <span className="text-primary">{t("audit.heroTitle2")}</span>
                     </h1>
                     <p className="text-lg md:text-xl text-muted max-w-2xl mx-auto mb-12">
-                        Our AI analyzes your website in under 2 minutes and delivers a comprehensive
-                        report with actionable recommendations to improve your advertising performance.
+                        {t("audit.heroDesc")}
                     </p>
 
                     {/* Audit Form */}
                     <div className="max-w-xl mx-auto">
                         <form onSubmit={handleSubmit} className="bg-card border border-border rounded-2xl p-6 md:p-8 text-left space-y-5">
                             <h2 className="text-lg font-semibold text-foreground text-center mb-2">
-                                Start Your Free Audit
+                                {t("audit.formTitle")}
                             </h2>
 
                             {error && (
@@ -120,7 +121,7 @@ export default function AuditPage() {
 
                             <div>
                                 <label className="text-sm text-muted mb-1.5 block flex items-center gap-1.5">
-                                    <Globe className="w-3.5 h-3.5" /> Website URL <span className="text-red-400">*</span>
+                                    <Globe className="w-3.5 h-3.5" /> {t("audit.websiteUrl")} <span className="text-red-400">*</span>
                                 </label>
                                 <input
                                     type="url"
@@ -135,7 +136,7 @@ export default function AuditPage() {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label className="text-sm text-muted mb-1.5 block flex items-center gap-1.5">
-                                        <Building2 className="w-3.5 h-3.5" /> Business Name <span className="text-red-400">*</span>
+                                        <Building2 className="w-3.5 h-3.5" /> {t("audit.businessName")} <span className="text-red-400">*</span>
                                     </label>
                                     <input
                                         type="text"
@@ -147,13 +148,13 @@ export default function AuditPage() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-sm text-muted mb-1.5 block">Industry</label>
+                                    <label className="text-sm text-muted mb-1.5 block">{t("audit.industry")}</label>
                                     <select
                                         value={industry}
                                         onChange={(e) => setIndustry(e.target.value)}
                                         className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:border-primary text-sm"
                                     >
-                                        <option value="">Select industry...</option>
+                                        <option value="">{t("audit.selectIndustry")}</option>
                                         <option value="ecommerce">E-Commerce / Retail</option>
                                         <option value="saas">SaaS / Technology</option>
                                         <option value="healthcare">Healthcare / Medical</option>
@@ -173,7 +174,7 @@ export default function AuditPage() {
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-sm text-muted mb-1.5 block">Email <span className="text-red-400">*</span></label>
+                                    <label className="text-sm text-muted mb-1.5 block">{t("audit.email")} <span className="text-red-400">*</span></label>
                                     <input
                                         type="email"
                                         value={email}
@@ -185,14 +186,14 @@ export default function AuditPage() {
                                 </div>
                                 <div>
                                     <label className="text-sm text-muted mb-1.5 block flex items-center gap-1.5">
-                                        <DollarSign className="w-3.5 h-3.5" /> Monthly Ad Spend (optional)
+                                        <DollarSign className="w-3.5 h-3.5" /> {t("audit.monthlySpend")}
                                     </label>
                                     <select
                                         value={monthlySpend}
                                         onChange={(e) => setMonthlySpend(e.target.value)}
                                         className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:border-primary text-sm"
                                     >
-                                        <option value="">Select range...</option>
+                                        <option value="">{t("audit.selectRange")}</option>
                                         <option value="0-1000">$0 – $1,000</option>
                                         <option value="1000-5000">$1,000 – $5,000</option>
                                         <option value="5000-15000">$5,000 – $15,000</option>
@@ -210,18 +211,18 @@ export default function AuditPage() {
                                 {loading ? (
                                     <>
                                         <Loader2 className="w-5 h-5 animate-spin" />
-                                        Analyzing Your Website...
+                                        {t("audit.analyzing")}
                                     </>
                                 ) : (
                                     <>
-                                        Get My Free Audit Report
+                                        {t("audit.getReport")}
                                         <ArrowRight className="w-5 h-5" />
                                     </>
                                 )}
                             </button>
 
                             <p className="text-[11px] text-muted/60 text-center">
-                                No credit card required. Your report will be ready in under 2 minutes.
+                                {t("audit.noCreditCard")}
                             </p>
                         </form>
                     </div>
@@ -232,11 +233,10 @@ export default function AuditPage() {
             <section className="py-16 bg-card/50">
                 <div className="max-w-6xl mx-auto px-4">
                     <h2 className="text-2xl md:text-3xl font-bold text-foreground text-center mb-3">
-                        What&apos;s In Your Audit Report?
+                        {t("audit.whatInReport")}
                     </h2>
                     <p className="text-muted text-center mb-12 max-w-2xl mx-auto">
-                        Our AI engine performs a comprehensive analysis of your website and delivers
-                        actionable insights in a beautiful, branded report.
+                        {t("audit.whatInReportDesc")}
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {auditFeatures.map((f, i) => (
@@ -256,7 +256,7 @@ export default function AuditPage() {
             <section className="py-16">
                 <div className="max-w-4xl mx-auto px-4">
                     <h2 className="text-2xl md:text-3xl font-bold text-foreground text-center mb-12">
-                        How It Works
+                        {t("audit.howItWorks")}
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         {[
@@ -299,13 +299,13 @@ export default function AuditPage() {
             <section className="py-16">
                 <div className="max-w-2xl mx-auto px-4 text-center">
                     <h2 className="text-2xl font-bold text-foreground mb-4">
-                        Ready to Discover Hidden Opportunities?
+                        {t("audit.readyToDiscover")}
                     </h2>
                     <p className="text-muted mb-8">
-                        Join thousands of businesses who&apos;ve used our free audit to improve their advertising performance.
+                        {t("audit.joinThousands")}
                     </p>
                     <a href="#" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="inline-flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-8 py-3 rounded-lg font-semibold text-lg transition">
-                        Start Your Free Audit
+                        {t("audit.startFreeAudit")}
                         <ArrowRight className="w-5 h-5" />
                     </a>
                 </div>

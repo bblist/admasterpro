@@ -9,6 +9,7 @@ import {
 import Link from "next/link";
 import { authFetch } from "@/lib/auth-client";
 import { useBusiness } from "@/lib/business-context";
+import { useTranslation } from "@/i18n/context";
 
 interface Keyword {
     id: string;
@@ -41,6 +42,7 @@ const matchTypeColors: Record<string, string> = {
 };
 
 export default function KeywordsPage() {
+    const { t } = useTranslation();
     const { activeBusiness } = useBusiness();
     const [keywords, setKeywords] = useState<Keyword[]>([]);
     const [loading, setLoading] = useState(true);
@@ -116,21 +118,21 @@ export default function KeywordsPage() {
     if (!loading && !connected) {
         return (
             <div className="max-w-4xl mx-auto space-y-6">
-                <h1 className="text-2xl font-bold">Keywords</h1>
+                <h1 className="text-2xl font-bold">{t("keywords.title")}</h1>
                 <div className="bg-card border border-border rounded-2xl p-12 text-center">
                     <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
                         <Key className="w-8 h-8 text-primary" />
                     </div>
-                    <h2 className="text-xl font-bold mb-2">Connect Google Ads</h2>
+                    <h2 className="text-xl font-bold mb-2">{t("keywords.connectTitle")}</h2>
                     <p className="text-muted text-sm max-w-md mx-auto mb-8">
-                        Link your Google Ads account to see your keyword performance data.
+                        {t("keywords.connectDesc")}
                     </p>
                     <div className="flex flex-col sm:flex-row gap-3 justify-center">
                         <Link href="/dashboard/settings" className="inline-flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-xl font-medium transition">
-                            Connect Account <ArrowRight className="w-4 h-4" />
+                            {t("keywords.connectAccount")} <ArrowRight className="w-4 h-4" />
                         </Link>
                         <Link href="/dashboard/chat" className="inline-flex items-center gap-2 bg-card border border-border hover:border-primary px-6 py-3 rounded-xl font-medium transition">
-                            <Zap className="w-4 h-4" /> Research Keywords with AI
+                            <Zap className="w-4 h-4" /> {t("keywords.researchWithAI")}
                         </Link>
                     </div>
                 </div>
@@ -143,17 +145,17 @@ export default function KeywordsPage() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold">Keywords</h1>
-                    <p className="text-muted text-sm mt-1">{keywords.length} keyword{keywords.length !== 1 ? "s" : ""} tracked</p>
+                    <h1 className="text-2xl font-bold">{t("keywords.title")}</h1>
+                    <p className="text-muted text-sm mt-1">{t("keywords.tracked", { count: keywords.length })}</p>
                 </div>
                 <div className="flex items-center gap-2">
                     <select value={dateRange} onChange={(e) => setDateRange(e.target.value)}
                         className="bg-card border border-border rounded-lg px-3 py-2 text-sm">
-                        <option value="LAST_7_DAYS">Last 7 days</option>
-                        <option value="LAST_14_DAYS">Last 14 days</option>
-                        <option value="LAST_30_DAYS">Last 30 days</option>
-                        <option value="THIS_MONTH">This month</option>
-                        <option value="LAST_MONTH">Last month</option>
+                        <option value="LAST_7_DAYS">{t("keywords.last7")}</option>
+                        <option value="LAST_14_DAYS">{t("keywords.last14")}</option>
+                        <option value="LAST_30_DAYS">{t("keywords.last30")}</option>
+                        <option value="THIS_MONTH">{t("keywords.thisMonth")}</option>
+                        <option value="LAST_MONTH">{t("keywords.lastMonth")}</option>
                     </select>
                     <button onClick={fetchKeywords} className="p-2 bg-card border border-border rounded-lg hover:border-primary transition" title="Refresh">
                         <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
@@ -164,19 +166,19 @@ export default function KeywordsPage() {
             {/* Summary */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-card border border-border rounded-xl p-4">
-                    <div className="flex items-center gap-2 text-sm text-muted mb-1"><DollarSign className="w-4 h-4" /> Total Spend</div>
+                    <div className="flex items-center gap-2 text-sm text-muted mb-1"><DollarSign className="w-4 h-4" /> {t("keywords.totalSpend")}</div>
                     <div className="text-2xl font-bold">${totals.cost.toFixed(2)}</div>
                 </div>
                 <div className="bg-card border border-border rounded-xl p-4">
-                    <div className="flex items-center gap-2 text-sm text-muted mb-1"><MousePointer className="w-4 h-4" /> Total Clicks</div>
+                    <div className="flex items-center gap-2 text-sm text-muted mb-1"><MousePointer className="w-4 h-4" /> {t("keywords.totalClicks")}</div>
                     <div className="text-2xl font-bold">{totals.clicks.toLocaleString()}</div>
                 </div>
                 <div className="bg-card border border-border rounded-xl p-4">
-                    <div className="flex items-center gap-2 text-sm text-muted mb-1"><Key className="w-4 h-4" /> Keywords</div>
+                    <div className="flex items-center gap-2 text-sm text-muted mb-1"><Key className="w-4 h-4" /> {t("keywords.title")}</div>
                     <div className="text-2xl font-bold">{keywords.length}</div>
                 </div>
                 <div className="bg-card border border-border rounded-xl p-4">
-                    <div className="flex items-center gap-2 text-sm text-muted mb-1"><Target className="w-4 h-4" /> Conversions</div>
+                    <div className="flex items-center gap-2 text-sm text-muted mb-1"><Target className="w-4 h-4" /> {t("keywords.conversions")}</div>
                     <div className="text-2xl font-bold">{totals.conversions.toFixed(1)}</div>
                 </div>
             </div>
@@ -186,14 +188,14 @@ export default function KeywordsPage() {
                 <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3 text-red-700">
                     <AlertCircle className="w-5 h-5 flex-shrink-0" />
                     <p className="text-sm">{error}</p>
-                    <button onClick={fetchKeywords} className="ml-auto text-sm underline">Retry</button>
+                    <button onClick={fetchKeywords} className="ml-auto text-sm underline">{t("common.retry")}</button>
                 </div>
             )}
             {mutateError && (
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-3 text-amber-700">
                     <AlertCircle className="w-4 h-4 flex-shrink-0" />
                     <p className="text-sm">{mutateError}</p>
-                    <button onClick={() => setMutateError(null)} className="ml-auto text-xs underline">Dismiss</button>
+                    <button onClick={() => setMutateError(null)} className="ml-auto text-xs underline">{t("common.dismiss")}</button>
                 </div>
             )}
 
@@ -209,11 +211,11 @@ export default function KeywordsPage() {
                 ))}
                 <select value={sortField} onChange={(e) => setSortField(e.target.value)}
                     className="ml-auto bg-card border border-border rounded-lg px-3 py-1.5 text-xs">
-                    <option value="cost">Sort: Spend</option>
-                    <option value="clicks">Sort: Clicks</option>
-                    <option value="conversions">Sort: Conversions</option>
-                    <option value="qualityScore">Sort: Quality Score</option>
-                    <option value="ctr">Sort: CTR</option>
+                    <option value="cost">{t("keywords.sortSpend")}</option>
+                    <option value="clicks">{t("keywords.sortClicks")}</option>
+                    <option value="conversions">{t("keywords.sortConversions")}</option>
+                    <option value="qualityScore">{t("keywords.sortQS")}</option>
+                    <option value="ctr">{t("keywords.sortCTR")}</option>
                 </select>
             </div>
 
@@ -231,17 +233,17 @@ export default function KeywordsPage() {
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b border-border bg-muted/30">
-                                    <th className="text-left p-3 font-medium">Keyword</th>
-                                    <th className="text-left p-3 font-medium">Match</th>
-                                    <th className="text-left p-3 font-medium">Campaign</th>
-                                    <th className="text-center p-3 font-medium">QS</th>
-                                    <th className="text-right p-3 font-medium">Impr.</th>
-                                    <th className="text-right p-3 font-medium">Clicks</th>
-                                    <th className="text-right p-3 font-medium">CTR</th>
-                                    <th className="text-right p-3 font-medium">Avg CPC</th>
-                                    <th className="text-right p-3 font-medium">Spend</th>
-                                    <th className="text-right p-3 font-medium">Conv.</th>
-                                    <th className="text-center p-3 font-medium">Actions</th>
+                                    <th className="text-left p-3 font-medium">{t("keywords.keyword")}</th>
+                                    <th className="text-left p-3 font-medium">{t("keywords.match")}</th>
+                                    <th className="text-left p-3 font-medium">{t("keywords.campaign")}</th>
+                                    <th className="text-center p-3 font-medium">{t("keywords.qs")}</th>
+                                    <th className="text-right p-3 font-medium">{t("keywords.impr")}</th>
+                                    <th className="text-right p-3 font-medium">{t("keywords.clicks")}</th>
+                                    <th className="text-right p-3 font-medium">{t("keywords.ctr")}</th>
+                                    <th className="text-right p-3 font-medium">{t("keywords.avgCpc")}</th>
+                                    <th className="text-right p-3 font-medium">{t("keywords.spend")}</th>
+                                    <th className="text-right p-3 font-medium">{t("keywords.conv")}</th>
+                                    <th className="text-center p-3 font-medium">{t("keywords.actions")}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -302,12 +304,12 @@ export default function KeywordsPage() {
             {!loading && keywords.length === 0 && connected && (
                 <div className="bg-card border border-border rounded-2xl p-12 text-center">
                     <Key className="w-12 h-12 text-muted mx-auto mb-4" />
-                    <h2 className="text-xl font-bold mb-2">No keywords found</h2>
+                    <h2 className="text-xl font-bold mb-2">{t("keywords.noKeywords")}</h2>
                     <p className="text-muted text-sm max-w-md mx-auto mb-6">
-                        Your account has no tracked keywords. Ask the AI to research and suggest keywords for your business.
+                        {t("keywords.noKeywordsDesc")}
                     </p>
                     <Link href="/dashboard/chat" className="inline-flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-xl font-medium transition">
-                        <Zap className="w-4 h-4" /> Research Keywords <ArrowRight className="w-4 h-4" />
+                        <Zap className="w-4 h-4" /> {t("keywords.researchKeywords")} <ArrowRight className="w-4 h-4" />
                     </Link>
                 </div>
             )}

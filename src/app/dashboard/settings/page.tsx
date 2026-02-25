@@ -25,6 +25,7 @@ import {
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { authFetch } from "@/lib/auth-client";
+import { useTranslation } from "@/i18n/context";
 
 interface SubscriptionInfo {
   plan: string;
@@ -36,6 +37,7 @@ interface SubscriptionInfo {
 }
 
 export default function SettingsPage() {
+  const { t } = useTranslation();
   const [autoPilot, setAutoPilot] = useState(true);
   const [dailyBudget, setDailyBudget] = useState("100");
   const [emailNotifs, setEmailNotifs] = useState(true);
@@ -140,8 +142,8 @@ export default function SettingsPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Settings</h1>
-        <p className="text-muted text-sm mt-1">Manage your AdMaster Pro preferences</p>
+        <h1 className="text-2xl font-bold">{t("settings.title")}</h1>
+        <p className="text-muted text-sm mt-1">{t("settings.subtitle")}</p>
       </div>
 
       {/* ─── Plan & Billing ─────────────────────────────────────────────── */}
@@ -151,8 +153,8 @@ export default function SettingsPage() {
             <Crown className="w-5 h-5 text-accent" />
           </div>
           <div>
-            <h2 className="font-semibold">Plan & Billing</h2>
-            <p className="text-sm text-muted mt-1">Manage your subscription and AI message usage.</p>
+            <h2 className="font-semibold">{t("settings.planBilling")}</h2>
+            <p className="text-sm text-muted mt-1">{t("settings.planBillingDesc")}</p>
           </div>
         </div>
 
@@ -174,18 +176,18 @@ export default function SettingsPage() {
                   <span className="text-sm text-muted">{planPrice(sub.plan)}/mo</span>
                   {sub.status === "active" && (
                     <span className="text-[10px] bg-success/15 text-success px-2 py-0.5 rounded-full font-medium">
-                      Active
+                      {t("settings.active")}
                     </span>
                   )}
                   {sub.status === "past_due" && (
                     <span className="text-[10px] bg-danger/15 text-danger px-2 py-0.5 rounded-full font-medium">
-                      Past Due
+                      {t("settings.pastDue")}
                     </span>
                   )}
                 </div>
                 {sub.currentPeriodEnd && (
                   <p className="text-xs text-muted mt-0.5">
-                    Renews {new Date(sub.currentPeriodEnd).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                    {t("settings.renews")} {new Date(sub.currentPeriodEnd).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
                   </p>
                 )}
               </div>
@@ -196,7 +198,7 @@ export default function SettingsPage() {
                   className="text-sm text-primary hover:text-primary-dark font-medium flex items-center gap-1 transition"
                 >
                   <CreditCard className="w-4 h-4" />
-                  {billingAction === "portal" ? "Loading..." : "Manage Billing"}
+                  {billingAction === "portal" ? t("common.loading") : t("settings.manageBilling")}
                 </button>
               ) : null}
             </div>
@@ -204,10 +206,10 @@ export default function SettingsPage() {
             {/* Usage Meter */}
             <div>
               <div className="flex items-center justify-between text-sm mb-1.5">
-                <span className="text-muted">AI Messages This Month</span>
+                <span className="text-muted">{t("settings.aiMessagesMonth")}</span>
                 <span className="font-medium">
                   {sub.plan === "pro" ? (
-                    <span className="text-accent">Unlimited</span>
+                    <span className="text-accent">{t("settings.unlimited")}</span>
                   ) : (
                     <>
                       {sub.aiMessagesUsed}{" "}
@@ -222,10 +224,10 @@ export default function SettingsPage() {
                 <div className="w-full h-2.5 bg-border rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all duration-500 ${usagePercent >= 90
-                        ? "bg-danger"
-                        : usagePercent >= 70
-                          ? "bg-warning"
-                          : "bg-primary"
+                      ? "bg-danger"
+                      : usagePercent >= 70
+                        ? "bg-warning"
+                        : "bg-primary"
                       }`}
                     style={{ width: `${usagePercent}%` }}
                   />
@@ -233,7 +235,7 @@ export default function SettingsPage() {
               )}
               {sub.bonusTokens > 0 && (
                 <p className="text-xs text-muted mt-1">
-                  Includes {sub.bonusTokens} bonus messages from top-ups
+                  {t("settings.includesBonus", { count: sub.bonusTokens })}
                 </p>
               )}
             </div>
@@ -248,7 +250,7 @@ export default function SettingsPage() {
                     className="bg-primary hover:bg-primary-dark text-white text-sm px-4 py-2 rounded-lg font-medium transition flex items-center gap-1.5"
                   >
                     <ArrowUpRight className="w-4 h-4" />
-                    {billingAction === "starter" ? "Loading..." : "Upgrade to Starter — $49/mo"}
+                    {billingAction === "starter" ? t("common.loading") : t("settings.upgradeStarter")}
                   </button>
                 )}
                 <button
@@ -257,13 +259,13 @@ export default function SettingsPage() {
                   className="bg-accent hover:bg-accent/90 text-white text-sm px-4 py-2 rounded-lg font-medium transition flex items-center gap-1.5"
                 >
                   <Sparkles className="w-4 h-4" />
-                  {billingAction === "pro" ? "Loading..." : "Upgrade to Pro — $149/mo"}
+                  {billingAction === "pro" ? t("common.loading") : t("settings.upgradePro")}
                 </button>
                 <Link
                   href="/pricing"
                   className="text-sm text-muted hover:text-foreground border border-border px-4 py-2 rounded-lg transition flex items-center gap-1"
                 >
-                  Compare Plans <ChevronRight className="w-3.5 h-3.5" />
+                  {t("settings.comparePlans")} <ChevronRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
             )}
@@ -273,7 +275,7 @@ export default function SettingsPage() {
               <div className="border-t border-border pt-4 mt-1">
                 <div className="flex items-center gap-2 mb-3">
                   <Package className="w-4 h-4 text-muted" />
-                  <span className="text-sm font-medium">Need more messages?</span>
+                  <span className="text-sm font-medium">{t("settings.needMore")}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   {[
@@ -295,7 +297,7 @@ export default function SettingsPage() {
                       <div className="text-lg font-bold group-hover:text-primary transition">
                         {topup.label}
                       </div>
-                      <div className="text-xs text-muted">{topup.messages} messages</div>
+                      <div className="text-xs text-muted">{topup.messages} {t("settings.messages")}</div>
                     </button>
                   ))}
                 </div>
@@ -304,7 +306,7 @@ export default function SettingsPage() {
           </div>
         ) : (
           <div className="text-sm text-muted">
-            <p>Subscription info unavailable. Sign in to view your plan.</p>
+            <p>{t("settings.subUnavailable")}</p>
           </div>
         )}
       </div>
@@ -317,11 +319,9 @@ export default function SettingsPage() {
               <Zap className="w-5 h-5 text-accent" />
             </div>
             <div>
-              <h2 className="font-semibold">Auto-Pilot Mode</h2>
+              <h2 className="font-semibold">{t("settings.autoPilot")}</h2>
               <p className="text-sm text-muted mt-1">
-                When on, I&apos;ll automatically handle small optimizations — pause clear losers, block junk
-                searches, and adjust bids. I&apos;ll always notify you after every change and stay inside
-                your daily budget.
+                {t("settings.autoPilotDesc")}
               </p>
             </div>
           </div>
@@ -339,27 +339,27 @@ export default function SettingsPage() {
 
         {autoPilot && (
           <div className="mt-4 pt-4 border-t border-border">
-            <h3 className="text-sm font-medium mb-3">Auto-Pilot will:</h3>
+            <h3 className="text-sm font-medium mb-3">{t("settings.autoPilotWill")}</h3>
             <div className="space-y-2 text-sm text-muted">
               <div className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 bg-success rounded-full"></div>
-                Pause keywords with $50+ spend and zero results (after 7 days)
+                {t("settings.ap1")}
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 bg-success rounded-full"></div>
-                Add negative keywords for junk searches (free, DIY, jobs, how to)
+                {t("settings.ap2")}
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 bg-success rounded-full"></div>
-                Lower bids on keywords costing 3x more than your average
+                {t("settings.ap3")}
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 bg-success rounded-full"></div>
-                Turn off ads during hours with zero results
+                {t("settings.ap4")}
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 bg-danger rounded-full"></div>
-                <span className="text-foreground font-medium">Never</span> create new campaigns, increase budgets, or change bid strategies
+                <span className="text-foreground font-medium">{t("settings.apNever")}</span>
               </div>
             </div>
           </div>
@@ -373,9 +373,9 @@ export default function SettingsPage() {
             <DollarSign className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h2 className="font-semibold">Daily Budget Limit</h2>
+            <h2 className="font-semibold">{t("settings.budgetLimit")}</h2>
             <p className="text-sm text-muted mt-1">
-              I&apos;ll never let your total daily ad spend go above this amount.
+              {t("settings.budgetLimitDesc")}
             </p>
           </div>
         </div>
@@ -387,7 +387,7 @@ export default function SettingsPage() {
             onChange={(e) => setDailyBudget(e.target.value)}
             className="w-32 bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary transition"
           />
-          <span className="text-sm text-muted">per day</span>
+          <span className="text-sm text-muted">{t("settings.perDay")}</span>
         </div>
       </div>
 
@@ -398,19 +398,19 @@ export default function SettingsPage() {
             <Bell className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h2 className="font-semibold">Notifications</h2>
-            <p className="text-sm text-muted mt-1">Choose how and when you want to hear from me.</p>
+            <h2 className="font-semibold">{t("settings.notifications")}</h2>
+            <p className="text-sm text-muted mt-1">{t("settings.notificationsDesc")}</p>
           </div>
         </div>
 
         {/* Channels */}
         <div className="mb-6">
-          <h3 className="text-sm font-medium mb-3">Notification Channels</h3>
+          <h3 className="text-sm font-medium mb-3">{t("settings.channels")}</h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm">
                 <Mail className="w-4 h-4 text-muted" />
-                Email Notifications
+                {t("settings.emailNotifs")}
               </div>
               <button onClick={() => setEmailNotifs(!emailNotifs)}>
                 {emailNotifs ? (
@@ -423,7 +423,7 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm">
                 <Smartphone className="w-4 h-4 text-muted" />
-                WhatsApp Notifications
+                {t("settings.whatsappNotifs")}
               </div>
               <button onClick={() => setWhatsappNotifs(!whatsappNotifs)}>
                 {whatsappNotifs ? (
@@ -438,12 +438,12 @@ export default function SettingsPage() {
 
         {/* Types */}
         <div className="pt-4 border-t border-border">
-          <h3 className="text-sm font-medium mb-3">Notification Types</h3>
+          <h3 className="text-sm font-medium mb-3">{t("settings.notifTypes")}</h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-sm">Daily Summary</div>
-                <div className="text-xs text-muted">A quick snapshot of yesterday&apos;s results</div>
+                <div className="text-sm">{t("settings.dailySummary")}</div>
+                <div className="text-xs text-muted">{t("settings.dailySummaryDesc")}</div>
               </div>
               <button onClick={() => setDailySummary(!dailySummary)}>
                 {dailySummary ? (
@@ -456,7 +456,7 @@ export default function SettingsPage() {
             {dailySummary && (
               <div className="flex items-center gap-2 ml-4 text-sm">
                 <Clock className="w-4 h-4 text-muted" />
-                <span className="text-muted">Send at</span>
+                <span className="text-muted">{t("settings.sendAt")}</span>
                 <input
                   type="time"
                   value={summaryTime}
@@ -467,8 +467,8 @@ export default function SettingsPage() {
             )}
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-sm">Instant Alerts</div>
-                <div className="text-xs text-muted">When a keyword burns money or something needs attention</div>
+                <div className="text-sm">{t("settings.instantAlerts")}</div>
+                <div className="text-xs text-muted">{t("settings.instantAlertsDesc")}</div>
               </div>
               <button onClick={() => setInstantAlerts(!instantAlerts)}>
                 {instantAlerts ? (
@@ -480,8 +480,8 @@ export default function SettingsPage() {
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-sm">Weekly Report</div>
-                <div className="text-xs text-muted">Every Monday — week-over-week comparison</div>
+                <div className="text-sm">{t("settings.weeklyReport")}</div>
+                <div className="text-xs text-muted">{t("settings.weeklyReportDesc")}</div>
               </div>
               <button onClick={() => setWeeklyReport(!weeklyReport)}>
                 {weeklyReport ? (
@@ -502,30 +502,30 @@ export default function SettingsPage() {
             <Shield className="w-5 h-5 text-success" />
           </div>
           <div>
-            <h2 className="font-semibold">Account Safety Rules</h2>
-            <p className="text-sm text-muted mt-1">These rules are always enforced and cannot be changed.</p>
+            <h2 className="font-semibold">{t("settings.safetyRules")}</h2>
+            <p className="text-sm text-muted mt-1">{t("settings.safetyRulesDesc")}</p>
           </div>
         </div>
         <div className="space-y-2 text-sm text-muted">
           <div className="flex items-center gap-2">
             <Shield className="w-3 h-3 text-success" />
-            New ads are always created as drafts — never pushed live without your approval
+            {t("settings.safety1")}
           </div>
           <div className="flex items-center gap-2">
             <Shield className="w-3 h-3 text-success" />
-            Campaigns are only ever paused, never deleted
+            {t("settings.safety2")}
           </div>
           <div className="flex items-center gap-2">
             <Shield className="w-3 h-3 text-success" />
-            Budget can never be increased more than 20% without your approval
+            {t("settings.safety3")}
           </div>
           <div className="flex items-center gap-2">
             <Shield className="w-3 h-3 text-success" />
-            Bid strategy changes always require your approval
+            {t("settings.safety4")}
           </div>
           <div className="flex items-center gap-2">
             <Shield className="w-3 h-3 text-success" />
-            Every change shows a preview before being applied
+            {t("settings.safety5")}
           </div>
         </div>
       </div>
@@ -543,17 +543,17 @@ export default function SettingsPage() {
           {saving ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              Saving...
+              {t("settings.saving")}
             </>
           ) : saved ? (
             <>
               <CheckCircle className="w-4 h-4" />
-              Saved!
+              {t("settings.saved")}
             </>
           ) : (
             <>
               <Save className="w-4 h-4" />
-              Save Settings
+              {t("settings.saveSettings")}
             </>
           )}
         </button>
@@ -565,6 +565,7 @@ export default function SettingsPage() {
 // ─── Connected Account Section ──────────────────────────────────────────────
 
 function ConnectedAccountSection() {
+  const { t } = useTranslation();
   const [accounts, setAccounts] = useState<Array<{ customerId: string; descriptiveName: string }>>([]);
   const [businesses, setBusinesses] = useState<Array<{ id: string; name: string; googleAdsId: string | null }>>([]);
   const [loading, setLoading] = useState(true);
@@ -601,11 +602,11 @@ function ConnectedAccountSection() {
 
   return (
     <div className="bg-card border border-border rounded-xl p-6">
-      <h2 className="font-semibold mb-4">Connected Accounts</h2>
+      <h2 className="font-semibold mb-4">{t("settings.connectedAccounts")}</h2>
 
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-muted">
-          <Loader2 className="w-4 h-4 animate-spin" /> Loading account info...
+          <Loader2 className="w-4 h-4 animate-spin" /> {t("settings.loadingAccount")}
         </div>
       ) : !connected ? (
         <div className="flex items-center justify-between">
@@ -614,15 +615,15 @@ function ConnectedAccountSection() {
               <span className="text-muted font-bold text-sm">G</span>
             </div>
             <div>
-              <div className="text-sm font-medium text-muted">No Google account connected</div>
-              <div className="text-xs text-muted">Sign in with Google to link your Ads account</div>
+              <div className="text-sm font-medium text-muted">{t("settings.noGoogle")}</div>
+              <div className="text-xs text-muted">{t("settings.noGoogleDesc")}</div>
             </div>
           </div>
           <button
             onClick={() => window.location.href = "/api/auth/callback"}
             className="text-sm text-primary hover:text-primary-dark font-medium transition flex items-center gap-1"
           >
-            Connect <ExternalLink className="w-3 h-3" />
+            {t("settings.connectGoogle")} <ExternalLink className="w-3 h-3" />
           </button>
         </div>
       ) : (
@@ -630,13 +631,13 @@ function ConnectedAccountSection() {
           {/* Connected status */}
           <div className="flex items-center gap-2 text-sm">
             <CheckCircle className="w-4 h-4 text-green-500" />
-            <span className="text-green-700 font-medium">Google account connected</span>
+            <span className="text-green-700 font-medium">{t("settings.googleConnected")}</span>
           </div>
 
           {/* Available Google Ads accounts */}
           {accounts.length > 0 && (
             <div>
-              <h3 className="text-sm font-medium mb-2">Google Ads Accounts</h3>
+              <h3 className="text-sm font-medium mb-2">{t("settings.googleAdsAccounts")}</h3>
               <div className="space-y-2">
                 {accounts.map(acc => {
                   const linkedBiz = businesses.find(b => b.googleAdsId === acc.customerId);
@@ -648,7 +649,7 @@ function ConnectedAccountSection() {
                       </div>
                       {linkedBiz ? (
                         <span className="text-xs text-green-600 font-medium flex items-center gap-1">
-                          <CheckCircle className="w-3 h-3" /> Linked to {linkedBiz.name}
+                          <CheckCircle className="w-3 h-3" /> {t("settings.linkedTo")} {linkedBiz.name}
                         </span>
                       ) : businesses.length > 0 ? (
                         <select
@@ -656,14 +657,14 @@ function ConnectedAccountSection() {
                           className="text-xs bg-card border border-border rounded px-2 py-1"
                           defaultValue=""
                         >
-                          <option value="">Link to business...</option>
+                          <option value="">{t("settings.linkToBusiness")}</option>
                           {businesses.filter(b => !b.googleAdsId).map(b => (
                             <option key={b.id} value={b.id}>{b.name}</option>
                           ))}
                         </select>
                       ) : (
                         <Link href="/dashboard/knowledge-base" className="text-xs text-primary hover:underline flex items-center gap-1">
-                          <Plus className="w-3 h-3" /> Add business first
+                          <Plus className="w-3 h-3" /> {t("settings.addBusinessFirst")}
                         </Link>
                       )}
                     </div>
@@ -675,7 +676,7 @@ function ConnectedAccountSection() {
 
           {accounts.length === 0 && (
             <div className="text-sm text-muted">
-              No Google Ads accounts found. Make sure your Google account has access to at least one Google Ads account.
+              {t("settings.noAdsAccounts")}
             </div>
           )}
         </div>

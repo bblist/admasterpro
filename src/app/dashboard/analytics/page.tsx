@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import { authFetch } from "@/lib/auth-client";
 import { useBusiness } from "@/lib/business-context";
+import { useTranslation } from "@/i18n/context";
 
 interface DailyData {
     date: string;
@@ -47,6 +48,7 @@ interface SearchTermData {
 }
 
 export default function AnalyticsPage() {
+    const { t } = useTranslation();
     const { activeBusiness } = useBusiness();
     const [dailyData, setDailyData] = useState<DailyData[]>([]);
     const [summary, setSummary] = useState<SummaryData | null>(null);
@@ -108,18 +110,18 @@ export default function AnalyticsPage() {
     if (!loading && !connected) {
         return (
             <div className="max-w-4xl mx-auto space-y-6">
-                <h1 className="text-2xl font-bold">Analytics</h1>
+                <h1 className="text-2xl font-bold">{t("analytics.title")}</h1>
                 <div className="bg-card border border-border rounded-2xl p-12 text-center">
                     <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
                         <BarChart3 className="w-8 h-8 text-primary" />
                     </div>
-                    <h2 className="text-xl font-bold mb-2">Connect Google Ads for Analytics</h2>
+                    <h2 className="text-xl font-bold mb-2">{t("analytics.connectTitle")}</h2>
                     <p className="text-muted text-sm max-w-md mx-auto mb-8">
-                        Link your Google Ads account to see detailed performance analytics, trends, and insights.
+                        {t("analytics.connectDesc")}
                     </p>
                     <div className="flex flex-col sm:flex-row gap-3 justify-center">
                         <Link href="/dashboard/settings" className="inline-flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-xl font-medium transition">
-                            Connect Account <ArrowRight className="w-4 h-4" />
+                            {t("analytics.connectAccount")} <ArrowRight className="w-4 h-4" />
                         </Link>
                     </div>
                 </div>
@@ -132,17 +134,17 @@ export default function AnalyticsPage() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold">Analytics</h1>
-                    <p className="text-muted text-sm mt-1">Performance overview for your Google Ads account</p>
+                    <h1 className="text-2xl font-bold">{t("analytics.title")}</h1>
+                    <p className="text-muted text-sm mt-1">{t("analytics.subtitle")}</p>
                 </div>
                 <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-muted" />
                     <select value={days} onChange={(e) => setDays(Number(e.target.value))}
                         className="bg-card border border-border rounded-lg px-3 py-2 text-sm">
-                        <option value={7}>Last 7 days</option>
-                        <option value={14}>Last 14 days</option>
-                        <option value={30}>Last 30 days</option>
-                        <option value={90}>Last 90 days</option>
+                        <option value={7}>{t("analytics.last7")}</option>
+                        <option value={14}>{t("analytics.last14")}</option>
+                        <option value={30}>{t("analytics.last30")}</option>
+                        <option value={90}>{t("analytics.last90")}</option>
                     </select>
                     <button onClick={fetchData} className="p-2 bg-card border border-border rounded-lg hover:border-primary transition">
                         <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
@@ -171,15 +173,15 @@ export default function AnalyticsPage() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="bg-card border border-border rounded-xl p-4">
                             <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm text-muted">Total Spend</span>
+                                <span className="text-sm text-muted">{t("analytics.totalSpend")}</span>
                                 <DollarSign className="w-4 h-4 text-muted" />
                             </div>
                             <div className="text-2xl font-bold">${summary.cost.toFixed(2)}</div>
-                            <div className="text-xs text-muted mt-1">Avg CPC: ${summary.avgCpc.toFixed(2)}</div>
+                            <div className="text-xs text-muted mt-1">{t("analytics.avgCpc")}: ${summary.avgCpc.toFixed(2)}</div>
                         </div>
                         <div className="bg-card border border-border rounded-xl p-4">
                             <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm text-muted">Clicks</span>
+                                <span className="text-sm text-muted">{t("analytics.clicks")}</span>
                                 <MousePointer className="w-4 h-4 text-muted" />
                             </div>
                             <div className="text-2xl font-bold">{summary.clicks.toLocaleString()}</div>
@@ -192,28 +194,28 @@ export default function AnalyticsPage() {
                         </div>
                         <div className="bg-card border border-border rounded-xl p-4">
                             <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm text-muted">Impressions</span>
+                                <span className="text-sm text-muted">{t("analytics.impressions")}</span>
                                 <Eye className="w-4 h-4 text-muted" />
                             </div>
                             <div className="text-2xl font-bold">{summary.impressions.toLocaleString()}</div>
                             <div className="text-xs text-muted mt-1">
-                                {summary.activeCampaigns} active, {summary.pausedCampaigns} paused
+                                {summary.activeCampaigns} {t("analytics.active")}, {summary.pausedCampaigns} {t("analytics.paused")}
                             </div>
                         </div>
                         <div className="bg-card border border-border rounded-xl p-4">
                             <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm text-muted">Conversions</span>
+                                <span className="text-sm text-muted">{t("analytics.conversions")}</span>
                                 <Target className="w-4 h-4 text-muted" />
                             </div>
                             <div className="text-2xl font-bold">{summary.conversions.toFixed(1)}</div>
-                            <div className="text-xs text-muted mt-1">CPA: ${summary.costPerConversion.toFixed(2)}</div>
+                            <div className="text-xs text-muted mt-1">{t("analytics.cpa")}: ${summary.costPerConversion.toFixed(2)}</div>
                         </div>
                     </div>
 
                     {/* Chart */}
                     <div className="bg-card border border-border rounded-xl p-6">
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-                            <h2 className="text-lg font-semibold">Performance Trend</h2>
+                            <h2 className="text-lg font-semibold">{t("analytics.performanceTrend")}</h2>
                             <div className="flex items-center gap-1 bg-muted/30 rounded-lg p-1">
                                 {(Object.keys(chartConfigs) as Array<keyof typeof chartConfigs>).map((key) => (
                                     <button key={key} onClick={() => setActiveChart(key)}
@@ -249,7 +251,7 @@ export default function AnalyticsPage() {
                             </ResponsiveContainer>
                         ) : (
                             <div className="h-[320px] flex items-center justify-center text-muted">
-                                No data for the selected period
+                                {t("analytics.noData")}
                             </div>
                         )}
                     </div>
@@ -257,7 +259,7 @@ export default function AnalyticsPage() {
                     {/* Cost & Clicks Comparison Chart */}
                     {chartData.length > 0 && (
                         <div className="bg-card border border-border rounded-xl p-6">
-                            <h2 className="text-lg font-semibold mb-6">Cost vs. Clicks</h2>
+                            <h2 className="text-lg font-semibold mb-6">{t("analytics.costVsClicks")}</h2>
                             <ResponsiveContainer width="100%" height={280}>
                                 <BarChart data={chartData}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -276,7 +278,7 @@ export default function AnalyticsPage() {
                     {/* Conversions Line Chart */}
                     {chartData.length > 0 && (
                         <div className="bg-card border border-border rounded-xl p-6">
-                            <h2 className="text-lg font-semibold mb-6">Conversions Over Time</h2>
+                            <h2 className="text-lg font-semibold mb-6">{t("analytics.conversionsOverTime")}</h2>
                             <ResponsiveContainer width="100%" height={280}>
                                 <LineChart data={chartData}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -293,19 +295,19 @@ export default function AnalyticsPage() {
                     {searchTerms.length > 0 && (
                         <div className="bg-card border border-border rounded-xl overflow-hidden">
                             <div className="p-4 border-b border-border">
-                                <h2 className="text-lg font-semibold">Top Search Terms</h2>
-                                <p className="text-sm text-muted">What people actually searched to trigger your ads</p>
+                                <h2 className="text-lg font-semibold">{t("analytics.topSearchTerms")}</h2>
+                                <p className="text-sm text-muted">{t("analytics.searchTermsDesc")}</p>
                             </div>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
                                     <thead>
                                         <tr className="border-b border-border bg-muted/30">
-                                            <th className="text-left p-3 font-medium">Search Term</th>
-                                            <th className="text-left p-3 font-medium">Campaign</th>
-                                            <th className="text-right p-3 font-medium">Clicks</th>
-                                            <th className="text-right p-3 font-medium">Cost</th>
-                                            <th className="text-right p-3 font-medium">Conv.</th>
-                                            <th className="text-right p-3 font-medium">CTR</th>
+                                            <th className="text-left p-3 font-medium">{t("analytics.searchTerm")}</th>
+                                            <th className="text-left p-3 font-medium">{t("analytics.campaign")}</th>
+                                            <th className="text-right p-3 font-medium">{t("analytics.clicks")}</th>
+                                            <th className="text-right p-3 font-medium">{t("analytics.cost")}</th>
+                                            <th className="text-right p-3 font-medium">{t("analytics.conv")}</th>
+                                            <th className="text-right p-3 font-medium">{t("analytics.ctr")}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -328,8 +330,7 @@ export default function AnalyticsPage() {
                     {/* AI Analysis CTA */}
                     <div className="bg-primary-light border border-primary/20 rounded-xl p-4">
                         <p className="text-sm">
-                            <strong>\ud83d\udca1 Pro tip:</strong> Ask the AI &mdash; &ldquo;Analyze my last 30 days of ad performance and identify money leaks&rdquo;
-                            for a detailed breakdown with specific optimization recommendations.
+                            <strong>\ud83d\udca1 {t("analytics.proTip")}:</strong> {t("analytics.proTipText")}
                         </p>
                     </div>
                 </>

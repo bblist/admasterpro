@@ -19,8 +19,10 @@ import {
 } from "lucide-react";
 import { PLANS, TOP_UPS } from "@/lib/plans";
 import { getAuthUser, authFetch } from "@/lib/auth-client";
+import { useTranslation } from "@/i18n/context";
 
 function PricingContent() {
+    const { t } = useTranslation();
     const searchParams = useSearchParams();
     const cancelled = searchParams.get("cancelled");
     const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
@@ -135,13 +137,13 @@ function PricingContent() {
                     </Link>
                     <div className="flex items-center gap-3">
                         <Link href="/login" className="text-sm text-muted hover:text-foreground transition">
-                            Log In
+                            {t("common.logIn")}
                         </Link>
                         <Link
                             href="/onboarding"
                             className="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg text-sm font-medium transition"
                         >
-                            Start Free
+                            {t("common.startFree")}
                         </Link>
                     </div>
                 </div>
@@ -155,17 +157,17 @@ function PricingContent() {
                         <div className="text-left">
                             <div className="flex items-center gap-2 mb-1">
                                 <Sparkles className="w-5 h-5" />
-                                <span className="font-bold text-lg">7-Day Free Trial</span>
+                                <span className="font-bold text-lg">{t("pricing.trialTitle")}</span>
                             </div>
                             <p className="text-sm text-white/90">
-                                Full access to all features — no credit card required. We&apos;re still in beta, so everything is free!
+                                {t("pricing.trialDesc")}
                             </p>
                         </div>
                         <Link
                             href="/login"
                             className="shrink-0 bg-white text-green-600 hover:bg-green-50 px-6 py-3 rounded-xl font-bold text-sm transition flex items-center gap-2"
                         >
-                            Start Free Trial
+                            {t("pricing.startTrial")}
                             <ArrowRight className="w-4 h-4" />
                         </Link>
                     </div>
@@ -173,25 +175,25 @@ function PricingContent() {
 
                 <div className="inline-flex items-center gap-2 bg-primary-light text-primary px-3 py-1 rounded-full text-sm font-medium mb-4">
                     <Crown className="w-4 h-4" />
-                    Simple, Transparent Pricing
+                    {t("pricing.badge")}
                 </div>
                 <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">
-                    Choose the plan that fits your business
+                    {t("pricing.title")}
                 </h1>
                 <p className="text-lg text-muted max-w-2xl mx-auto mb-6">
-                    Start with a 7-day free trial — full access, no credit card. Upgrade when you&apos;re ready.
+                    {t("pricing.subtitle")}
                 </p>
 
                 {cancelled && (
                     <div className="max-w-md mx-auto mb-6 bg-amber-50 border border-amber-200 text-amber-700 text-sm rounded-lg px-4 py-3">
-                        Checkout was cancelled. No worries — you can try again anytime.
+                        {t("pricing.cancelledMsg")}
                     </div>
                 )}
 
                 {/* Billing toggle */}
                 <div className="flex items-center justify-center gap-3 mb-12">
                     <span className={`text-sm ${billingCycle === "monthly" ? "text-foreground font-medium" : "text-muted"}`}>
-                        Monthly
+                        {t("pricing.monthly")}
                     </span>
                     <button
                         onClick={() => setBillingCycle(billingCycle === "monthly" ? "annual" : "monthly")}
@@ -202,11 +204,11 @@ function PricingContent() {
                         />
                     </button>
                     <span className={`text-sm ${billingCycle === "annual" ? "text-foreground font-medium" : "text-muted"}`}>
-                        Annual
+                        {t("pricing.annual")}
                     </span>
                     {billingCycle === "annual" && (
                         <span className="bg-green-100 text-green-700 text-xs font-medium px-2 py-0.5 rounded-full">
-                            Save 20%
+                            {t("pricing.save20")}
                         </span>
                     )}
                 </div>
@@ -232,7 +234,7 @@ function PricingContent() {
                                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                                         <div className="bg-primary text-white text-xs font-bold px-4 py-1 rounded-full flex items-center gap-1">
                                             <Star className="w-3 h-3 fill-white" />
-                                            Most Popular
+                                            {t("pricing.mostPopular")}
                                         </div>
                                     </div>
                                 )}
@@ -241,7 +243,7 @@ function PricingContent() {
                                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                                         <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold px-4 py-1 rounded-full flex items-center gap-1">
                                             <Sparkles className="w-3 h-3" />
-                                            Full Power
+                                            {t("pricing.fullPower")}
                                         </div>
                                     </div>
                                 )}
@@ -311,7 +313,7 @@ function PricingContent() {
                             className="inline-flex items-center gap-2 bg-card border border-border rounded-full px-6 py-3 text-sm font-medium hover:border-primary transition"
                         >
                             <CreditCard className="w-4 h-4 text-primary" />
-                            Need more AI messages? View Top-Up Packages
+                            {t("pricing.topUpCta")}
                             {showTopUps ? <Minus className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
                         </button>
                     </div>
@@ -326,11 +328,11 @@ function PricingContent() {
                                 >
                                     {topUp.popular && (
                                         <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-primary text-white text-[10px] font-bold px-3 py-0.5 rounded-full">
-                                            Best Value
+                                            {t("pricing.bestValue")}
                                         </div>
                                     )}
                                     <div className="text-3xl font-bold mb-1">${topUp.amount}</div>
-                                    <div className="text-sm text-muted mb-1">one-time</div>
+                                    <div className="text-sm text-muted mb-1">{t("pricing.oneTime")}</div>
                                     <div className="flex items-center justify-center gap-1.5 mb-4">
                                         <MessageCircle className="w-4 h-4 text-primary" />
                                         <span className="font-semibold">{topUp.label}</span>
@@ -339,13 +341,13 @@ function PricingContent() {
                                         <div className="text-xs text-green-600 font-medium mb-3">{topUp.savings}</div>
                                     )}
                                     <div className="text-xs text-muted mb-4">
-                                        ${(topUp.amount / topUp.messages).toFixed(2)}/message · Never expires
+                                        ${(topUp.amount / topUp.messages).toFixed(2)}/{t("pricing.perMessage")} · {t("pricing.neverExpires")}
                                     </div>
                                     <button
                                         onClick={() => handleTopUp(topUp.id)}
                                         className="w-full py-2.5 border border-border rounded-lg text-sm font-medium hover:border-primary hover:text-primary transition"
                                     >
-                                        Buy Now
+                                        {t("pricing.buyNow")}
                                     </button>
                                 </div>
                             ))}
@@ -357,13 +359,13 @@ function PricingContent() {
             {/* Feature Comparison Table */}
             <section className="px-4 pb-16">
                 <div className="max-w-5xl mx-auto">
-                    <h2 className="text-2xl font-bold text-center mb-8">Detailed Feature Comparison</h2>
+                    <h2 className="text-2xl font-bold text-center mb-8">{t("pricing.comparisonTitle")}</h2>
                     <div className="bg-card border border-border rounded-xl overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="border-b border-border bg-sidebar">
-                                        <th className="text-left p-4 font-semibold">Feature</th>
+                                        <th className="text-left p-4 font-semibold">{t("pricing.feature")}</th>
                                         <th className="text-center p-4 font-semibold">Free</th>
                                         <th className="text-center p-4 font-semibold text-primary">Starter · $49/mo</th>
                                         <th className="text-center p-4 font-semibold text-amber-600">Pro · $149/mo</th>
@@ -420,7 +422,7 @@ function PricingContent() {
             {/* FAQ */}
             <section className="px-4 pb-20">
                 <div className="max-w-3xl mx-auto">
-                    <h2 className="text-2xl font-bold text-center mb-8">Frequently Asked Questions</h2>
+                    <h2 className="text-2xl font-bold text-center mb-8">{t("pricing.faqTitle")}</h2>
                     <div className="space-y-3">
                         {faqs.map((faq, i) => (
                             <div
@@ -454,30 +456,30 @@ function PricingContent() {
                 <div className="max-w-3xl mx-auto text-center">
                     <div className="bg-primary text-white rounded-2xl p-8 md:p-12">
                         <h2 className="text-2xl md:text-3xl font-bold mb-4">
-                            Ready to stop wasting money on Google Ads?
+                            {t("pricing.ctaTitle")}
                         </h2>
                         <p className="text-lg opacity-90 mb-6">
-                            Start with a free audit. See exactly where your ad budget is going. No credit card required.
+                            {t("pricing.ctaSubtitle")}
                         </p>
                         <Link
                             href="/onboarding"
                             className="inline-flex items-center gap-2 bg-white text-primary hover:bg-gray-100 px-8 py-3 rounded-xl font-semibold text-lg transition"
                         >
-                            Get Your Free Audit
+                            {t("pricing.ctaButton")}
                             <ArrowRight className="w-5 h-5" />
                         </Link>
                         <div className="flex items-center justify-center gap-6 mt-6 text-sm opacity-80">
                             <div className="flex items-center gap-1.5">
                                 <Shield className="w-4 h-4" />
-                                SSL Encrypted
+                                {t("pricing.trustSsl")}
                             </div>
                             <div className="flex items-center gap-1.5">
                                 <Shield className="w-4 h-4" />
-                                7-Day Free Trial
+                                {t("pricing.trustTrial")}
                             </div>
                             <div className="flex items-center gap-1.5">
                                 <Shield className="w-4 h-4" />
-                                Cancel Anytime
+                                {t("pricing.trustCancel")}
                             </div>
                         </div>
                     </div>
@@ -495,10 +497,10 @@ function PricingContent() {
                                 </div>
                                 <span className="font-semibold text-sm">AdMaster Pro</span>
                             </div>
-                            <p className="text-xs text-muted leading-relaxed">AI-powered Google Ads management for small businesses.</p>
+                            <p className="text-xs text-muted leading-relaxed">{t("landing.footerTagline")}</p>
                         </div>
                         <div>
-                            <h4 className="font-semibold text-sm mb-3">Product</h4>
+                            <h4 className="font-semibold text-sm mb-3">{t("common.product")}</h4>
                             <div className="flex flex-col gap-2 text-sm text-muted">
                                 <a href="/pricing" className="hover:text-foreground transition">Pricing</a>
                                 <a href="/audit" className="hover:text-foreground transition">Free Audit</a>
@@ -507,14 +509,14 @@ function PricingContent() {
                             </div>
                         </div>
                         <div>
-                            <h4 className="font-semibold text-sm mb-3">Company</h4>
+                            <h4 className="font-semibold text-sm mb-3">{t("common.company")}</h4>
                             <div className="flex flex-col gap-2 text-sm text-muted">
                                 <a href="/about" className="hover:text-foreground transition">About Us</a>
                                 <a href="mailto:support@admasterai.com" className="hover:text-foreground transition">Contact</a>
                             </div>
                         </div>
                         <div>
-                            <h4 className="font-semibold text-sm mb-3">Legal</h4>
+                            <h4 className="font-semibold text-sm mb-3">{t("common.legal")}</h4>
                             <div className="flex flex-col gap-2 text-sm text-muted">
                                 <a href="/privacy" className="hover:text-foreground transition">Privacy Policy</a>
                                 <a href="/terms" className="hover:text-foreground transition">Terms of Service</a>

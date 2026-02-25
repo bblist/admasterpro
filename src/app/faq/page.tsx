@@ -18,6 +18,7 @@ import {
     Sparkles,
     type LucideIcon,
 } from "lucide-react";
+import { useTranslation } from "@/i18n/context";
 
 interface FAQItem {
     q: string;
@@ -251,6 +252,7 @@ function generateFAQSchema() {
 }
 
 export default function PublicFAQPage() {
+    const { t } = useTranslation();
     const [search, setSearch] = useState("");
     const [openItems, setOpenItems] = useState<Set<string>>(new Set());
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -303,9 +305,9 @@ export default function PublicFAQPage() {
                         <Link href="/audit" className="hover:text-foreground transition">Free Audit</Link>
                     </div>
                     <div className="flex items-center gap-3">
-                        <Link href="/login" className="text-sm text-muted hover:text-foreground transition">Log In</Link>
+                        <Link href="/login" className="text-sm text-muted hover:text-foreground transition">{t("common.logIn")}</Link>
                         <Link href="/onboarding" className="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg text-sm font-medium transition">
-                            Start Free
+                            {t("common.startFree")}
                         </Link>
                     </div>
                 </div>
@@ -421,10 +423,10 @@ export default function PublicFAQPage() {
                     {filteredCategories.length === 0 && (
                         <div className="text-center py-12">
                             <HelpCircle className="w-12 h-12 text-muted/30 mx-auto mb-4" />
-                            <h3 className="font-semibold text-foreground mb-2">No matching questions</h3>
-                            <p className="text-sm text-muted mb-4">Try a different search term or browse all categories.</p>
+                            <h3 className="font-semibold text-foreground mb-2">{t("publicFaq.noResults")}</h3>
+                            <p className="text-sm text-muted mb-4">{t("publicFaq.noResultsDesc")}</p>
                             <button onClick={() => { setSearch(""); setActiveCategory(null); }} className="text-sm text-primary hover:underline">
-                                Clear search
+                                {t("publicFaq.clearSearch")}
                             </button>
                         </div>
                     )}
@@ -432,9 +434,9 @@ export default function PublicFAQPage() {
                     {/* Still have questions CTA */}
                     <div className="mt-12 bg-gradient-to-r from-primary/5 to-blue-500/5 border border-primary/20 rounded-xl p-8 text-center">
                         <Sparkles className="w-8 h-8 text-primary mx-auto mb-3" />
-                        <h3 className="text-xl font-semibold text-foreground mb-2">Still have questions?</h3>
+                        <h3 className="text-xl font-semibold text-foreground mb-2">{t("publicFaq.stillHaveQuestions")}</h3>
                         <p className="text-sm text-muted mb-6 max-w-lg mx-auto">
-                            Get in touch with our team or try our free AI-powered website audit to see AdMaster Pro in action.
+                            {t("publicFaq.getInTouch")}
                         </p>
                         <div className="flex flex-col sm:flex-row gap-3 justify-center">
                             <Link
@@ -442,14 +444,14 @@ export default function PublicFAQPage() {
                                 className="inline-flex items-center justify-center gap-2 bg-primary text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-primary-dark transition"
                             >
                                 <Zap className="w-4 h-4" />
-                                Try Free Audit
+                                {t("publicFaq.tryAudit")}
                             </Link>
                             <a
                                 href="mailto:support@admasterai.com"
                                 className="inline-flex items-center justify-center gap-2 border border-border text-foreground px-6 py-2.5 rounded-lg text-sm font-medium hover:border-primary transition"
                             >
                                 <MessageCircle className="w-4 h-4" />
-                                Email Support
+                                {t("publicFaq.emailSupport")}
                             </a>
                         </div>
                     </div>

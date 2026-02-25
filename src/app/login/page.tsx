@@ -5,10 +5,12 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense, useState } from "react";
 import { Zap, Mail, ArrowRight, Shield } from "lucide-react";
 import { setAuth, decodeTokenPayload, clearAuth } from "@/lib/auth-client";
+import { useTranslation } from "@/i18n/context";
 
 const emailLoginEnabled = process.env.NEXT_PUBLIC_ENABLE_EMAIL_LOGIN !== "false";
 
 function LoginForm() {
+    const { t } = useTranslation();
     const searchParams = useSearchParams();
     const router = useRouter();
     const next = searchParams.get("next") || "/dashboard/chat";
@@ -32,11 +34,11 @@ function LoginForm() {
     const handleEmailSignIn = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!email.trim()) {
-            setEmailError("Email is required");
+            setEmailError(t("login.error.emailRequired"));
             return;
         }
         if (!email.includes("@")) {
-            setEmailError("Enter a valid email address");
+            setEmailError(t("login.error.emailInvalid"));
             return;
         }
         setEmailError("");
@@ -57,11 +59,11 @@ function LoginForm() {
                 }
                 router.push(redirectTo);
             } else {
-                setEmailError("Sign-in failed. Please try again.");
+                setEmailError(t("login.error.signInFailed"));
                 setLoading(false);
             }
         } catch {
-            setEmailError("Network error. Please try again.");
+            setEmailError(t("login.error.network"));
             setLoading(false);
         }
     };
@@ -82,17 +84,16 @@ function LoginForm() {
                         <span className="text-2xl font-bold">AdMaster Pro</span>
                     </div>
                     <h2 className="text-4xl font-bold leading-tight mb-4">
-                        Your AI-Powered<br />Google Ads Manager
+                        {t("login.brandTitle")}
                     </h2>
                     <p className="text-lg text-white/80 leading-relaxed mb-8 max-w-md">
-                        Create campaigns, optimize keywords, generate ad copy, and manage your entire
-                        Google Ads account with an AI agent that works 24/7.
+                        {t("login.brandDesc")}
                     </p>
                     <div className="space-y-3">
                         {[
-                            "Sign in with your Google Ads account email",
-                            "AI instantly connects to your ad campaigns",
-                            "Full campaign management on autopilot",
+                            t("login.feature1"),
+                            t("login.feature2"),
+                            t("login.feature3"),
                         ].map((item, i) => (
                             <div key={i} className="flex items-center gap-3">
                                 <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
@@ -116,16 +117,16 @@ function LoginForm() {
                             </div>
                             <span className="text-xl font-bold">AdMaster Pro</span>
                         </Link>
-                        <h1 className="text-2xl font-bold">Welcome back</h1>
-                        <p className="text-muted text-sm mt-1">Sign in to manage your Google Ads</p>
+                        <h1 className="text-2xl font-bold">{t("login.title")}</h1>
+                        <p className="text-muted text-sm mt-1">{t("login.subtitle")}</p>
                     </div>
 
                     {/* Error messages */}
                     {error && (
                         <div className="mb-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
-                            {error === "auth_failed" && "Google sign-in failed. Please try again."}
-                            {error === "auth_error" && "Something went wrong during authentication. Please try again."}
-                            {error === "no_ads_account" && "No Google Ads account found for this email. You can still use AdMaster Pro — connect your Ads account later in Settings."}
+                            {error === "auth_failed" && t("login.error.googleFailed")}
+                            {error === "auth_error" && t("login.error.authFailed")}
+                            {error === "no_ads_account" && t("login.error.authFailed")}
                         </div>
                     )}
 
@@ -141,11 +142,11 @@ function LoginForm() {
                             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
                             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                         </svg>
-                        {loading ? "Connecting..." : "Sign in with Google"}
+                        {loading ? t("login.connecting") : t("login.google")}
                     </button>
 
                     <p className="text-[11px] text-muted text-center mt-2">
-                        Use the same Google account as your Google Ads account for instant access
+                        {t("login.googleTip")}
                     </p>
 
                     {emailLoginEnabled && <div className="relative my-6">
@@ -153,7 +154,7 @@ function LoginForm() {
                             <div className="w-full border-t border-border"></div>
                         </div>
                         <div className="relative flex justify-center text-xs">
-                            <span className="bg-background px-3 text-muted">or sign in with email</span>
+                            <span className="bg-background px-3 text-muted">{t("login.orEmail")}</span>
                         </div>
                     </div>}
 
@@ -163,7 +164,7 @@ function LoginForm() {
                             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                             <input
                                 type="email"
-                                placeholder="Email address"
+                                placeholder={t("login.emailPlaceholder")}
                                 value={email}
                                 onChange={(e) => { setEmail(e.target.value); setEmailError(""); }}
                                 className={`w-full bg-card border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-primary transition ${emailError ? "border-red-400" : "border-border"}`}
@@ -175,7 +176,7 @@ function LoginForm() {
                             disabled={loading}
                             className="w-full bg-primary hover:bg-primary-dark text-white py-2.5 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 disabled:opacity-50"
                         >
-                            Sign In
+                            {t("login.emailSubmit")}
                             <ArrowRight className="w-4 h-4" />
                         </button>
                     </form>}
@@ -188,7 +189,7 @@ function LoginForm() {
 
                     <div className="text-center mt-6 space-y-2">
                         <Link href="/onboarding" className="text-sm text-primary hover:underline block">
-                            Don&apos;t have an account? Sign up free →
+                            {t("login.noAccount")}
                         </Link>
                     </div>
 
@@ -197,10 +198,10 @@ function LoginForm() {
                         <div className="flex items-center justify-center gap-4 text-[10px] text-muted">
                             <div className="flex items-center gap-1">
                                 <Shield className="w-3 h-3" />
-                                <span>SSL Encrypted</span>
+                                <span>{t("login.trust.ssl")}</span>
                             </div>
                             <span>•</span>
-                            <span>Data Protected</span>
+                            <span>{t("login.trust.protected")}</span>
                         </div>
                     </div>
                 </div>

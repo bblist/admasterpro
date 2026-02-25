@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ChevronDown, Search, MessageCircle, CreditCard, Shield, Zap, BarChart3, Settings, HelpCircle, Users, type LucideIcon } from "lucide-react";
+import { useTranslation } from "@/i18n/context";
 
 interface FAQItem {
     q: string;
@@ -189,6 +190,7 @@ const categories: FAQCategory[] = [
 ];
 
 export default function FAQPage() {
+    const { t } = useTranslation();
     const [search, setSearch] = useState("");
     const [openItems, setOpenItems] = useState<Set<string>>(new Set());
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -225,8 +227,8 @@ export default function FAQPage() {
                         <HelpCircle className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold">Frequently Asked Questions</h1>
-                        <p className="text-sm text-muted">{totalQuestions} answers to help you get the most from AdMaster Pro</p>
+                        <h1 className="text-2xl font-bold">{t("dashFaq.title")}</h1>
+                        <p className="text-sm text-muted">{t("dashFaq.subtitle", { count: totalQuestions })}</p>
                     </div>
                 </div>
             </div>
@@ -238,7 +240,7 @@ export default function FAQPage() {
                     type="text"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search questions..."
+                    placeholder={t("dashFaq.searchPlaceholder")}
                     className="w-full bg-card border border-border rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-primary transition"
                 />
             </div>
@@ -248,8 +250,8 @@ export default function FAQPage() {
                 <button
                     onClick={() => setActiveCategory(null)}
                     className={`text-xs px-3 py-1.5 rounded-full transition font-medium ${!activeCategory
-                            ? "bg-primary text-white"
-                            : "border border-border text-muted hover:border-primary hover:text-primary"
+                        ? "bg-primary text-white"
+                        : "border border-border text-muted hover:border-primary hover:text-primary"
                         }`}
                 >
                     All ({totalQuestions})
@@ -259,8 +261,8 @@ export default function FAQPage() {
                         key={cat.label}
                         onClick={() => setActiveCategory(activeCategory === cat.label ? null : cat.label)}
                         className={`text-xs px-3 py-1.5 rounded-full transition font-medium flex items-center gap-1.5 ${activeCategory === cat.label
-                                ? "bg-primary text-white"
-                                : "border border-border text-muted hover:border-primary hover:text-primary"
+                            ? "bg-primary text-white"
+                            : "border border-border text-muted hover:border-primary hover:text-primary"
                             }`}
                     >
                         <cat.icon className="w-3 h-3" />
@@ -320,14 +322,14 @@ export default function FAQPage() {
             {/* Still have questions */}
             <div className="mt-10 bg-gradient-to-r from-primary/5 to-blue-500/5 border border-primary/20 rounded-xl p-6 text-center">
                 <HelpCircle className="w-8 h-8 text-primary mx-auto mb-2" />
-                <h3 className="font-semibold mb-1">Still have questions?</h3>
-                <p className="text-sm text-muted mb-4">Our AI assistant can answer anything about your account in real-time.</p>
+                <h3 className="font-semibold mb-1">{t("dashFaq.stillHaveQuestions")}</h3>
+                <p className="text-sm text-muted mb-4">{t("dashFaq.aiCanAnswer")}</p>
                 <Link
                     href="/dashboard/chat"
                     className="inline-flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-primary-dark transition"
                 >
                     <MessageCircle className="w-4 h-4" />
-                    Ask the AI Assistant
+                    {t("dashFaq.askAI")}
                 </Link>
             </div>
         </div>
