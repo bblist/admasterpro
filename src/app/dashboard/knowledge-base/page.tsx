@@ -759,30 +759,100 @@ export default function KnowledgeBasePage() {
     // ── Add URL entry ──
     const addURLEntry = async () => {
         if (!urlInput.trim()) return;
-        const url = urlInput.trim();
+        let url = urlInput.trim();
+        // Normalize URL
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            url = "https://" + url;
+        }
+        const tempId = Date.now();
         const newURL: CrawledURL = {
-            id: Date.now(),
+            id: tempId,
             url,
-            status: "queued",
+            status: "crawling",
             pagesFound: 0,
-            contentExtracted: "URL saved. Crawling will be available soon.",
+            contentExtracted: "Crawling website... This may take a moment.",
             client: activeBusiness.name,
         };
         setCrawledURLs(prev => [newURL, ...prev]);
         setUrlInput("");
 
         try {
-            await authFetch("/api/knowledge-base", {
+            const res = await authFetch("/api/crawl", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    type: "url",
-                    title: url,
-                    content: "URL saved. Crawling not yet started.",
+                    url,
                     businessId: activeBusiness.id,
+                    depth: 5,
                 }),
             });
-        } catch (err) { console.error("[KB] Failed to save URL:", err); }
+
+            if (res.ok) {
+                const data = await res.json();
+                setCrawledURLs(prev => prev.map(u =>
+                    u.id === tempId ? {
+                        ...u,
+                        status: "crawled" as CrawlStatus,
+                        pagesFound: data.item?.pagesFound || 1,
+                        contentExtracted: `Crawled ${data.item?.pagesFound || 1} pages — "${data.item?.title || url}"`,
+                        lastCrawled: new Date().toLocaleDateString(),
+                    } : u
+                ));
+            } else {
+                const errData = await res.json().catch(() => ({ error: "Crawl failed" }));
+                setCrawledURLs(prev => prev.map(u =>
+                    u.id === tempId ? {
+                        ...u,
+                        status: "failed" as CrawlStatus,
+                        contentExtracted: errData.error || "Crawl failed. The website may be blocking requests.",
+                    } : u
+                ));
+            }
+        } catch (err) {
+            console.error("[KB] Crawl error:", err);
+            setCrawledURLs(prev => prev.map(u =>
+                u.id === tempId ? {
+                    ...u,
+                    status: "failed" as CrawlStatus,
+                    contentExtracted: "Crawl failed. Check your network connection.",
+                } : u
+            ));
+        }
+    };
+
+    // Re-crawl / retry handler
+    const reCrawlURL = async (targetUrl: string, targetId: number) => {
+        setCrawledURLs(prev => prev.map(u =>
+            u.id === targetId ? { ...u, status: "crawling" as CrawlStatus, contentExtracted: "Re-crawling website..." } : u
+        ));
+        try {
+            const res = await authFetch("/api/crawl", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: targetUrl, businessId: activeBusiness.id, depth: 5 }),
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setCrawledURLs(prev => prev.map(u =>
+                    u.id === targetId ? {
+                        ...u,
+                        status: "crawled" as CrawlStatus,
+                        pagesFound: data.item?.pagesFound || 1,
+                        contentExtracted: `Crawled ${data.item?.pagesFound || 1} pages — "${data.item?.title || targetUrl}"`,
+                        lastCrawled: new Date().toLocaleDateString(),
+                    } : u
+                ));
+            } else {
+                const errData = await res.json().catch(() => ({ error: "Crawl failed" }));
+                setCrawledURLs(prev => prev.map(u =>
+                    u.id === targetId ? { ...u, status: "failed" as CrawlStatus, contentExtracted: errData.error || "Crawl failed." } : u
+                ));
+            }
+        } catch {
+            setCrawledURLs(prev => prev.map(u =>
+                u.id === targetId ? { ...u, status: "failed" as CrawlStatus, contentExtracted: "Crawl failed." } : u
+            ));
+        }
     };
 
     const tabs: { id: TabId; label: string; icon: React.ReactNode; count: number }[] = [
@@ -1342,8 +1412,8 @@ export default function KnowledgeBasePage() {
                                     <div className="flex flex-col items-end gap-2 shrink-0">
                                         {statusBadge(url.status)}
                                         <div className="flex gap-1.5">
-                                            {url.status === "crawled" && <button className="text-xs border border-border rounded-lg px-2.5 py-1.5 hover:border-primary transition flex items-center gap-1 text-muted hover:text-foreground"><RefreshCw className="w-3 h-3" /> Re-crawl</button>}
-                                            {url.status === "failed" && <button className="text-xs border border-border rounded-lg px-2.5 py-1.5 hover:border-primary transition flex items-center gap-1 text-muted hover:text-foreground"><RefreshCw className="w-3 h-3" /> Retry</button>}
+                                            {url.status === "crawled" && <button onClick={() => reCrawlURL(url.url, url.id)} className="text-xs border border-border rounded-lg px-2.5 py-1.5 hover:border-primary transition flex items-center gap-1 text-muted hover:text-foreground"><RefreshCw className="w-3 h-3" /> Re-crawl</button>}
+                                            {url.status === "failed" && <button onClick={() => reCrawlURL(url.url, url.id)} className="text-xs border border-border rounded-lg px-2.5 py-1.5 hover:border-primary transition flex items-center gap-1 text-muted hover:text-foreground"><RefreshCw className="w-3 h-3" /> Retry</button>}
                                             <button className="text-xs border border-border rounded-lg px-2 py-1.5 hover:border-danger text-muted hover:text-danger transition"><Trash2 className="w-3 h-3" /></button>
                                         </div>
                                     </div>

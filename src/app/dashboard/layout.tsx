@@ -195,8 +195,8 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
     const { activeBusiness } = useBusiness();
     const { t } = useTranslation();
 
-    // Notification state — use translations
-    const initialNotifications: Notification[] = [
+    // Notification state — use translations (sync-loaded so always available)
+    const [notifications, setNotifications] = useState<Notification[]>([
         {
             id: "welcome",
             type: "info",
@@ -207,8 +207,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
             action: t("notifications.welcome.action"),
             actionHref: "/dashboard/knowledge-base",
         },
-    ];
-    const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
+    ]);
     const [notifOpen, setNotifOpen] = useState(false);
     const notifRef = useRef<HTMLDivElement>(null);
 

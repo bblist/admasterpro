@@ -404,6 +404,7 @@ export default function ChatPage() {
     const silenceStartRef = useRef<number>(0);
     const hasAnalyserRef = useRef(false);
     const prevBusinessRef = useRef(activeBusiness.id);
+    const [kbContext, setKbContext] = useState<string>("");
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -432,6 +433,30 @@ export default function ChatPage() {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeBusiness]);
+
+    // Load knowledge base items for context injection
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await authFetch(`/api/knowledge-base?businessId=${activeBusiness.id}`);
+                if (!res.ok || cancelled) return;
+                const data = await res.json();
+                const items = data.items || [];
+                // Build context string from KB items (limit to ~8000 chars)
+                const parts: string[] = [];
+                let total = 0;
+                for (const item of items) {
+                    if (!item.content || total > 8000) break;
+                    const snippet = item.content.slice(0, 2000);
+                    parts.push(`[${item.type}: ${item.title}]\n${snippet}`);
+                    total += snippet.length;
+                }
+                if (!cancelled) setKbContext(parts.join("\n\n---\n\n"));
+            } catch { /* ignore */ }
+        })();
+        return () => { cancelled = true; };
+    }, [activeBusiness.id]);
 
     // Cleanup voice timers + audio context on unmount
     useEffect(() => {
@@ -795,6 +820,11 @@ export default function ChatPage() {
 
     const callAI = useCallback(async (message: string, chatHistory: Message[]) => {
         try {
+            // Build full context: shortDesc + KB content
+            const contextParts: string[] = [];
+            if (activeBusiness.shortDesc) contextParts.push(activeBusiness.shortDesc);
+            if (kbContext) contextParts.push("─── KNOWLEDGE BASE ───\n" + kbContext);
+
             const res = await authFetch("/api/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -806,7 +836,8 @@ export default function ChatPage() {
                     businessIndustry: activeBusiness.industry,
                     businessServices: activeBusiness.services,
                     businessLocation: activeBusiness.location,
-                    context: activeBusiness.shortDesc,
+                    businessWebsite: activeBusiness.website || activeBusiness.url || undefined,
+                    context: contextParts.join("\n\n"),
                     history: chatHistory
                         .filter((m) => m.role === "ai" || m.role === "user")
                         .slice(-10)
@@ -822,7 +853,7 @@ export default function ChatPage() {
             console.error("AI call failed:", err);
             return null;
         }
-    }, [activeBusiness, locale]);
+    }, [activeBusiness, locale, kbContext]);
 
     // ─── Send Message ───────────────────────────────────────────────────────
 
@@ -1082,32 +1113,115 @@ export default function ChatPage() {
 
     const isSafeHref = (url: string) => /^https?:\/\//i.test(url) || (url.startsWith("/") && !url.startsWith("//"));
 
+    const renderInline = (text: string) => {
+        // Handle bold + links within a line
+        return text.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/).map((part, j) => {
+            if (part.startsWith("**") && part.endsWith("**")) {
+                return <strong key={j} className="font-semibold">{part.slice(2, -2)}</strong>;
+            }
+            const linkMatch = part.match(/\[([^\]]+)\]\(([^)]+)\)/);
+            if (linkMatch) {
+                if (isSafeHref(linkMatch[2])) {
+                    return <a key={j} href={linkMatch[2]} className="text-primary underline hover:text-primary-dark" rel="noopener noreferrer">{linkMatch[1]}</a>;
+                }
+                return <span key={j} className="text-primary">{linkMatch[1]}</span>;
+            }
+            // Inline code
+            return <span key={j}>{part.split(/(`[^`]+`)/).map((seg, k) =>
+                seg.startsWith("`") && seg.endsWith("`")
+                    ? <code key={k} className="bg-muted/50 px-1 py-0.5 rounded text-xs font-mono">{seg.slice(1, -1)}</code>
+                    : <span key={k}>{seg}</span>
+            )}</span>;
+        });
+    };
+
     const renderMarkdown = (text: string) => {
-        return text.split("\n").map((line, i) => (
-            <span key={i}>
-                {line.split(/(\*\*[^*]+\*\*)/).map((part, j) =>
-                    part.startsWith("**") && part.endsWith("**") ? (
-                        <strong key={j} className="font-semibold">{part.slice(2, -2)}</strong>
-                    ) : part.includes("[") && part.includes("](") ? (
-                        <span key={j}>
-                            {part.split(/(\[[^\]]+\]\([^)]+\))/).map((seg, k) => {
-                                const linkMatch = seg.match(/\[([^\]]+)\]\(([^)]+)\)/);
-                                if (linkMatch && isSafeHref(linkMatch[2])) {
-                                    return <a key={k} href={linkMatch[2]} className="text-primary underline hover:text-primary-dark" rel="noopener noreferrer">{linkMatch[1]}</a>;
-                                }
-                                if (linkMatch) {
-                                    return <span key={k} className="text-primary">{linkMatch[1]}</span>;
-                                }
-                                return <span key={k}>{seg}</span>;
-                            })}
-                        </span>
-                    ) : (
-                        <span key={j}>{part}</span>
-                    )
-                )}
-                {i < text.split("\n").length - 1 && <br />}
-            </span>
-        ));
+        const lines = text.split("\n");
+        const elements: React.ReactNode[] = [];
+        let inCodeBlock = false;
+        let codeLines: string[] = [];
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+
+            // Code block toggle
+            if (line.trim().startsWith("```")) {
+                if (inCodeBlock) {
+                    elements.push(
+                        <pre key={`code-${i}`} className="bg-muted/60 border border-border rounded-lg p-3 my-2 overflow-x-auto text-xs font-mono leading-relaxed">
+                            <code>{codeLines.join("\n")}</code>
+                        </pre>
+                    );
+                    codeLines = [];
+                    inCodeBlock = false;
+                } else {
+                    inCodeBlock = true;
+                }
+                continue;
+            }
+            if (inCodeBlock) {
+                codeLines.push(line);
+                continue;
+            }
+
+            // Headings
+            const h3Match = line.match(/^###\s+(.+)/);
+            if (h3Match) {
+                elements.push(<h4 key={i} className="text-sm font-bold mt-3 mb-1">{renderInline(h3Match[1])}</h4>);
+                continue;
+            }
+            const h2Match = line.match(/^##\s+(.+)/);
+            if (h2Match) {
+                elements.push(<h3 key={i} className="text-base font-bold mt-3 mb-1">{renderInline(h2Match[1])}</h3>);
+                continue;
+            }
+            const h1Match = line.match(/^#\s+(.+)/);
+            if (h1Match) {
+                elements.push(<h2 key={i} className="text-lg font-bold mt-3 mb-1">{renderInline(h1Match[1])}</h2>);
+                continue;
+            }
+
+            // Horizontal rule
+            if (/^[-*_]{3,}\s*$/.test(line.trim())) {
+                elements.push(<hr key={i} className="border-border my-2" />);
+                continue;
+            }
+
+            // Numbered list
+            const numMatch = line.match(/^(\d+)\.\s+(.+)/);
+            if (numMatch) {
+                elements.push(
+                    <div key={i} className="flex gap-2 ml-1 my-0.5">
+                        <span className="text-muted font-medium min-w-[1.2em] text-right">{numMatch[1]}.</span>
+                        <span className="flex-1">{renderInline(numMatch[2])}</span>
+                    </div>
+                );
+                continue;
+            }
+
+            // Bullet list (-, *, •)
+            const bulletMatch = line.match(/^[\s]*[-*•]\s+(.+)/);
+            if (bulletMatch) {
+                elements.push(
+                    <div key={i} className="flex gap-2 ml-3 my-0.5">
+                        <span className="text-muted">•</span>
+                        <span className="flex-1">{renderInline(bulletMatch[1])}</span>
+                    </div>
+                );
+                continue;
+            }
+
+            // Empty line
+            if (line.trim() === "") {
+                elements.push(<div key={i} className="h-2" />);
+                continue;
+            }
+
+            // Regular paragraph
+            elements.push(<span key={i}>{renderInline(line)}{i < lines.length - 1 && <br />}</span>);
+        }
+
+        return <>{elements}</>;
     };
 
     const renderAdPreview = (ad: AdPreview, index: number) => {

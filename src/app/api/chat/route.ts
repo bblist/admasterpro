@@ -784,6 +784,32 @@ export async function POST(req: NextRequest) {
             }
         }
 
+        // ─── Fetch KB items server-side if context is thin ──────────────────
+        if (userId && body.businessId && (!body.context || body.context.length < 200)) {
+            try {
+                const { prisma: db } = await import("@/lib/db");
+                const kbItems = await db.knowledgeBaseItem.findMany({
+                    where: { userId, businessId: body.businessId },
+                    orderBy: { createdAt: "desc" },
+                    take: 20,
+                    select: { type: true, title: true, content: true },
+                });
+                if (kbItems.length > 0) {
+                    let total = 0;
+                    const parts: string[] = [];
+                    for (const item of kbItems) {
+                        if (total > 8000) break;
+                        const snippet = (item.content || "").slice(0, 2000);
+                        parts.push(`[${item.type}: ${item.title}]\n${snippet}`);
+                        total += snippet.length;
+                    }
+                    body.context = (body.context || "") + "\n\n─── KNOWLEDGE BASE ───\n" + parts.join("\n---\n");
+                }
+            } catch (kbErr) {
+                console.warn("[Chat] KB fetch error:", kbErr);
+            }
+        }
+
         // ─── Call AI Model ──────────────────────────────────────────────────
         const preferredModel = body.model === "gpt-4o" ? "gpt-4o-mini" : (body.model || "gpt-4o-mini");
         let result = null;

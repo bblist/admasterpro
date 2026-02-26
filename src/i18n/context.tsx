@@ -15,6 +15,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import { Locale, DEFAULT_LOCALE, LANGUAGES, LanguageConfig, getStoredLocale, setStoredLocale } from "./config";
 import type { Messages } from "./messages/en";
+import enDefault from "./messages/en";
 
 interface I18nContextValue {
     locale: Locale;
@@ -44,19 +45,13 @@ const messageLoaders: Record<Locale, () => Promise<{ default: Messages }>> = {
 // Cache loaded messages
 const messageCache: Partial<Record<Locale, Messages>> = {};
 
+// Pre-populate cache with synchronously imported English
+messageCache.en = enDefault;
+
 export function I18nProvider({ children }: { children: React.ReactNode }) {
     const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
-    const [messages, setMessages] = useState<Messages>({});
-    const [enMessages, setEnMessages] = useState<Messages>({});
-
-    // Load English as fallback on mount
-    useEffect(() => {
-        messageLoaders.en().then(mod => {
-            const msgs = mod.default;
-            messageCache.en = msgs;
-            setEnMessages(msgs);
-        });
-    }, []);
+    const [messages, setMessages] = useState<Messages>(enDefault);
+    const [enMessages, setEnMessages] = useState<Messages>(enDefault);
 
     // Detect locale on mount (client-side only)
     useEffect(() => {
