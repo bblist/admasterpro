@@ -81,6 +81,8 @@ const en = {
     "nav.analytics": "Analytics",
     "nav.callTracking": "Call Tracking",
     "nav.adDrafts": "Ad Drafts",
+    "nav.adCopyGenerator": "Ad Copy Generator",
+    "nav.budgetOptimizer": "Budget Optimizer",
     "nav.shoppingAds": "Shopping Ads",
     "nav.knowledgeBase": "Knowledge Base",
     "nav.aiExamples": "AI Examples",

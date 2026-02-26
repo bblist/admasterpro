@@ -24,6 +24,8 @@ import {
     Brain,
     BarChart3,
     Phone,
+    Sparkles,
+    DollarSign,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { BusinessProvider, useBusiness } from "@/lib/business-context";
@@ -77,6 +79,8 @@ const mainNavItems = [
     { href: "/dashboard/analytics", labelKey: "nav.analytics", icon: BarChart3 },
     { href: "/dashboard/calls", labelKey: "nav.callTracking", icon: Phone },
     { href: "/dashboard/drafts", labelKey: "nav.adDrafts", icon: FileText },
+    { href: "/dashboard/ad-copy", labelKey: "nav.adCopyGenerator", icon: Sparkles },
+    { href: "/dashboard/budget", labelKey: "nav.budgetOptimizer", icon: DollarSign },
     { href: "/dashboard/shopping", labelKey: "nav.shoppingAds", icon: ShoppingBag, shoppingOnly: true },
     { href: "/dashboard/knowledge-base", labelKey: "nav.knowledgeBase", icon: BookOpen },
     { href: "/dashboard/demo/examples", labelKey: "nav.aiExamples", icon: Lightbulb },

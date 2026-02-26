@@ -707,6 +707,325 @@ function formatBiddingStrategy(type: string): string {
     return map[type] || type;
 }
 
+// ─── Campaign Creation ──────────────────────────────────────────────────────
+
+export interface CreateCampaignInput {
+    name: string;
+    type?: "SEARCH" | "DISPLAY" | "SHOPPING" | "PERFORMANCE_MAX" | "VIDEO";
+    status?: "ENABLED" | "PAUSED";
+    dailyBudgetMicros: number; // in micros (e.g., 50 * 1_000_000 for $50)
+    biddingStrategy?: "MAXIMIZE_CONVERSIONS" | "MAXIMIZE_CLICKS" | "TARGET_CPA" | "TARGET_ROAS" | "MANUAL_CPC";
+    targetCpaMicros?: number;
+    targetRoas?: number;
+    networkSettings?: {
+        targetGoogleSearch?: boolean;
+        targetSearchNetwork?: boolean;
+        targetContentNetwork?: boolean;
+    };
+}
+
+/**
+ * Create a campaign budget and then a campaign in Google Ads.
+ * Returns the new campaign resource name or null on failure.
+ */
+export async function createCampaign(
+    refreshToken: string,
+    customerId: string,
+    input: CreateCampaignInput
+): Promise<{ campaignResourceName: string; budgetResourceName: string } | null> {
+    const accessToken = await getAccessToken(refreshToken);
+    const cleanId = customerId.replace(/-/g, "");
+
+    // Step 1: Create campaign budget
+    const budgetRes = await fetch(
+        `${ADS_BASE}/customers/${cleanId}/campaignBudgets:mutate`,
+        {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "developer-token": DEVELOPER_TOKEN,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                operations: [
+                    {
+                        create: {
+                            name: `${input.name} Budget`,
+                            amountMicros: String(input.dailyBudgetMicros),
+                            deliveryMethod: "STANDARD",
+                        },
+                    },
+                ],
+            }),
+        }
+    );
+
+    if (!budgetRes.ok) {
+        const err = await budgetRes.text();
+        console.error("[GoogleAds] Budget create failed:", err);
+        return null;
+    }
+
+    const budgetData = await budgetRes.json();
+    const budgetResourceName = budgetData?.results?.[0]?.resourceName;
+    if (!budgetResourceName) {
+        console.error("[GoogleAds] No budget resource name returned");
+        return null;
+    }
+
+    // Step 2: Create campaign
+    const campaignType = input.type || "SEARCH";
+    const biddingConfig: Record<string, unknown> = {};
+
+    switch (input.biddingStrategy || "MAXIMIZE_CONVERSIONS") {
+        case "MAXIMIZE_CONVERSIONS":
+            biddingConfig.maximizeConversions = input.targetCpaMicros
+                ? { targetCpaMicros: String(input.targetCpaMicros) }
+                : {};
+            break;
+        case "MAXIMIZE_CLICKS":
+            biddingConfig.maximizeClicks = {};
+            break;
+        case "TARGET_CPA":
+            biddingConfig.targetCpa = { targetCpaMicros: String(input.targetCpaMicros || 0) };
+            break;
+        case "TARGET_ROAS":
+            biddingConfig.targetRoas = { targetRoas: input.targetRoas || 1.0 };
+            break;
+        case "MANUAL_CPC":
+            biddingConfig.manualCpc = { enhancedCpcEnabled: true };
+            break;
+    }
+
+    const networkSettings = {
+        targetGoogleSearch: input.networkSettings?.targetGoogleSearch ?? true,
+        targetSearchNetwork: input.networkSettings?.targetSearchNetwork ?? true,
+        targetContentNetwork: input.networkSettings?.targetContentNetwork ?? false,
+    };
+
+    const campaignRes = await fetch(
+        `${ADS_BASE}/customers/${cleanId}/campaigns:mutate`,
+        {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "developer-token": DEVELOPER_TOKEN,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                operations: [
+                    {
+                        create: {
+                            name: input.name,
+                            status: input.status || "PAUSED",
+                            advertisingChannelType: campaignType,
+                            campaignBudget: budgetResourceName,
+                            networkSettings: campaignType === "SEARCH" ? networkSettings : undefined,
+                            ...biddingConfig,
+                        },
+                    },
+                ],
+            }),
+        }
+    );
+
+    if (!campaignRes.ok) {
+        const err = await campaignRes.text();
+        console.error("[GoogleAds] Campaign create failed:", err);
+        return null;
+    }
+
+    const campaignData = await campaignRes.json();
+    const campaignResourceName = campaignData?.results?.[0]?.resourceName;
+
+    return {
+        campaignResourceName: campaignResourceName || "",
+        budgetResourceName,
+    };
+}
+
+// ─── Ad Group Creation ──────────────────────────────────────────────────────
+
+export interface CreateAdGroupInput {
+    campaignResourceName: string;
+    name: string;
+    status?: "ENABLED" | "PAUSED";
+    cpcBidMicros?: number;
+}
+
+/**
+ * Create an ad group within a campaign.
+ * Returns the ad group resource name or null on failure.
+ */
+export async function createAdGroup(
+    refreshToken: string,
+    customerId: string,
+    input: CreateAdGroupInput
+): Promise<string | null> {
+    const accessToken = await getAccessToken(refreshToken);
+    const cleanId = customerId.replace(/-/g, "");
+
+    const res = await fetch(
+        `${ADS_BASE}/customers/${cleanId}/adGroups:mutate`,
+        {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "developer-token": DEVELOPER_TOKEN,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                operations: [
+                    {
+                        create: {
+                            name: input.name,
+                            campaign: input.campaignResourceName,
+                            status: input.status || "ENABLED",
+                            type: "SEARCH_STANDARD",
+                            cpcBidMicros: input.cpcBidMicros ? String(input.cpcBidMicros) : undefined,
+                        },
+                    },
+                ],
+            }),
+        }
+    );
+
+    if (!res.ok) {
+        const err = await res.text();
+        console.error("[GoogleAds] Ad group create failed:", err);
+        return null;
+    }
+
+    const data = await res.json();
+    return data?.results?.[0]?.resourceName || null;
+}
+
+// ─── Ad (RSA) Creation ──────────────────────────────────────────────────────
+
+export interface CreateAdInput {
+    adGroupResourceName: string;
+    finalUrl: string;
+    headlines: string[]; // max 15, each max 30 chars
+    descriptions: string[]; // max 4, each max 90 chars
+    path1?: string; // max 15 chars
+    path2?: string; // max 15 chars
+}
+
+/**
+ * Create a Responsive Search Ad in an ad group.
+ * Returns the ad group ad resource name or null on failure.
+ */
+export async function createResponsiveSearchAd(
+    refreshToken: string,
+    customerId: string,
+    input: CreateAdInput
+): Promise<string | null> {
+    const accessToken = await getAccessToken(refreshToken);
+    const cleanId = customerId.replace(/-/g, "");
+
+    const headlines = input.headlines.slice(0, 15).map(text => ({
+        text: text.slice(0, 30),
+    }));
+
+    const descriptions = input.descriptions.slice(0, 4).map(text => ({
+        text: text.slice(0, 90),
+    }));
+
+    const res = await fetch(
+        `${ADS_BASE}/customers/${cleanId}/adGroupAds:mutate`,
+        {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "developer-token": DEVELOPER_TOKEN,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                operations: [
+                    {
+                        create: {
+                            adGroup: input.adGroupResourceName,
+                            status: "ENABLED",
+                            ad: {
+                                finalUrls: [input.finalUrl],
+                                responsiveSearchAd: {
+                                    headlines,
+                                    descriptions,
+                                    path1: input.path1?.slice(0, 15) || undefined,
+                                    path2: input.path2?.slice(0, 15) || undefined,
+                                },
+                            },
+                        },
+                    },
+                ],
+            }),
+        }
+    );
+
+    if (!res.ok) {
+        const err = await res.text();
+        console.error("[GoogleAds] RSA create failed:", err);
+        return null;
+    }
+
+    const data = await res.json();
+    return data?.results?.[0]?.resourceName || null;
+}
+
+// ─── Keyword Addition ───────────────────────────────────────────────────────
+
+export interface AddKeywordInput {
+    adGroupResourceName: string;
+    keyword: string;
+    matchType: "BROAD" | "PHRASE" | "EXACT";
+}
+
+/**
+ * Add keywords to an ad group.
+ * Returns the number of successfully added keywords.
+ */
+export async function addKeywords(
+    refreshToken: string,
+    customerId: string,
+    keywords: AddKeywordInput[]
+): Promise<number> {
+    const accessToken = await getAccessToken(refreshToken);
+    const cleanId = customerId.replace(/-/g, "");
+
+    const operations = keywords.map(kw => ({
+        create: {
+            adGroup: kw.adGroupResourceName,
+            status: "ENABLED",
+            keyword: {
+                text: kw.keyword,
+                matchType: kw.matchType,
+            },
+        },
+    }));
+
+    const res = await fetch(
+        `${ADS_BASE}/customers/${cleanId}/adGroupCriteria:mutate`,
+        {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "developer-token": DEVELOPER_TOKEN,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ operations }),
+        }
+    );
+
+    if (!res.ok) {
+        const err = await res.text();
+        console.error("[GoogleAds] Keywords add failed:", err);
+        return 0;
+    }
+
+    const data = await res.json();
+    return data?.results?.length || 0;
+}
+
 // ─── Check if Google Ads is configured ──────────────────────────────────────
 
 export function isGoogleAdsConfigured(): boolean {
