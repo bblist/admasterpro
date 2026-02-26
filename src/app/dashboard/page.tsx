@@ -10,6 +10,7 @@ import Link from "next/link";
 import { authFetch } from "@/lib/auth-client";
 import { useBusiness } from "@/lib/business-context";
 import { useTranslation } from "@/i18n/context";
+import Tooltip from "@/components/Tooltip";
 
 interface DashboardStats {
     subscription: {
@@ -116,7 +117,7 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-card border border-border rounded-xl p-5">
                     <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm text-muted">{t("dashboard.currentPlan")}</span>
+                        <span className="text-sm text-muted flex items-center gap-1">{t("dashboard.currentPlan")} <Tooltip text="Your subscription tier determines AI message limits, ad account connections, and advanced features." position="bottom" /></span>
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${plan === "pro" ? "bg-purple-100 text-purple-700"
                             : plan === "trial" ? "bg-amber-100 text-amber-700"
                                 : plan === "starter" ? "bg-blue-100 text-blue-700"
@@ -141,7 +142,7 @@ export default function DashboardPage() {
 
                 <div className="bg-card border border-border rounded-xl p-5">
                     <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm text-muted">{t("dashboard.aiMessages")}</span>
+                        <span className="text-sm text-muted flex items-center gap-1">{t("dashboard.aiMessages")} <Tooltip text="AI chat messages remaining this billing cycle. Each message to the AI assistant uses one credit. Top up anytime from Settings." position="bottom" /></span>
                         <MessageSquare className="w-4 h-4 text-muted" />
                     </div>
                     <div className="text-3xl font-bold">
@@ -162,7 +163,7 @@ export default function DashboardPage() {
 
                 <div className="bg-card border border-border rounded-xl p-5">
                     <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm text-muted">{t("dashboard.googleAds")}</span>
+                        <span className="text-sm text-muted flex items-center gap-1">{t("dashboard.googleAds")} <Tooltip text="Link your Google Ads account to see live campaign data, get AI optimization suggestions, and manage ads directly." position="bottom" /></span>
                         <Settings className="w-4 h-4 text-muted" />
                     </div>
                     {stats?.adsConnected ? (
@@ -193,25 +194,25 @@ export default function DashboardPage() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="bg-card border border-border rounded-xl p-4">
                             <div className="flex items-center gap-2 text-sm text-muted mb-1">
-                                <DollarSign className="w-4 h-4" /> {t("dashboard.spend")}
+                                <DollarSign className="w-4 h-4" /> {t("dashboard.spend")} <Tooltip text="Total ad spend across all campaigns in the last 7 days." />
                             </div>
                             <div className="text-2xl font-bold">${stats.adsSummary.cost.toFixed(2)}</div>
                         </div>
                         <div className="bg-card border border-border rounded-xl p-4">
                             <div className="flex items-center gap-2 text-sm text-muted mb-1">
-                                <MousePointer className="w-4 h-4" /> {t("dashboard.clicks")}
+                                <MousePointer className="w-4 h-4" /> {t("dashboard.clicks")} <Tooltip text="Number of times users clicked your ads. Higher clicks = more traffic to your site." />
                             </div>
                             <div className="text-2xl font-bold">{stats.adsSummary.clicks.toLocaleString()}</div>
                         </div>
                         <div className="bg-card border border-border rounded-xl p-4">
                             <div className="flex items-center gap-2 text-sm text-muted mb-1">
-                                <Eye className="w-4 h-4" /> {t("dashboard.impressions")}
+                                <Eye className="w-4 h-4" /> {t("dashboard.impressions")} <Tooltip text="How many times your ads were shown to people. Not every impression leads to a click." />
                             </div>
                             <div className="text-2xl font-bold">{stats.adsSummary.impressions.toLocaleString()}</div>
                         </div>
                         <div className="bg-card border border-border rounded-xl p-4">
                             <div className="flex items-center gap-2 text-sm text-muted mb-1">
-                                <Target className="w-4 h-4" /> {t("dashboard.conversions")}
+                                <Target className="w-4 h-4" /> {t("dashboard.conversions")} <Tooltip text="Actions people took after clicking — like calling, filling a form, or making a purchase." />
                             </div>
                             <div className="text-2xl font-bold">{stats.adsSummary.conversions.toFixed(1)}</div>
                         </div>

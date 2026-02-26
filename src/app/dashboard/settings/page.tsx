@@ -28,6 +28,7 @@ import Link from "next/link";
 import { authFetch } from "@/lib/auth-client";
 import { useTranslation } from "@/i18n/context";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import Tooltip from "@/components/Tooltip";
 
 interface SubscriptionInfo {
   plan: string;
@@ -155,7 +156,7 @@ export default function SettingsPage() {
             <Crown className="w-5 h-5 text-accent" />
           </div>
           <div>
-            <h2 className="font-semibold">{t("settings.planBilling")}</h2>
+            <h2 className="font-semibold">{t("settings.planBilling")} <Tooltip text="View your current subscription, track AI message usage, and upgrade or manage billing." position="right" /></h2>
             <p className="text-sm text-muted mt-1">{t("settings.planBillingDesc")}</p>
           </div>
         </div>
@@ -208,7 +209,7 @@ export default function SettingsPage() {
             {/* Usage Meter */}
             <div>
               <div className="flex items-center justify-between text-sm mb-1.5">
-                <span className="text-muted">{t("settings.aiMessagesMonth")}</span>
+                <span className="text-muted">{t("settings.aiMessagesMonth")} <Tooltip text="Each AI interaction (chat, ad generation, analysis) uses one message. Resets monthly on your billing date." position="right" /></span>
                 <span className="font-medium">
                   {sub.plan === "pro" ? (
                     <span className="text-accent">{t("settings.unlimited")}</span>
@@ -321,7 +322,7 @@ export default function SettingsPage() {
               <Zap className="w-5 h-5 text-accent" />
             </div>
             <div>
-              <h2 className="font-semibold">{t("settings.autoPilot")}</h2>
+              <h2 className="font-semibold">{t("settings.autoPilot")} <Tooltip text="When enabled, AI automatically pauses underperforming keywords and reallocates budget to top performers — hands-free optimization." position="right" /></h2>
               <p className="text-sm text-muted mt-1">
                 {t("settings.autoPilotDesc")}
               </p>
@@ -375,7 +376,7 @@ export default function SettingsPage() {
             <DollarSign className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h2 className="font-semibold">{t("settings.budgetLimit")}</h2>
+            <h2 className="font-semibold">{t("settings.budgetLimit")} <Tooltip text="Set a max daily ad spend. The AI will never exceed this amount, protecting you from accidental overspending." position="right" /></h2>
             <p className="text-sm text-muted mt-1">
               {t("settings.budgetLimitDesc")}
             </p>
@@ -400,7 +401,7 @@ export default function SettingsPage() {
             <Bell className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h2 className="font-semibold">{t("settings.notifications")}</h2>
+            <h2 className="font-semibold">{t("settings.notifications")} <Tooltip text="Control how and when you get alerted about campaign performance, budget warnings, and AI actions." position="right" /></h2>
             <p className="text-sm text-muted mt-1">{t("settings.notificationsDesc")}</p>
           </div>
         </div>

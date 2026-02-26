@@ -72,20 +72,20 @@ const notificationIcons: Record<NotificationType, { bg: string; text: string; ic
 // ─── Nav items ─────────────────────────────────────────────────────────────
 
 const mainNavItems = [
-    { href: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard },
-    { href: "/dashboard/chat", labelKey: "nav.aiAssistant", icon: MessageCircle },
-    { href: "/dashboard/campaigns", labelKey: "nav.campaigns", icon: FileText },
-    { href: "/dashboard/keywords", labelKey: "nav.keywords", icon: Search },
-    { href: "/dashboard/analytics", labelKey: "nav.analytics", icon: BarChart3 },
-    { href: "/dashboard/calls", labelKey: "nav.callTracking", icon: Phone },
-    { href: "/dashboard/drafts", labelKey: "nav.adDrafts", icon: FileText },
-    { href: "/dashboard/ad-copy", labelKey: "nav.adCopyGenerator", icon: Sparkles },
-    { href: "/dashboard/budget", labelKey: "nav.budgetOptimizer", icon: DollarSign },
-    { href: "/dashboard/shopping", labelKey: "nav.shoppingAds", icon: ShoppingBag, shoppingOnly: true },
-    { href: "/dashboard/knowledge-base", labelKey: "nav.knowledgeBase", icon: BookOpen },
-    { href: "/dashboard/demo/examples", labelKey: "nav.aiExamples", icon: Lightbulb },
-    { href: "/dashboard/faq", labelKey: "nav.faq", icon: HelpCircle },
-    { href: "/dashboard/settings", labelKey: "nav.settings", icon: Settings },
+    { href: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard, tip: "Overview of your account, plan usage, and quick actions" },
+    { href: "/dashboard/chat", labelKey: "nav.aiAssistant", icon: MessageCircle, tip: "Chat with AI to create ads, analyze performance, and find budget leaks" },
+    { href: "/dashboard/campaigns", labelKey: "nav.campaigns", icon: FileText, tip: "View and manage your live Google Ads campaigns" },
+    { href: "/dashboard/keywords", labelKey: "nav.keywords", icon: Search, tip: "Discover keyword opportunities and manage negative keywords" },
+    { href: "/dashboard/analytics", labelKey: "nav.analytics", icon: BarChart3, tip: "Charts and trends for your Google Ads performance" },
+    { href: "/dashboard/calls", labelKey: "nav.callTracking", icon: Phone, tip: "Track phone calls driven by your ads" },
+    { href: "/dashboard/drafts", labelKey: "nav.adDrafts", icon: FileText, tip: "Review and edit AI-generated ad drafts before publishing" },
+    { href: "/dashboard/ad-copy", labelKey: "nav.adCopyGenerator", icon: Sparkles, tip: "Generate Google Ads headlines, descriptions, and keywords" },
+    { href: "/dashboard/budget", labelKey: "nav.budgetOptimizer", icon: DollarSign, tip: "AI recommendations to optimize your ad spend and bids" },
+    { href: "/dashboard/shopping", labelKey: "nav.shoppingAds", icon: ShoppingBag, shoppingOnly: true, tip: "Manage product listing and shopping ads" },
+    { href: "/dashboard/knowledge-base", labelKey: "nav.knowledgeBase", icon: BookOpen, tip: "Upload brand assets and info to train the AI on your business" },
+    { href: "/dashboard/demo/examples", labelKey: "nav.aiExamples", icon: Lightbulb, tip: "See example prompts and what the AI can do for you" },
+    { href: "/dashboard/faq", labelKey: "nav.faq", icon: HelpCircle, tip: "Frequently asked questions about features and billing" },
+    { href: "/dashboard/settings", labelKey: "nav.settings", icon: Settings, tip: "Account settings, billing, notifications, and integrations" },
 ];
 
 // Industries that can use shopping ads
@@ -305,6 +305,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                                         key={item.href}
                                         href={item.href}
                                         onClick={() => setSidebarOpen(false)}
+                                        title={item.tip}
                                         className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition ${isActive
                                             ? "bg-primary text-white"
                                             : "text-muted hover:bg-border/50 hover:text-foreground"
@@ -341,6 +342,14 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                                 </Link>
                             )}
                         </div>
+                        <Link
+                            href="/onboarding?guide=1"
+                            className="flex items-center gap-2 px-3 py-2 text-xs text-muted hover:text-primary transition w-full rounded-lg hover:bg-primary/5"
+                            title="Re-watch the step-by-step onboarding walkthrough"
+                        >
+                            <HelpCircle className="w-3.5 h-3.5" />
+                            View Setup Guide
+                        </Link>
                         <button
                             onClick={async () => {
                                 clearAuth(); // Clear localStorage token

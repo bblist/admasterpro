@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
     Zap,
     ArrowRight,
@@ -19,6 +19,9 @@ import {
 } from "lucide-react";
 import { captureTokenFromHash, isAuthenticated, authFetch } from "@/lib/auth-client";
 import { useTranslation } from "@/i18n/context";
+import Tooltip from "@/components/Tooltip";
+import WelcomeGuide from "@/components/WelcomeGuide";
+import { HelpCircle } from "lucide-react";
 
 const STEPS = [
     { id: 1, label: "Account" },
@@ -43,9 +46,26 @@ function normalizeUrl(raw: string): string {
 }
 
 export default function OnboardingPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}>
+            <OnboardingInner />
+        </Suspense>
+    );
+}
+
+function OnboardingInner() {
     const { t } = useTranslation();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [currentStep, setCurrentStep] = useState(1);
+    const [showGuide, setShowGuide] = useState(false);
+
+    // Show guide if linked from dashboard sidebar (?guide=1)
+    useEffect(() => {
+        if (searchParams.get("guide") === "1") {
+            setShowGuide(true);
+        }
+    }, [searchParams]);
 
     // Step 1 — auth
     const [connected, setConnected] = useState(false);
@@ -247,6 +267,9 @@ export default function OnboardingPage() {
        ══════════════════════════════════════════════════════════ */
     return (
         <div className="min-h-screen bg-background flex flex-col">
+            {/* Welcome Guide Modal */}
+            <WelcomeGuide forceOpen={showGuide} onClose={() => setShowGuide(false)} />
+
             {/* ── Header ─────────────────────────────────────── */}
             <div className="border-b border-border bg-card">
                 <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -256,9 +279,17 @@ export default function OnboardingPage() {
                         </div>
                         <span className="font-bold text-lg">AdMaster Pro</span>
                     </Link>
-                    <Link href="/login" className="text-sm text-muted hover:text-foreground">
-                        Already have an account?
-                    </Link>
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => setShowGuide(true)}
+                            className="text-xs text-muted hover:text-primary transition flex items-center gap-1"
+                        >
+                            <HelpCircle className="w-3.5 h-3.5" /> How it works
+                        </button>
+                        <Link href="/login" className="text-sm text-muted hover:text-foreground">
+                            Already have an account?
+                        </Link>
+                    </div>
                 </div>
             </div>
 
@@ -302,6 +333,12 @@ export default function OnboardingPage() {
                         <p className="text-muted mb-8 max-w-sm mx-auto">
                             Sign in with Google so we can save your progress and keep your data private.
                         </p>
+
+                        {/* Step tip */}
+                        <div className="bg-indigo-50 border border-indigo-100 rounded-lg px-4 py-2.5 text-xs text-indigo-700 mb-6 max-w-sm mx-auto flex items-start gap-2">
+                            <Sparkles className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                            <span>Signing in lets us save your Knowledge Base and generated ads. If you have Google Ads, we&apos;ll read your campaign data (read-only — we never modify anything).</span>
+                        </div>
 
                         {!connected ? (
                             <div className="space-y-4">
@@ -359,9 +396,18 @@ export default function OnboardingPage() {
                             We&apos;ll scan your website to understand your business so we can write better ads.
                         </p>
 
+                        {/* Step tip */}
+                        <div className="bg-indigo-50 border border-indigo-100 rounded-lg px-4 py-2.5 text-xs text-indigo-700 mb-6 flex items-start gap-2">
+                            <Sparkles className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                            <span>Your website is the most important input — we&apos;ll crawl it to learn your products, services, and brand voice so the AI can write ads that sound like you.</span>
+                        </div>
+
                         <div className="space-y-4">
                             <div>
-                                <label className="text-sm font-medium mb-1 block">Business name <span className="text-red-400">*</span></label>
+                                <label className="text-sm font-medium mb-1 flex items-center gap-1">
+                                    Business name <span className="text-red-400">*</span>
+                                    <Tooltip text="Your company or brand name. This appears in ad preview headers and helps the AI personalize copy." position="right" />
+                                </label>
                                 <input
                                     type="text"
                                     value={businessName}
@@ -371,7 +417,10 @@ export default function OnboardingPage() {
                                 />
                             </div>
                             <div>
-                                <label className="text-sm font-medium mb-1 block">Website URL <span className="text-red-400">*</span></label>
+                                <label className="text-sm font-medium mb-1 flex items-center gap-1">
+                                    Website URL <span className="text-red-400">*</span>
+                                    <Tooltip text="Enter your full website address. We'll crawl it to learn about your products, services, and brand voice. No www needed — just the domain." position="right" />
+                                </label>
                                 <input
                                     type="text"
                                     value={websiteUrl}
@@ -382,7 +431,10 @@ export default function OnboardingPage() {
                                 />
                             </div>
                             <div>
-                                <label className="text-sm font-medium mb-1 block">Industry</label>
+                                <label className="text-sm font-medium mb-1 flex items-center gap-1">
+                                    Industry
+                                    <Tooltip text="Selecting your industry helps us benchmark against competitors and choose the right keywords and ad formats." position="right" />
+                                </label>
                                 <select
                                     value={businessType}
                                     onChange={(e) => setBusinessType(e.target.value)}
@@ -450,9 +502,15 @@ export default function OnboardingPage() {
                                     <Sparkles className="w-8 h-8 text-primary animate-pulse" />
                                 </div>
                                 <h2 className="text-xl font-bold mb-2">Scanning your website…</h2>
-                                <p className="text-muted text-sm mb-6">
+                                <p className="text-muted text-sm mb-4">
                                     We&apos;re reading your pages to learn about your products, services, and brand voice.
                                 </p>
+
+                                {/* Step tip */}
+                                <div className="bg-amber-50 border border-amber-100 rounded-lg px-4 py-2.5 text-xs text-amber-700 mb-4 max-w-xs mx-auto text-left flex items-start gap-2">
+                                    <Sparkles className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                                    <span>We&apos;re visiting each page on your site, extracting text content, and saving it to your Knowledge Base. This usually takes 15-30 seconds.</span>
+                                </div>
 
                                 {/* Progress bar */}
                                 <div className="max-w-xs mx-auto mb-4">
@@ -544,9 +602,15 @@ export default function OnboardingPage() {
                             <FileText className="w-8 h-8 text-primary" />
                         </div>
                         <h2 className="text-xl font-bold mb-2 text-center">Anything else we should know?</h2>
-                        <p className="text-muted text-sm mb-6 text-center max-w-sm mx-auto">
+                        <p className="text-muted text-sm mb-4 text-center max-w-sm mx-auto">
                             Tell us about promotions, your target audience, what makes you different — anything that helps us write better ads. You can skip this for now.
                         </p>
+
+                        {/* Step tip */}
+                        <div className="bg-teal-50 border border-teal-100 rounded-lg px-4 py-2.5 text-xs text-teal-700 mb-4 flex items-start gap-2">
+                            <Sparkles className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                            <span>This is optional, but the more context you give, the better your ads will be. Think: current sales, seasonal offers, unique selling points, target demographics, service areas.</span>
+                        </div>
 
                         <textarea
                             value={aboutText}
@@ -595,9 +659,15 @@ export default function OnboardingPage() {
                             <Upload className="w-8 h-8 text-primary" />
                         </div>
                         <h2 className="text-xl font-bold mb-2 text-center">Upload ad creatives</h2>
-                        <p className="text-muted text-sm mb-6 text-center max-w-sm mx-auto">
+                        <p className="text-muted text-sm mb-4 text-center max-w-sm mx-auto">
                             Have existing banners, logos, or product photos? Upload them so we can use them in your ads. You can always add more later.
                         </p>
+
+                        {/* Step tip */}
+                        <div className="bg-pink-50 border border-pink-100 rounded-lg px-4 py-2.5 text-xs text-pink-700 mb-4 flex items-start gap-2">
+                            <Sparkles className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                            <span>Upload logos, product photos, or existing ad banners. The AI will analyze these for colors, text, and composition to recommend display ad formats. Totally optional — skip if you don&apos;t have any yet.</span>
+                        </div>
 
                         <input
                             ref={fileInputRef}

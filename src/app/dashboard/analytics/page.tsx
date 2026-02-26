@@ -14,6 +14,7 @@ import {
 import { authFetch } from "@/lib/auth-client";
 import { useBusiness } from "@/lib/business-context";
 import { useTranslation } from "@/i18n/context";
+import UITooltip from "@/components/Tooltip";
 
 interface DailyData {
     date: string;
@@ -174,6 +175,7 @@ export default function AnalyticsPage() {
                         <div className="bg-card border border-border rounded-xl p-4">
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-sm text-muted">{t("analytics.totalSpend")}</span>
+                                <UITooltip text="Total ad spend for the selected period. Track this against conversions to gauge ROI." position="bottom" />
                                 <DollarSign className="w-4 h-4 text-muted" />
                             </div>
                             <div className="text-2xl font-bold">${summary.cost.toFixed(2)}</div>
@@ -182,6 +184,7 @@ export default function AnalyticsPage() {
                         <div className="bg-card border border-border rounded-xl p-4">
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-sm text-muted">{t("analytics.clicks")}</span>
+                                <UITooltip text="Total clicks on your ads. Compare with impressions to assess ad relevance." position="bottom" />
                                 <MousePointer className="w-4 h-4 text-muted" />
                             </div>
                             <div className="text-2xl font-bold">{summary.clicks.toLocaleString()}</div>
@@ -195,6 +198,7 @@ export default function AnalyticsPage() {
                         <div className="bg-card border border-border rounded-xl p-4">
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-sm text-muted">{t("analytics.impressions")}</span>
+                                <UITooltip text="Total times ads were displayed. More impressions mean more visibility for your brand." position="bottom" />
                                 <Eye className="w-4 h-4 text-muted" />
                             </div>
                             <div className="text-2xl font-bold">{summary.impressions.toLocaleString()}</div>
@@ -205,6 +209,7 @@ export default function AnalyticsPage() {
                         <div className="bg-card border border-border rounded-xl p-4">
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-sm text-muted">{t("analytics.conversions")}</span>
+                                <UITooltip text="Completed actions (purchases, leads, calls). The most important metric for measuring ad success." position="bottom" />
                                 <Target className="w-4 h-4 text-muted" />
                             </div>
                             <div className="text-2xl font-bold">{summary.conversions.toFixed(1)}</div>

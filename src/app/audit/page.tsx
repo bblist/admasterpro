@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "@/i18n/context";
 import { authFetch, captureTokenFromHash, decodeTokenPayload, isAuthenticated, setAuth } from "@/lib/auth-client";
+import Tooltip from "@/components/Tooltip";
 
 const auditFeatures = [
     { icon: BarChart3, title: "Landing Page Analysis", desc: "We analyze your website for conversion-readiness, mobile optimization, and page speed." },
@@ -245,7 +246,7 @@ export default function AuditPage() {
 
                             <div>
                                 <label className="text-sm text-muted mb-1.5 block flex items-center gap-1.5">
-                                    <Globe className="w-3.5 h-3.5" /> {t("audit.websiteUrl")} <span className="text-red-400">*</span>
+                                    <Globe className="w-3.5 h-3.5" /> {t("audit.websiteUrl")} <span className="text-red-400">*</span> <Tooltip text="Enter the homepage URL of the website you want audited. We'll crawl it to analyze content, structure, and ad-readiness." position="right" />
                                 </label>
                                 <input
                                     type="text"
@@ -261,7 +262,7 @@ export default function AuditPage() {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label className="text-sm text-muted mb-1.5 block flex items-center gap-1.5">
-                                        <Building2 className="w-3.5 h-3.5" /> {t("audit.businessName")} <span className="text-red-400">*</span>
+                                        <Building2 className="w-3.5 h-3.5" /> {t("audit.businessName")} <span className="text-red-400">*</span> <Tooltip text="Your company or brand name. Used to personalize the audit report and competitive analysis." position="right" />
                                     </label>
                                     <input
                                         type="text"
@@ -273,7 +274,7 @@ export default function AuditPage() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-sm text-muted mb-1.5 block">{t("audit.industry")}</label>
+                                    <label className="text-sm text-muted mb-1.5 block">{t("audit.industry")} <Tooltip text="Helps the AI benchmark your site against industry standards and competitors in the same space." position="right" /></label>
                                     <select
                                         value={industry}
                                         onChange={(e) => setIndustry(e.target.value)}
@@ -299,7 +300,7 @@ export default function AuditPage() {
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-sm text-muted mb-1.5 block">{t("audit.email")} <span className="text-red-400">*</span></label>
+                                    <label className="text-sm text-muted mb-1.5 block">{t("audit.email")} <span className="text-red-400">*</span> <Tooltip text="We'll email you the full PDF audit report. No spam, ever." position="right" /></label>
                                     <input
                                         type="email"
                                         value={email}
@@ -311,7 +312,7 @@ export default function AuditPage() {
                                 </div>
                                 <div>
                                     <label className="text-sm text-muted mb-1.5 block flex items-center gap-1.5">
-                                        <DollarSign className="w-3.5 h-3.5" /> {t("audit.monthlySpend")}
+                                        <DollarSign className="w-3.5 h-3.5" /> {t("audit.monthlySpend")} <Tooltip text="Your current monthly Google Ads budget. Helps the AI tailor recommendations to your spending level." position="left" />
                                     </label>
                                     <select
                                         value={monthlySpend}

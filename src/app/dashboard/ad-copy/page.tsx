@@ -9,6 +9,7 @@ import {
 import { authFetch } from "@/lib/auth-client";
 import { useBusiness } from "@/lib/business-context";
 import { useTranslation } from "@/i18n/context";
+import Tooltip from "@/components/Tooltip";
 
 interface GeneratedAd {
     headlines?: string[];
@@ -187,6 +188,7 @@ export default function AdCopyPage() {
                 <h1 className="text-2xl font-bold flex items-center gap-2">
                     <Sparkles className="w-6 h-6 text-primary" />
                     AI Ad Copy Generator
+                    <Tooltip text="Generate ready-to-use Google Ads copy including headlines, descriptions, and keyword suggestions — all checked for policy compliance." position="bottom" />
                 </h1>
                 <p className="text-muted text-sm mt-1">
                     Generate Google Ads-compliant ad copy with AI — headlines, descriptions, keywords, and extensions
@@ -228,7 +230,7 @@ export default function AdCopyPage() {
                     <div className="space-y-5">
                         {/* Campaign Type */}
                         <div>
-                            <label className="block text-sm font-medium mb-2">Campaign Type</label>
+                            <label className="block text-sm font-medium mb-2 flex items-center gap-1">Campaign Type <Tooltip text="Choose the ad format. Search ads appear in Google results; Display ads are banners on websites; Video ads play on YouTube." position="right" /></label>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                 {CAMPAIGN_TYPES.map(ct => {
                                     const Icon = ct.icon;
@@ -252,8 +254,8 @@ export default function AdCopyPage() {
 
                         {/* Product Description */}
                         <div>
-                            <label className="block text-sm font-medium mb-1.5">
-                                Product / Service Description *
+                            <label className="block text-sm font-medium mb-1.5 flex items-center gap-1">
+                                Product / Service Description * <Tooltip text="Describe what you're advertising in detail. The more specific you are (features, location, pricing), the better the AI can craft targeted copy." position="right" />
                             </label>
                             <textarea
                                 value={productDesc}
@@ -266,7 +268,7 @@ export default function AdCopyPage() {
 
                         {/* Target Audience */}
                         <div>
-                            <label className="block text-sm font-medium mb-1.5">Target Audience</label>
+                            <label className="block text-sm font-medium mb-1.5 flex items-center gap-1">Target Audience <Tooltip text="Who are your ideal customers? Include demographics, interests, and pain points to help the AI tailor messaging." position="right" /></label>
                             <input
                                 type="text"
                                 value={targetAudience}
@@ -278,7 +280,7 @@ export default function AdCopyPage() {
 
                         {/* Tone */}
                         <div>
-                            <label className="block text-sm font-medium mb-1.5">Tone</label>
+                            <label className="block text-sm font-medium mb-1.5 flex items-center gap-1">Tone <Tooltip text="Sets the voice of your ad copy. Professional works for B2B, Urgent creates FOMO, Friendly suits lifestyle brands." position="right" /></label>
                             <div className="flex flex-wrap gap-2">
                                 {TONES.map(t => (
                                     <button
@@ -307,8 +309,8 @@ export default function AdCopyPage() {
 
                         {showAdvanced && (
                             <div>
-                                <label className="block text-sm font-medium mb-1.5">
-                                    Focus Keywords <span className="text-muted font-normal">(comma-separated)</span>
+                                <label className="block text-sm font-medium mb-1.5 flex items-center gap-1">
+                                    Focus Keywords <span className="text-muted font-normal">(comma-separated)</span> <Tooltip text="Include your top-performing or target keywords. The AI will weave them into headlines and descriptions for better Quality Score." position="right" />
                                 </label>
                                 <input
                                     type="text"

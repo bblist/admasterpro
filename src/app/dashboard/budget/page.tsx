@@ -9,6 +9,7 @@ import {
 import { authFetch } from "@/lib/auth-client";
 import { useBusiness } from "@/lib/business-context";
 import { useTranslation } from "@/i18n/context";
+import Tooltip from "@/components/Tooltip";
 
 interface Recommendation {
     campaignId?: string;
@@ -90,6 +91,7 @@ export default function BudgetOptimizerPage() {
                     <h1 className="text-2xl font-bold flex items-center gap-2">
                         <DollarSign className="w-6 h-6 text-primary" />
                         Budget & Bid Optimizer
+                        <Tooltip text="AI analyzes your campaign performance and recommends optimal budget allocation to maximize ROI and cut waste." position="bottom" />
                     </h1>
                     <p className="text-muted text-sm mt-1">
                         AI-powered budget allocation and bid optimization recommendations
@@ -170,7 +172,7 @@ export default function BudgetOptimizerPage() {
                     {/* Top-line metrics */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="bg-card border border-border rounded-xl p-5">
-                            <p className="text-xs text-muted mb-1">Health Score</p>
+                            <p className="text-xs text-muted mb-1">Health Score <Tooltip text="Overall account health from 0-100. Above 80 is great, below 50 needs attention. Based on budget efficiency, keyword quality, and conversion rates." position="right" /></p>
                             <p className={`text-3xl font-bold ${
                                 (result.overallScore || 0) >= 80 ? "text-green-600" :
                                 (result.overallScore || 0) >= 50 ? "text-yellow-600" :
@@ -181,15 +183,15 @@ export default function BudgetOptimizerPage() {
                             <p className="text-xs text-muted">/100</p>
                         </div>
                         <div className="bg-card border border-border rounded-xl p-5">
-                            <p className="text-xs text-muted mb-1">Current Monthly</p>
+                            <p className="text-xs text-muted mb-1">Current Monthly <Tooltip text="Your total monthly ad spend across all campaigns at current daily budget levels." position="right" /></p>
                             <p className="text-2xl font-bold">${(result.totalMonthlyBudget || 0).toLocaleString()}</p>
                         </div>
                         <div className="bg-card border border-border rounded-xl p-5">
-                            <p className="text-xs text-muted mb-1">Suggested Monthly</p>
+                            <p className="text-xs text-muted mb-1">Suggested Monthly <Tooltip text="The AI-recommended monthly budget based on performance data. Shifting to this amount could improve results." position="right" /></p>
                             <p className="text-2xl font-bold text-primary">${(result.suggestedMonthlyBudget || 0).toLocaleString()}</p>
                         </div>
                         <div className="bg-card border border-border rounded-xl p-5">
-                            <p className="text-xs text-muted mb-1">Potential Savings</p>
+                            <p className="text-xs text-muted mb-1">Potential Savings <Tooltip text="Estimated monthly savings if you follow the AI’s budget reallocation recommendations." position="left" /></p>
                             <p className="text-2xl font-bold text-green-600">${(result.potentialSavings || 0).toLocaleString()}</p>
                             <p className="text-xs text-muted">/month</p>
                         </div>

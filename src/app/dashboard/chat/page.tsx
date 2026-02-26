@@ -43,6 +43,7 @@ import {
 import { useBusiness, type BusinessProfile } from "@/lib/business-context";
 import { authFetch } from "@/lib/auth-client";
 import { useTranslation } from "@/i18n/context";
+import Tooltip from "@/components/Tooltip";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -1460,6 +1461,7 @@ export default function ChatPage() {
                     <div className="min-w-0">
                         <h1 className="font-semibold text-sm sm:text-base flex items-center gap-1.5 sm:gap-2 flex-wrap">
                             <span className="truncate">AI Assistant</span>
+                            <Tooltip text="Your AI advertising expert. Ask me to create ads, analyze campaigns, find budget leaks, research competitors, or generate reports." position="bottom" />
                         </h1>
                         <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-success">
                             <div className="w-1.5 h-1.5 bg-success rounded-full animate-pulse"></div>

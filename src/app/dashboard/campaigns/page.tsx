@@ -9,6 +9,7 @@ import Link from "next/link";
 import { authFetch } from "@/lib/auth-client";
 import { useBusiness } from "@/lib/business-context";
 import { useTranslation } from "@/i18n/context";
+import Tooltip from "@/components/Tooltip";
 
 interface Campaign {
     id: string;
@@ -161,25 +162,25 @@ export default function CampaignsPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-card border border-border rounded-xl p-4">
                     <div className="flex items-center gap-2 text-sm text-muted mb-1">
-                        <DollarSign className="w-4 h-4" /> {t("campaigns.totalSpend")}
+                        <DollarSign className="w-4 h-4" /> {t("campaigns.totalSpend")} <Tooltip text="Total amount spent across all campaigns in the selected date range." position="bottom" />
                     </div>
                     <div className="text-2xl font-bold">${totals.cost.toFixed(2)}</div>
                 </div>
                 <div className="bg-card border border-border rounded-xl p-4">
                     <div className="flex items-center gap-2 text-sm text-muted mb-1">
-                        <MousePointer className="w-4 h-4" /> {t("campaigns.totalClicks")}
+                        <MousePointer className="w-4 h-4" /> {t("campaigns.totalClicks")} <Tooltip text="Total number of times users clicked your ads. More clicks = more traffic to your site." position="bottom" />
                     </div>
                     <div className="text-2xl font-bold">{totals.clicks.toLocaleString()}</div>
                 </div>
                 <div className="bg-card border border-border rounded-xl p-4">
                     <div className="flex items-center gap-2 text-sm text-muted mb-1">
-                        <Eye className="w-4 h-4" /> {t("campaigns.impressions")}
+                        <Eye className="w-4 h-4" /> {t("campaigns.impressions")} <Tooltip text="How many times your ads were shown. High impressions with low clicks may mean your ad copy needs improving." position="bottom" />
                     </div>
                     <div className="text-2xl font-bold">{totals.impressions.toLocaleString()}</div>
                 </div>
                 <div className="bg-card border border-border rounded-xl p-4">
                     <div className="flex items-center gap-2 text-sm text-muted mb-1">
-                        <Target className="w-4 h-4" /> {t("campaigns.conversions")}
+                        <Target className="w-4 h-4" /> {t("campaigns.conversions")} <Tooltip text="Actions that matter — purchases, sign‑ups, or calls. This is the ultimate measure of ad effectiveness." position="bottom" />
                     </div>
                     <div className="text-2xl font-bold">{totals.conversions.toFixed(1)}</div>
                 </div>
