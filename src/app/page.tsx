@@ -22,6 +22,7 @@ import {
   X,
 } from "lucide-react";
 import { useTranslation } from "@/i18n/context";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 const features = [
   { icon: BarChart3, title: "Dead-Simple Stats", desc: "See how much you spent, how many customers called, and which ads are working — at a glance." },
@@ -83,6 +84,7 @@ export default function LandingPage() {
             <Link href="/pricing" className="hover:text-neutral-900 transition-colors">{t("common.pricing")}</Link>
           </div>
           <div className="flex items-center gap-4">
+            <LanguageSwitcher compact />
             <Link href="/login" className="text-sm font-normal text-neutral-500 hover:text-neutral-900 transition-colors hidden sm:block">
               {t("common.logIn")}
             </Link>

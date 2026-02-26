@@ -21,11 +21,13 @@ import {
   CheckCircle,
   ExternalLink,
   Plus,
+  Globe,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { authFetch } from "@/lib/auth-client";
 import { useTranslation } from "@/i18n/context";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 interface SubscriptionInfo {
   plan: string;
@@ -493,6 +495,20 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Language */}
+      <div className="bg-card border border-border rounded-xl p-6">
+        <div className="flex items-start gap-3 mb-5">
+          <div className="w-10 h-10 bg-primary-light rounded-lg flex items-center justify-center shrink-0">
+            <Globe className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <h2 className="font-semibold">{t("common.changeLanguage")}</h2>
+            <p className="text-sm text-muted mt-1">{t("common.selectLanguage")}</p>
+          </div>
+        </div>
+        <LanguageSwitcher variant="settings" />
       </div>
 
       {/* Account Safety */}
