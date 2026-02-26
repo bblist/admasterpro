@@ -20,7 +20,7 @@ import {
     X,
 } from "lucide-react";
 import { useTranslation } from "@/i18n/context";
-import { captureTokenFromHash, decodeTokenPayload, isAuthenticated, setAuth } from "@/lib/auth-client";
+import { authFetch, captureTokenFromHash, decodeTokenPayload, isAuthenticated, setAuth } from "@/lib/auth-client";
 
 const auditFeatures = [
     { icon: BarChart3, title: "Landing Page Analysis", desc: "We analyze your website for conversion-readiness, mobile optimization, and page speed." },
@@ -83,7 +83,7 @@ export default function AuditPage() {
     const runAudit = React.useCallback(async (payload: AuditPayload) => {
         setLoading(true);
         try {
-            const res = await fetch("/api/audit", {
+            const res = await authFetch("/api/audit", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
