@@ -39,6 +39,14 @@ interface AuditResult {
     estimatedSavings: string;
 }
 
+/** Auto-prepend https:// if user enters a bare domain */
+function normalizeUrl(raw: string): string {
+    const v = raw.trim();
+    if (!v) return v;
+    if (/^https?:\/\//i.test(v)) return v;
+    return `https://${v}`;
+}
+
 export default function OnboardingPage() {
     const { t } = useTranslation();
     const [currentStep, setCurrentStep] = useState(1);
@@ -94,7 +102,7 @@ export default function OnboardingPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     name: businessName.trim(),
-                    website: websiteUrl.trim() || undefined,
+                    website: normalizeUrl(websiteUrl) || undefined,
                     industry: businessType || undefined,
                     location: location.trim() || undefined,
                 }),
@@ -146,7 +154,7 @@ export default function OnboardingPage() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    websiteUrl: websiteUrl.trim() || `https://${businessName.toLowerCase().replace(/[^a-z0-9]/g, "")}.com`,
+                    websiteUrl: normalizeUrl(websiteUrl) || `https://${businessName.toLowerCase().replace(/[^a-z0-9]/g, "")}.com`,
                     businessName: businessName.trim(),
                     industry: businessType || undefined,
                     email: user?.email || "user@admasterai.com",
@@ -353,10 +361,11 @@ export default function OnboardingPage() {
                                     {t("onboarding.business.website")}
                                 </label>
                                 <input
-                                    type="url"
+                                    type="text"
                                     value={websiteUrl}
                                     onChange={(e) => setWebsiteUrl(e.target.value)}
-                                    placeholder="https://mikesplumbing.com"
+                                    onBlur={() => { if (websiteUrl.trim()) setWebsiteUrl(normalizeUrl(websiteUrl)); }}
+                                    placeholder="mikesplumbing.com"
                                     className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary transition"
                                 />
                             </div>

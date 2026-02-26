@@ -46,6 +46,14 @@ export default function AuditPage() {
     const [authLoading, setAuthLoading] = useState(false);
     const [authError, setAuthError] = useState("");
 
+    /** Auto-prepend https:// if user enters a bare domain */
+    const normalizeUrl = (raw: string): string => {
+        const v = raw.trim();
+        if (!v) return v;
+        if (/^https?:\/\//i.test(v)) return v;
+        return `https://${v}`;
+    };
+
     const PENDING_AUDIT_KEY = "amp_pending_audit_form";
 
     type AuditPayload = {
@@ -57,7 +65,7 @@ export default function AuditPage() {
     };
 
     const getPayload = (): AuditPayload => ({
-        websiteUrl,
+        websiteUrl: normalizeUrl(websiteUrl),
         businessName,
         industry,
         email,
@@ -240,10 +248,11 @@ export default function AuditPage() {
                                     <Globe className="w-3.5 h-3.5" /> {t("audit.websiteUrl")} <span className="text-red-400">*</span>
                                 </label>
                                 <input
-                                    type="url"
+                                    type="text"
                                     value={websiteUrl}
                                     onChange={(e) => setWebsiteUrl(e.target.value)}
-                                    placeholder="https://yourwebsite.com"
+                                    onBlur={() => { if (websiteUrl.trim()) setWebsiteUrl(normalizeUrl(websiteUrl)); }}
+                                    placeholder="yourwebsite.com"
                                     className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground placeholder-muted/50 focus:outline-none focus:border-primary text-sm"
                                     required
                                 />
