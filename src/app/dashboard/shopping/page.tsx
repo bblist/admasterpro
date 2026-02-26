@@ -233,7 +233,7 @@ export default function ShoppingPage() {
                         Set one up to start promoting your products.
                     </p>
                     <Link
-                        href="/dashboard/chat"
+                        href="/dashboard/chat?intent=shopping"
                         className="inline-flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-xl text-sm font-medium transition"
                     >
                         <Zap className="w-4 h-4" />
@@ -260,7 +260,7 @@ export default function ShoppingPage() {
                             <ArrowRight className="w-4 h-4" />
                         </Link>
                         <Link
-                            href="/dashboard/chat"
+                            href="/dashboard/chat?intent=shopping"
                             className="inline-flex items-center gap-2 bg-card border border-border hover:border-primary text-foreground px-5 py-2.5 rounded-xl text-sm font-medium transition"
                         >
                             <Zap className="w-4 h-4" />

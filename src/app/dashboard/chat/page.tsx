@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import NextImage from "next/image";
 import {
     Send,
@@ -39,7 +40,10 @@ import {
     Smartphone,
     Volume2,
     ShieldAlert,
+    BookOpen,
+    Key,
 } from "lucide-react";
+import Link from "next/link";
 import { useBusiness, type BusinessProfile } from "@/lib/business-context";
 import { authFetch } from "@/lib/auth-client";
 import { useTranslation } from "@/i18n/context";
@@ -244,9 +248,122 @@ const quickActionKeys = [
     { key: "chat.quick.competitors", icon: Users },
 ];
 
-// ─── Initial Messages ───────────────────────────────────────────────────────
+// ─── Intent Deep-Link Map ───────────────────────────────────────────────────
 
-const getInitialMessages = (bizIn: BusinessProfile | null, t: (key: string, params?: Record<string, string | number>) => string): Message[] => {
+type ChatIntent = "keywords" | "campaigns" | "shopping" | "ads" | "audit" | "budget" | "competitors" | null;
+
+const INTENT_PROMPTS: Record<string, { autoMessage: string; greeting: string }> = {
+    keywords: {
+        autoMessage: "Research the best keywords for my business. Suggest high-value keywords with match types, estimated search volume, and competition level. Also suggest negative keywords I should block.",
+        greeting: "🔍 **Keyword Research Mode** — Let me dig into what your ideal customers are searching for and find the best keywords to target.",
+    },
+    campaigns: {
+        autoMessage: "Help me plan and create a new Google Ads campaign for my business. Walk me through the best campaign type, structure, budget, and targeting.",
+        greeting: "🚀 **Campaign Builder Mode** — Let's build a campaign that gets your business in front of the right people.",
+    },
+    shopping: {
+        autoMessage: "Help me set up a Shopping campaign or Performance Max campaign for my products. What do I need and what's the best approach?",
+        greeting: "🛍️ **Shopping Campaign Mode** — Let's get your products showing up in Google Shopping results.",
+    },
+    ads: {
+        autoMessage: "Create new ad copy for my business. I need compelling headlines and descriptions for Google Search Ads.",
+        greeting: "✍️ **Ad Creation Mode** — Let me write some killer ad copy that gets clicks.",
+    },
+    audit: {
+        autoMessage: "Audit my Google Ads account. Find waste, identify top performers, and suggest optimizations with specific dollar amounts.",
+        greeting: "🔎 **Audit Mode** — Let me scan your campaigns for money leaks and quick wins.",
+    },
+    budget: {
+        autoMessage: "Help me optimize my Google Ads budget. Where should I be spending more? Where am I wasting money?",
+        greeting: "💰 **Budget Optimizer Mode** — Let me help you get the most bang for your ad spend.",
+    },
+    competitors: {
+        autoMessage: "Analyze my competitors. Who's bidding on similar keywords? What positioning are they using? How can I outperform them?",
+        greeting: "🕵️ **Competitor Analysis Mode** — Let me scope out what your competition is doing.",
+    },
+};
+
+// ─── Location-Aware Greeting Generator ──────────────────────────────────────
+
+const getLocationGreeting = (location: string, name: string): string => {
+    const loc = location.toLowerCase();
+
+    // Jamaica / Caribbean
+    if (loc.includes("jamaica") || loc.includes("kingston") || loc.includes("montego"))
+        return `Wha gwaan, **${name}**! 🇯🇲 Big up yuhself fi coming through.`;
+    if (loc.includes("trinidad") || loc.includes("tobago"))
+        return `Hey **${name}**! Big up yuhself! 🇹🇹 Let's get your ads firing.`;
+    if (loc.includes("barbados") || loc.includes("bajan"))
+        return `Hey **${name}**! 🇧🇧 Welcome nuh! Let's get your ads poppin'.`;
+    if (loc.includes("bahamas") || loc.includes("nassau"))
+        return `Hey **${name}**! 🇧🇸 What's up! Let's get those ads working for you.`;
+
+    // US Regional
+    if (loc.includes("new york") || loc.includes("brooklyn") || loc.includes("manhattan") || loc.includes("nyc"))
+        return `Yo **${name}**! 🗽 Let's get this bread — your ads need some NYC energy.`;
+    if (loc.includes("miami") || loc.includes("fort lauderdale"))
+        return `What's good, **${name}**! ☀️ Let's get those ads running hot down here.`;
+    if (loc.includes("texas") || loc.includes("houston") || loc.includes("dallas") || loc.includes("austin"))
+        return `Howdy, **${name}**! 🤠 Let's make your ads as big as Texas.`;
+    if (loc.includes("los angeles") || loc.includes("la") || loc.includes("california") || loc.includes("san francisco"))
+        return `Hey **${name}**! 🌴 Let's get those ads vibing out here on the West Coast.`;
+    if (loc.includes("chicago"))
+        return `What's up, **${name}**! 🌆 Chi-town energy — let's get your ads moving.`;
+    if (loc.includes("atlanta") || loc.includes("georgia"))
+        return `What's good, **${name}**! 🍑 ATL in the building — let's boost those ads.`;
+
+    // UK
+    if (loc.includes("london") || loc.includes("uk") || loc.includes("united kingdom") || loc.includes("england") || loc.includes("manchester") || loc.includes("birmingham"))
+        return `Alright **${name}**! 🇬🇧 Cheers for popping in — let's sort your ads out.`;
+    if (loc.includes("scotland") || loc.includes("glasgow") || loc.includes("edinburgh"))
+        return `Hiya **${name}**! 🏴󠁧󠁢󠁳󠁣󠁴󠁿 Let's get your ads smashing it.`;
+
+    // Canada
+    if (loc.includes("canada") || loc.includes("toronto") || loc.includes("vancouver") || loc.includes("montreal") || loc.includes("ottawa"))
+        return `Hey **${name}**, good to see you! 🇨🇦 Let's get your ads rolling, eh?`;
+
+    // Australia / New Zealand
+    if (loc.includes("australia") || loc.includes("sydney") || loc.includes("melbourne") || loc.includes("brisbane"))
+        return `G'day **${name}**! 🇦🇺 Let's get those ads going, mate.`;
+    if (loc.includes("new zealand") || loc.includes("auckland") || loc.includes("wellington"))
+        return `Kia ora **${name}**! 🇳🇿 Let's get your ads sorted.`;
+
+    // India
+    if (loc.includes("india") || loc.includes("mumbai") || loc.includes("delhi") || loc.includes("bangalore") || loc.includes("hyderabad"))
+        return `Namaste **${name}**! 🇮🇳 Welcome — let's get your ads performing.`;
+
+    // Nigeria / West Africa
+    if (loc.includes("nigeria") || loc.includes("lagos") || loc.includes("abuja"))
+        return `Hey **${name}**! 🇳🇬 How far? Let's get those ads on point.`;
+    if (loc.includes("ghana") || loc.includes("accra"))
+        return `Hey **${name}**! 🇬🇭 Akwaaba! Let's get your ads doing big things.`;
+    if (loc.includes("kenya") || loc.includes("nairobi"))
+        return `Sasa **${name}**! 🇰🇪 Let's get your ads moving.`;
+    if (loc.includes("south africa") || loc.includes("johannesburg") || loc.includes("cape town"))
+        return `Howzit **${name}**! 🇿🇦 Let's get your ads firing.`;
+
+    // Latin America
+    if (loc.includes("mexico") || loc.includes("mexico city") || loc.includes("guadalajara"))
+        return `¡Qué onda, **${name}**! 🇲🇽 Let's get those ads rockin'.`;
+    if (loc.includes("brazil") || loc.includes("são paulo") || loc.includes("rio"))
+        return `E aí, **${name}**! 🇧🇷 Let's get your ads going strong.`;
+
+    // Middle East
+    if (loc.includes("dubai") || loc.includes("abu dhabi") || loc.includes("uae") || loc.includes("emirates"))
+        return `Hey **${name}**! 🇦🇪 Yalla — let's supercharge your ads.`;
+
+    // Default - still warm and friendly
+    return `Hey **${name}**! 👋 Great to have you here.`;
+};
+
+// ─── Initial Messages (Context-Aware) ───────────────────────────────────────
+
+const getInitialMessages = (
+    bizIn: BusinessProfile | null,
+    t: (key: string, params?: Record<string, string | number>) => string,
+    kbStatus: "empty" | "has-content" = "empty",
+    intent: ChatIntent = null,
+): Message[] => {
     const biz: BusinessProfile = bizIn || {
         id: "default", name: "My Business", industry: "General", website: null,
         googleAdsId: null, initials: "MB", color: "from-blue-500 to-blue-700",
@@ -256,28 +373,85 @@ const getInitialMessages = (bizIn: BusinessProfile | null, t: (key: string, para
         geo: "Local", goals: ["Grow"], kbStatus: "empty",
     };
     const name = biz.name;
-    return [
+    const location = biz.location || biz.geo || "";
+    const greeting = getLocationGreeting(location, name);
+
+    const messages: Message[] = [
         {
             id: 1,
             role: "system",
             content: t("chat.greeting.connected", { name }),
             timestamp: "Session started",
         },
-        {
-            id: 2,
-            role: "ai",
-            model: "gpt-4o-mini",
-            content:
-                `${t("chat.greeting.hello", { name })} **${t("chat.status")}**\n\n` +
-                `${t("chat.greeting.actions")}`,
-            timestamp: timeNow(),
-            actions: [
-                { label: t("chat.quick.stats"), type: "primary" },
-                { label: t("chat.quick.leaks"), type: "secondary" },
-                { label: t("chat.quick.whatElse"), type: "secondary" },
-            ],
-        },
     ];
+
+    // Build the main greeting with context awareness
+    let greetingContent = `${greeting} **${t("chat.status")}**\n\n`;
+
+    // If there's an intent from another page, acknowledge it
+    if (intent && INTENT_PROMPTS[intent]) {
+        greetingContent += `${INTENT_PROMPTS[intent].greeting}\n\n`;
+    }
+
+    // KB awareness — warn if empty with actionable link
+    if (kbStatus === "empty") {
+        greetingContent += `⚠️ **Quick heads up** — your Knowledge Base is empty right now, so I'm working with limited info about **${name}**. `;
+        greetingContent += `The more I know about your business, the better I can target your ads, find the right keywords, and write copy that actually converts.\n\n`;
+        greetingContent += `**[→ Add to Knowledge Base](/dashboard/knowledge-base)** — drop in your website content, services, pricing, or anything that helps me understand your business.\n\n`;
+
+        if (!intent) {
+            greetingContent += `In the meantime, what would you like to start with?`;
+        }
+    } else {
+        if (!intent) {
+            greetingContent += `I've loaded your Knowledge Base and I'm up to speed on **${name}**. ${t("chat.greeting.actions")}`;
+        } else {
+            greetingContent += `I've loaded your Knowledge Base — let's put it to work.`;
+        }
+    }
+
+    // Build actions based on intent
+    let actions: { label: string; type: "primary" | "secondary" | "danger" }[];
+    if (intent === "keywords") {
+        actions = [
+            { label: "Find my best keywords", type: "primary" },
+            { label: "Show trending searches in my industry", type: "secondary" },
+            { label: "Suggest negative keywords", type: "secondary" },
+        ];
+    } else if (intent === "campaigns") {
+        actions = [
+            { label: "Create a new campaign", type: "primary" },
+            { label: "What campaign type is best for me?", type: "secondary" },
+            { label: "Show my stats", type: "secondary" },
+        ];
+    } else if (intent === "shopping") {
+        actions = [
+            { label: "Set up a Shopping campaign", type: "primary" },
+            { label: "What do I need for Shopping ads?", type: "secondary" },
+            { label: "Performance Max vs Standard Shopping", type: "secondary" },
+        ];
+    } else {
+        actions = [
+            { label: t("chat.quick.stats"), type: "primary" },
+            { label: t("chat.quick.leaks"), type: "secondary" },
+            { label: t("chat.quick.whatElse"), type: "secondary" },
+        ];
+        if (kbStatus === "empty") {
+            actions.unshift({ label: "📚 Add to Knowledge Base", type: "primary" });
+            actions[1] = { ...actions[1], type: "secondary" };
+        }
+    }
+
+    messages.push({
+        id: 2,
+        role: "ai",
+        model: "gpt-4o-mini",
+        content: greetingContent,
+        timestamp: timeNow(),
+        actions,
+    });
+
+    return messages;
 };
 
 // ─── Component ──────────────────────────────────────────────────────────────
@@ -370,9 +544,12 @@ const getMicInstructions = (browser: string, platform: Platform): { steps: strin
     };
 };
 
-export default function ChatPage() {
+function ChatPageInner() {
     const { activeBusiness, businesses, setActiveBusiness } = useBusiness();
     const { t, locale } = useTranslation();
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const intentParam = searchParams.get("intent") as ChatIntent;
     // getOffTopicBusiness was removed — keep stable callback to avoid hook churn
     const getOffTopicBusiness = useCallback((_text: string): BusinessProfile | null => null, []);
     const chatHistoryRef = useRef<Map<string, Message[]>>(new Map());
@@ -406,6 +583,8 @@ export default function ChatPage() {
     const hasAnalyserRef = useRef(false);
     const prevBusinessRef = useRef(activeBusiness.id);
     const [kbContext, setKbContext] = useState<string>("");
+    const [kbLoaded, setKbLoaded] = useState(false);
+    const intentHandled = useRef(false);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -427,10 +606,12 @@ export default function ChatPage() {
             if (saved && saved.length > 0) {
                 setMessages(saved);
             } else {
-                setMessages(getInitialMessages(activeBusiness, t));
+                setMessages(getInitialMessages(activeBusiness, t, kbContext ? "has-content" : "empty"));
             }
             setInput("");
             setIsTyping(false);
+            setKbLoaded(false);
+            intentHandled.current = false;
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeBusiness]);
@@ -453,11 +634,46 @@ export default function ChatPage() {
                     parts.push(`[${item.type}: ${item.title}]\n${snippet}`);
                     total += snippet.length;
                 }
-                if (!cancelled) setKbContext(parts.join("\n\n---\n\n"));
-            } catch { /* ignore */ }
+                if (!cancelled) {
+                    const ctx = parts.join("\n\n---\n\n");
+                    setKbContext(ctx);
+                    const hasContent = items.length > 0 && total > 0;
+                    setKbLoaded(true);
+                    // Rebuild initial messages with KB awareness + intent
+                    setMessages(prev => {
+                        // Only update if we're still on the initial greeting (haven't chatted yet)
+                        if (prev.length <= 2 && prev[0]?.id === 1) {
+                            return getInitialMessages(
+                                activeBusiness, t,
+                                hasContent ? "has-content" : "empty",
+                                intentParam,
+                            );
+                        }
+                        return prev;
+                    });
+                }
+            } catch { if (!cancelled) { setKbLoaded(true); } }
         })();
         return () => { cancelled = true; };
-    }, [activeBusiness.id]);
+    }, [activeBusiness.id, activeBusiness, t, intentParam]);
+
+    // Auto-send intent message after KB is loaded
+    useEffect(() => {
+        if (!kbLoaded || !intentParam || intentHandled.current) return;
+        const prompt = INTENT_PROMPTS[intentParam];
+        if (!prompt) return;
+
+        intentHandled.current = true;
+
+        // Small delay so the greeting renders first
+        const timer = setTimeout(() => {
+            sendMessageRef.current(prompt.autoMessage);
+            // Clean the URL without triggering navigation
+            router.replace("/dashboard/chat", { scroll: false });
+        }, 1200);
+
+        return () => clearTimeout(timer);
+    }, [kbLoaded, intentParam, router]);
 
     // Cleanup voice timers + audio context on unmount
     useEffect(() => {
@@ -788,7 +1004,7 @@ export default function ChatPage() {
 
         // Load or create history for new business
         const saved = chatHistoryRef.current.get(bizId);
-        const baseHistory = saved && saved.length > 0 ? saved : getInitialMessages(biz, t);
+        const baseHistory = saved && saved.length > 0 ? saved : getInitialMessages(biz, t, "empty");
 
         // Add a context-switch system message + greeting
         const switchMsg: Message = {
@@ -860,6 +1076,12 @@ export default function ChatPage() {
 
     const sendMessage = useCallback((text: string) => {
         if (!text.trim() || isTyping) return;
+
+        // ── Handle navigation actions (don't send as chat messages) ──
+        if (text.includes("Add to Knowledge Base")) {
+            router.push("/dashboard/knowledge-base");
+            return;
+        }
 
         const userMsg: Message = {
             id: Date.now(),
@@ -1107,7 +1329,8 @@ export default function ChatPage() {
     };
 
     const handleClear = () => {
-        setMessages(getInitialMessages(activeBusiness, t));
+        setMessages(getInitialMessages(activeBusiness, t, kbContext ? "has-content" : "empty"));
+        intentHandled.current = false;
     };
 
     // ─── Render Helpers ─────────────────────────────────────────────────────
@@ -1122,8 +1345,12 @@ export default function ChatPage() {
             }
             const linkMatch = part.match(/\[([^\]]+)\]\(([^)]+)\)/);
             if (linkMatch) {
+                if (linkMatch[2].startsWith("/")) {
+                    // Internal link — use Next.js Link for SPA navigation
+                    return <Link key={j} href={linkMatch[2]} className="text-primary underline hover:text-primary-dark font-medium">{linkMatch[1]}</Link>;
+                }
                 if (isSafeHref(linkMatch[2])) {
-                    return <a key={j} href={linkMatch[2]} className="text-primary underline hover:text-primary-dark" rel="noopener noreferrer">{linkMatch[1]}</a>;
+                    return <a key={j} href={linkMatch[2]} className="text-primary underline hover:text-primary-dark" rel="noopener noreferrer" target="_blank">{linkMatch[1]}</a>;
                 }
                 return <span key={j} className="text-primary">{linkMatch[1]}</span>;
             }
@@ -1457,7 +1684,7 @@ export default function ChatPage() {
             {/* Chat header */}
             <div className="flex items-center justify-between pb-3 border-b border-border mb-3">
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                    <NextImage src="https://api.dicebear.com/9.x/bottts-neutral/svg?seed=AdMasterAI&backgroundColor=4f46e5" alt="AI" width={40} height={40} unoptimized className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl shadow-lg shadow-primary/20 shrink-0" />
+                    <NextImage src="https://api.dicebear.com/9.x/icons/svg?seed=AdMasterAI&backgroundColor=6366f1&icon=robot" alt="AI" width={40} height={40} unoptimized className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl shadow-lg shadow-primary/20 shrink-0" />
                     <div className="min-w-0">
                         <h1 className="font-semibold text-sm sm:text-base flex items-center gap-1.5 sm:gap-2 flex-wrap">
                             <span className="truncate">AI Assistant</span>
@@ -1525,7 +1752,7 @@ export default function ChatPage() {
                     // AI message
                     return (
                         <div key={msg.id} className="flex gap-2 sm:gap-3 py-2">
-                            <NextImage src="https://api.dicebear.com/9.x/bottts-neutral/svg?seed=AdMasterAI&backgroundColor=4f46e5" alt="AI" width={32} height={32} unoptimized className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg shrink-0 shadow-sm" />
+                            <NextImage src="https://api.dicebear.com/9.x/icons/svg?seed=AdMasterAI&backgroundColor=6366f1&icon=robot" alt="AI" width={32} height={32} unoptimized className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg shrink-0 shadow-sm" />
                             <div className="max-w-[90%] sm:max-w-[88%] min-w-0">
 
 
@@ -1588,7 +1815,7 @@ export default function ChatPage() {
                 {/* Typing indicator */}
                 {isTyping && (
                     <div className="flex gap-3 py-2">
-                        <NextImage src="https://api.dicebear.com/9.x/bottts-neutral/svg?seed=AdMasterAI&backgroundColor=4f46e5" alt="AI" width={32} height={32} unoptimized className="w-8 h-8 rounded-lg shrink-0" />
+                        <NextImage src="https://api.dicebear.com/9.x/icons/svg?seed=AdMasterAI&backgroundColor=6366f1&icon=robot" alt="AI" width={32} height={32} unoptimized className="w-8 h-8 rounded-lg shrink-0" />
                         <div className="bg-card border border-border rounded-xl px-4 py-3 flex items-center gap-3">
                             <Loader2 className="w-4 h-4 animate-spin text-primary" />
                             <div className="flex items-center gap-1.5">
@@ -1724,5 +1951,17 @@ export default function ChatPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function ChatPage() {
+    return (
+        <Suspense fallback={
+            <div className="max-w-3xl mx-auto flex items-center justify-center h-chat">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+        }>
+            <ChatPageInner />
+        </Suspense>
     );
 }

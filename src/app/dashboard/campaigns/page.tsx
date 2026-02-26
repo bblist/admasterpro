@@ -117,7 +117,7 @@ export default function CampaignsPage() {
                         <Link href="/dashboard/settings" className="inline-flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-xl font-medium transition">
                             {t("campaigns.connectAccount")} <ArrowRight className="w-4 h-4" />
                         </Link>
-                        <Link href="/dashboard/chat" className="inline-flex items-center gap-2 bg-card border border-border hover:border-primary px-6 py-3 rounded-xl font-medium transition">
+                        <Link href="/dashboard/chat?intent=campaigns" className="inline-flex items-center gap-2 bg-card border border-border hover:border-primary px-6 py-3 rounded-xl font-medium transition">
                             <Zap className="w-4 h-4" /> {t("campaigns.planWithAI")}
                         </Link>
                     </div>
@@ -308,7 +308,7 @@ export default function CampaignsPage() {
                     <p className="text-muted text-sm max-w-md mx-auto mb-8">
                         {t("campaigns.noCampaignsDesc")}
                     </p>
-                    <Link href="/dashboard/chat" className="inline-flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-xl font-medium transition">
+                    <Link href="/dashboard/chat?intent=campaigns" className="inline-flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-xl font-medium transition">
                         <Zap className="w-4 h-4" /> {t("campaigns.createWithAI")} <ArrowRight className="w-4 h-4" />
                     </Link>
                 </div>

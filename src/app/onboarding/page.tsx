@@ -16,6 +16,8 @@ import {
     FileText,
     Sparkles,
     ExternalLink,
+    Pencil,
+    Save,
 } from "lucide-react";
 import { captureTokenFromHash, isAuthenticated, authFetch } from "@/lib/auth-client";
 import { useTranslation } from "@/i18n/context";
@@ -35,13 +37,18 @@ interface CrawlPage {
     url: string;
     title: string;
     snippet: string;
+    content: string;
 }
 
-/** Auto-prepend https:// if user enters a bare domain */
+/** Normalize a user-entered URL to a valid https:// URL */
 function normalizeUrl(raw: string): string {
-    const v = raw.trim();
+    let v = raw.trim();
     if (!v) return v;
-    if (/^https?:\/\//i.test(v)) return v;
+    // Strip trailing/leading whitespace and trailing slashes for uniformity
+    v = v.replace(/\/+$/, "");
+    // Remove any protocol prefix so we can re-add it
+    v = v.replace(/^(https?:\/\/)?(www\.)?/i, "");
+    if (!v) return "";
     return `https://${v}`;
 }
 
@@ -85,6 +92,10 @@ function OnboardingInner() {
     const [crawlError, setCrawlError] = useState("");
     const [crawlProgress, setCrawlProgress] = useState(0);
     const crawlTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const [crawledContent, setCrawledContent] = useState("");
+    const [crawlKbItemId, setCrawlKbItemId] = useState<string | null>(null);
+    const [editingContent, setEditingContent] = useState(false);
+    const [savingContent, setSavingContent] = useState(false);
 
     // Step 4 — about
     const [aboutText, setAboutText] = useState("");
@@ -191,13 +202,17 @@ function OnboardingInner() {
             const data = await res.json();
             setCrawlProgress(100);
 
-            // Parse crawled pages from response
-            const pages: CrawlPage[] = (data.items || []).map((item: { sourceUrl?: string; title?: string; content?: string }) => ({
-                url: item.sourceUrl || normalizeUrl(websiteUrl),
-                title: item.title || "Untitled page",
-                snippet: (item.content || "").slice(0, 180) + "…",
+            // Parse crawled pages from response — now includes real content
+            const pages: CrawlPage[] = (data.item?.pages || []).map((p: { url?: string; title?: string; content?: string }) => ({
+                url: p.url || normalizeUrl(websiteUrl),
+                title: p.title || "Untitled page",
+                snippet: (p.content || "").slice(0, 180) + "…",
+                content: p.content || "",
             }));
             setCrawlPages(pages);
+            // Store combined content for editing
+            setCrawledContent(data.item?.combinedContent || pages.map(p => p.content).join("\n\n---\n\n"));
+            setCrawlKbItemId(data.item?.id || null);
             setCrawlDone(true);
         } catch (err: unknown) {
             if (crawlTimerRef.current) clearInterval(crawlTimerRef.current);
@@ -206,6 +221,24 @@ function OnboardingInner() {
             setCrawlDone(true);
         } finally {
             setCrawling(false);
+        }
+    };
+
+    /* ── Step 3 — save edited crawl content ──────────────── */
+    const handleSaveCrawledContent = async () => {
+        if (!crawlKbItemId || !crawledContent.trim()) return;
+        setSavingContent(true);
+        try {
+            await authFetch("/api/knowledge-base", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: crawlKbItemId, content: crawledContent.trim() }),
+            });
+            setEditingContent(false);
+        } catch {
+            // non-critical
+        } finally {
+            setSavingContent(false);
         }
     };
 
@@ -412,7 +445,7 @@ function OnboardingInner() {
                                     type="text"
                                     value={businessName}
                                     onChange={(e) => setBusinessName(e.target.value)}
-                                    placeholder="e.g., Mike's Plumbing LLC"
+                                    placeholder="e.g., Bella's Dental Clinic"
                                     className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary transition"
                                 />
                             </div>
@@ -426,7 +459,7 @@ function OnboardingInner() {
                                     value={websiteUrl}
                                     onChange={(e) => setWebsiteUrl(e.target.value)}
                                     onBlur={() => { if (websiteUrl.trim()) setWebsiteUrl(normalizeUrl(websiteUrl)); }}
-                                    placeholder="mikesplumbing.com"
+                                    placeholder="bellasdentalclinic.com"
                                     className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary transition"
                                 />
                             </div>
@@ -441,21 +474,50 @@ function OnboardingInner() {
                                     className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary transition"
                                 >
                                     <option value="">Select industry…</option>
-                                    <option value="plumber">Plumber</option>
-                                    <option value="electrician">Electrician</option>
-                                    <option value="hvac">HVAC</option>
-                                    <option value="dentist">Dentist</option>
-                                    <option value="lawyer">Lawyer</option>
-                                    <option value="restaurant">Restaurant</option>
-                                    <option value="retail">Retail</option>
-                                    <option value="ecommerce">E-Commerce</option>
-                                    <option value="real-estate">Real Estate</option>
-                                    <option value="automotive">Automotive</option>
-                                    <option value="beauty-salon">Beauty / Salon</option>
-                                    <option value="healthcare">Healthcare</option>
-                                    <option value="fitness">Fitness / Gym</option>
-                                    <option value="photography">Photography</option>
+                                    <option value="accounting">Accounting / CPA</option>
+                                    <option value="automotive">Automotive / Mechanic</option>
+                                    <option value="beauty-salon">Beauty / Salon / Spa</option>
+                                    <option value="cannabis">Cannabis / CBD</option>
+                                    <option value="chiropractor">Chiropractor</option>
+                                    <option value="cleaning">Cleaning Services</option>
+                                    <option value="construction">Construction / Contractor</option>
                                     <option value="consulting">Consulting</option>
+                                    <option value="dentist">Dentist / Orthodontist</option>
+                                    <option value="ecommerce">E-Commerce / Online Store</option>
+                                    <option value="education">Education / Tutoring</option>
+                                    <option value="electrician">Electrician</option>
+                                    <option value="entertainment">Entertainment / Events</option>
+                                    <option value="fashion">Fashion / Clothing</option>
+                                    <option value="financial-advisor">Financial Advisor</option>
+                                    <option value="fitness">Fitness / Gym</option>
+                                    <option value="florist">Florist / Gift Shop</option>
+                                    <option value="food-delivery">Food Delivery / Catering</option>
+                                    <option value="healthcare">Healthcare / Medical</option>
+                                    <option value="hvac">HVAC / Air Conditioning</option>
+                                    <option value="insurance">Insurance</option>
+                                    <option value="interior-design">Interior Design</option>
+                                    <option value="jewelry">Jewelry</option>
+                                    <option value="landscaping">Landscaping / Lawn Care</option>
+                                    <option value="lawyer">Lawyer / Attorney</option>
+                                    <option value="marketing-agency">Marketing / Ad Agency</option>
+                                    <option value="moving">Moving / Storage</option>
+                                    <option value="optometrist">Optometrist / Eye Care</option>
+                                    <option value="pest-control">Pest Control</option>
+                                    <option value="pet-services">Pet Services / Vet</option>
+                                    <option value="pharmacy">Pharmacy</option>
+                                    <option value="photography">Photography / Videography</option>
+                                    <option value="plumber">Plumber</option>
+                                    <option value="printing">Printing / Signage</option>
+                                    <option value="real-estate">Real Estate</option>
+                                    <option value="restaurant">Restaurant / Café</option>
+                                    <option value="retail">Retail / Brick & Mortar</option>
+                                    <option value="roofing">Roofing</option>
+                                    <option value="saas">SaaS / Software</option>
+                                    <option value="security">Security Services</option>
+                                    <option value="solar">Solar / Renewable Energy</option>
+                                    <option value="travel">Travel / Tourism</option>
+                                    <option value="tutoring">Tutoring / Online Courses</option>
+                                    <option value="wedding">Wedding / Bridal</option>
                                     <option value="other">Other</option>
                                 </select>
                             </div>
@@ -532,15 +594,15 @@ function OnboardingInner() {
                             /* Scan complete */
                             <div>
                                 <div className="text-center mb-6">
-                                    <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                                        <CheckCircle className="w-8 h-8 text-emerald-500" />
+                                    <div className={`w-16 h-16 ${crawlError ? "bg-amber-50" : "bg-emerald-50"} rounded-2xl flex items-center justify-center mx-auto mb-4`}>
+                                        {crawlError ? <AlertCircle className="w-8 h-8 text-amber-500" /> : <CheckCircle className="w-8 h-8 text-emerald-500" />}
                                     </div>
                                     <h2 className="text-xl font-bold mb-2">
                                         {crawlError ? "Scan had issues" : "Scan complete!"}
                                     </h2>
                                     <p className="text-muted text-sm">
                                         {crawlError
-                                            ? "We couldn't fetch all pages, but you can add info manually in the next step."
+                                            ? "We couldn't fetch all pages, but you can add info manually below."
                                             : `We found ${crawlPages.length} page${crawlPages.length !== 1 ? "s" : ""} and saved the content to your Knowledge Base.`}
                                     </p>
                                 </div>
@@ -552,9 +614,9 @@ function OnboardingInner() {
                                     </div>
                                 )}
 
-                                {/* Pages found */}
-                                {crawlPages.length > 0 && (
-                                    <div className="space-y-2 max-h-64 overflow-y-auto mb-6">
+                                {/* Pages found summary */}
+                                {crawlPages.length > 0 && !editingContent && (
+                                    <div className="space-y-2 max-h-48 overflow-y-auto mb-4">
                                         {crawlPages.map((page, i) => (
                                             <div key={i} className="border border-border rounded-lg p-3 bg-background">
                                                 <div className="flex items-start justify-between gap-2">
@@ -571,6 +633,61 @@ function OnboardingInner() {
                                                 </div>
                                             </div>
                                         ))}
+                                    </div>
+                                )}
+
+                                {/* Editable content area */}
+                                {crawledContent && (
+                                    <div className="mb-4">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-sm font-medium flex items-center gap-1.5">
+                                                <FileText className="w-4 h-4 text-primary" />
+                                                Crawled Content
+                                            </span>
+                                            {!editingContent ? (
+                                                <button
+                                                    onClick={() => setEditingContent(true)}
+                                                    className="text-xs text-primary hover:text-primary-dark flex items-center gap-1 transition"
+                                                >
+                                                    <Pencil className="w-3 h-3" /> Edit
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={handleSaveCrawledContent}
+                                                    disabled={savingContent}
+                                                    className="text-xs bg-primary text-white px-3 py-1 rounded-lg hover:bg-primary-dark flex items-center gap-1 transition disabled:opacity-50"
+                                                >
+                                                    {savingContent ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                                                    {savingContent ? "Saving…" : "Save"}
+                                                </button>
+                                            )}
+                                        </div>
+                                        {editingContent ? (
+                                            <textarea
+                                                value={crawledContent}
+                                                onChange={(e) => setCrawledContent(e.target.value)}
+                                                rows={10}
+                                                className="w-full bg-background border border-primary rounded-lg px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 transition resize-y"
+                                            />
+                                        ) : (
+                                            <div className="bg-background border border-border rounded-lg p-3 max-h-48 overflow-y-auto">
+                                                <pre className="text-xs text-muted whitespace-pre-wrap font-sans leading-relaxed">{crawledContent.slice(0, 3000)}{crawledContent.length > 3000 ? "\n\n… (content truncated for preview)" : ""}</pre>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* If crawl error and no content — show manual entry box */}
+                                {crawlError && !crawledContent && (
+                                    <div className="mb-4">
+                                        <label className="text-sm font-medium mb-1.5 block">Add your website content manually</label>
+                                        <textarea
+                                            value={crawledContent}
+                                            onChange={(e) => setCrawledContent(e.target.value)}
+                                            rows={6}
+                                            placeholder="Paste or type information about your business here: services, products, about us, unique selling points…"
+                                            className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary transition resize-y"
+                                        />
                                     </div>
                                 )}
 

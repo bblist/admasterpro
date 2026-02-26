@@ -31,6 +31,43 @@ function isBlockedUrl(urlStr: string): boolean {
 }
 
 // ── Scrape a single page ──────────────────────────────────────────────────────
+
+const USER_AGENTS = [
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+];
+
+async function fetchWithRetry(url: string, retries = 2): Promise<Response | null> {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 20000);
+            const res = await fetch(url, {
+                signal: controller.signal,
+                headers: {
+                    "User-Agent": USER_AGENTS[attempt % USER_AGENTS.length],
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                    "Accept-Language": "en-US,en;q=0.9",
+                    "Accept-Encoding": "gzip, deflate, br",
+                    "Connection": "keep-alive",
+                    "Cache-Control": "no-cache",
+                },
+                redirect: "follow",
+            });
+            clearTimeout(timeout);
+            if (res.ok) return res;
+            // If we get a 403/503, retry with next UA
+            if (attempt < retries && (res.status === 403 || res.status === 503 || res.status >= 500)) continue;
+            return res; // Return non-ok response so caller can check
+        } catch (err) {
+            if (attempt === retries) return null;
+            // Wait a bit before retry
+            await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+        }
+    }
+    return null;
+}
+
 async function scrapePage(url: string): Promise<{
     title: string;
     description: string;
@@ -41,20 +78,9 @@ async function scrapePage(url: string): Promise<{
     if (isBlockedUrl(url)) return { title: "", description: "", content: "", links: [], success: false };
 
     try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 15000);
+        const res = await fetchWithRetry(url);
 
-        const res = await fetch(url, {
-            signal: controller.signal,
-            headers: {
-                "User-Agent": "AdMasterPro/1.0 (https://admasterai.nobleblocks.com; AI Ad Assistant)",
-                "Accept": "text/html,application/xhtml+xml",
-            },
-            redirect: "follow",
-        });
-        clearTimeout(timeout);
-
-        if (!res.ok) return { title: "", description: "", content: "", links: [], success: false };
+        if (!res || !res.ok) return { title: "", description: "", content: "", links: [], success: false };
 
         const contentType = res.headers.get("content-type") || "";
         if (!contentType.includes("text/html") && !contentType.includes("text/plain")) {
@@ -150,12 +176,15 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "url is required" }, { status: 400 });
         }
 
-        // Normalize URL
+        // Normalize URL — strip trailing slashes, ensure https://
+        url = url.trim().replace(/\/+$/, "");
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
             url = "https://" + url;
         }
+        // Remove www. for canonical form, we'll try both
+        const canonicalUrl = url.replace(/^(https?:\/\/)www\./i, "$1");
 
-        if (isBlockedUrl(url)) {
+        if (isBlockedUrl(canonicalUrl)) {
             return NextResponse.json({ error: "URL is not allowed" }, { status: 400 });
         }
 
@@ -171,15 +200,34 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        // ── Crawl the main page ─────────────────────────────────────────────
-        const mainResult = await scrapePage(url);
+        // ── Crawl the main page — try canonical, then www variant ───────────
+        let mainResult = await scrapePage(canonicalUrl);
+        let finalUrl = canonicalUrl;
+
+        if (!mainResult.success) {
+            // Try with www. prefix
+            const wwwUrl = canonicalUrl.replace(/^(https?:\/\/)/i, "$1www.");
+            mainResult = await scrapePage(wwwUrl);
+            if (mainResult.success) {
+                finalUrl = wwwUrl;
+            } else {
+                // Last resort: try http:// instead of https://
+                const httpUrl = canonicalUrl.replace(/^https:\/\//i, "http://");
+                mainResult = await scrapePage(httpUrl);
+                if (mainResult.success) {
+                    finalUrl = httpUrl;
+                }
+            }
+        }
 
         if (!mainResult.success) {
             return NextResponse.json({
-                error: "Failed to crawl the website. The site may be blocking requests or is unreachable.",
-                url,
+                error: "Failed to crawl the website. The site may be blocking automated requests. Try adding content manually in the Knowledge Base.",
+                url: canonicalUrl,
             }, { status: 422 });
         }
+
+        url = finalUrl;  // Use the URL that worked
 
         // ── Crawl sub-pages ─────────────────────────────────────────────────
         const allPages: { url: string; title: string; content: string }[] = [
@@ -259,7 +307,12 @@ export async function POST(req: NextRequest) {
                 description: mainResult.description,
                 pagesFound: allPages.length,
                 totalChars: combinedContent.length,
-                pages: allPages.map(p => ({ url: p.url, title: p.title })),
+                pages: allPages.map(p => ({
+                    url: p.url,
+                    title: p.title,
+                    content: p.content.slice(0, 3000),
+                })),
+                combinedContent: combinedContent.slice(0, 50_000),
             },
         });
     } catch (error) {

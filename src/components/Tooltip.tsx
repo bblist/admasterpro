@@ -13,6 +13,20 @@ interface TooltipProps {
 export default function Tooltip({ text, children, position = "top", icon = true }: TooltipProps) {
     const [show, setShow] = useState(false);
     const tooltipRef = useRef<HTMLDivElement>(null);
+    const popoverRef = useRef<HTMLDivElement>(null);
+    const [adjustedPos, setAdjustedPos] = useState(position);
+
+    // Reposition if overflowing viewport
+    useEffect(() => {
+        if (!show || !popoverRef.current) { setAdjustedPos(position); return; }
+        const rect = popoverRef.current.getBoundingClientRect();
+        let pos = position;
+        if (rect.left < 8) pos = "right";
+        else if (rect.right > window.innerWidth - 8) pos = "left";
+        if (rect.top < 8) pos = "bottom";
+        else if (rect.bottom > window.innerHeight - 8) pos = "top";
+        setAdjustedPos(pos);
+    }, [show, position]);
 
     const positionClasses = {
         top: "bottom-full left-1/2 -translate-x-1/2 mb-2",
@@ -28,29 +42,37 @@ export default function Tooltip({ text, children, position = "top", icon = true 
         right: "right-full top-1/2 -translate-y-1/2 border-r-gray-800 border-t-transparent border-b-transparent border-l-transparent",
     };
 
+    const handleToggle = () => setShow((s) => !s);
+
     return (
         <div
             className="relative inline-flex items-center"
             onMouseEnter={() => setShow(true)}
             onMouseLeave={() => setShow(false)}
-            onFocus={() => setShow(true)}
-            onBlur={() => setShow(false)}
             ref={tooltipRef}
         >
             {children ? (
-                children
+                <span onTouchStart={handleToggle}>{children}</span>
             ) : icon ? (
-                <HelpCircle className="w-3.5 h-3.5 text-muted/50 hover:text-primary cursor-help transition" tabIndex={0} aria-label="Help" />
+                <HelpCircle
+                    className="w-3.5 h-3.5 text-muted/50 hover:text-primary cursor-help transition"
+                    tabIndex={0}
+                    aria-label="Help"
+                    onFocus={() => setShow(true)}
+                    onBlur={() => setShow(false)}
+                    onTouchStart={handleToggle}
+                />
             ) : null}
 
             {show && (
                 <div
-                    className={`absolute z-50 ${positionClasses[position]} pointer-events-none`}
+                    ref={popoverRef}
+                    className={`absolute z-50 ${positionClasses[adjustedPos]} pointer-events-none`}
                 >
-                    <div className="bg-gray-800 text-white text-xs rounded-lg px-3 py-2 max-w-[240px] whitespace-normal leading-relaxed shadow-lg">
+                    <div className="bg-gray-800 text-white text-xs rounded-lg px-3 py-2 w-[240px] sm:w-[280px] whitespace-normal leading-relaxed shadow-lg">
                         {text}
                         <div
-                            className={`absolute w-0 h-0 border-4 ${arrowClasses[position]}`}
+                            className={`absolute w-0 h-0 border-4 ${arrowClasses[adjustedPos]}`}
                         />
                     </div>
                 </div>

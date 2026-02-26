@@ -96,9 +96,9 @@ const SLIDES = [
         visual: (
             <div className="mt-4 space-y-2.5">
                 {[
-                    { label: "Business Name", value: "Mike's Plumbing LLC", required: true },
-                    { label: "Website URL", value: "mikesplumbing.com", required: true },
-                    { label: "Industry", value: "Plumber", required: false },
+                    { label: "Business Name", value: "Bella's Dental Clinic", required: true },
+                    { label: "Website URL", value: "bellasdentalclinic.com", required: true },
+                    { label: "Industry", value: "Dentist", required: false },
                 ].map((f) => (
                     <div key={f.label} className="bg-gray-50 rounded-lg border border-gray-100 px-4 py-2.5">
                         <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-0.5">
@@ -122,7 +122,7 @@ const SLIDES = [
         visual: (
             <div className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
                 <div className="space-y-2.5">
-                    {["Home Page", "Services — Emergency Plumbing", "About Us — Family-Owned Since 1998"].map((page, i) => (
+                    {["Home Page", "Services — Cosmetic Dentistry", "About Us — Caring For Smiles Since 2005"].map((page, i) => (
                         <div key={i} className="flex items-center gap-2.5">
                             <div className={`w-6 h-6 rounded-full flex items-center justify-center ${i < 2 ? "bg-emerald-100" : "bg-indigo-100"}`}>
                                 {i < 2 ? (
@@ -154,7 +154,7 @@ const SLIDES = [
         visual: (
             <div className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
                 <div className="bg-white border border-gray-200 rounded-lg p-3 text-xs text-gray-500 leading-relaxed italic">
-                    &ldquo;We&apos;re running a 20% summer sale on all emergency services. Our customers are homeowners 30-55 in Miami. We do same-day response guaranteed…&rdquo;
+                    &ldquo;We&apos;re running a 20% off teeth whitening special this month. Our patients are professionals aged 25-50 in Kingston. We offer same-day appointments…&rdquo;
                 </div>
                 <div className="flex items-center gap-1.5 mt-2.5 text-xs text-gray-400">
                     <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400" />
@@ -202,8 +202,8 @@ const SLIDES = [
                 {[
                     { text: "Write me 5 headlines for my summer sale", color: "bg-blue-50 border-blue-100 text-blue-700" },
                     { text: "What's wasting money in my campaigns?", color: "bg-amber-50 border-amber-100 text-amber-700" },
-                    { text: "Suggest negative keywords for plumbing", color: "bg-violet-50 border-violet-100 text-violet-700" },
-                    { text: "Create a display ad for emergency service", color: "bg-emerald-50 border-emerald-100 text-emerald-700" },
+                    { text: "Suggest negative keywords for my clinic", color: "bg-violet-50 border-violet-100 text-violet-700" },
+                    { text: "Create a display ad for teeth whitening", color: "bg-emerald-50 border-emerald-100 text-emerald-700" },
                 ].map((q) => (
                     <div key={q.text} className={`text-[11px] leading-relaxed p-2.5 rounded-lg border ${q.color}`}>
                         {q.text}
@@ -275,14 +275,14 @@ export default function WelcomeGuide({ forceOpen = false, onClose }: WelcomeGuid
                     {/* Close button */}
                     <button
                         onClick={dismiss}
-                        className="absolute top-4 right-4 z-10 text-gray-400 hover:text-gray-600 transition"
+                        className="absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition"
                         aria-label="Close guide"
                     >
-                        <X className="w-5 h-5" />
+                        <X className="w-4 h-4" />
                     </button>
 
                     {/* Slide indicator dots */}
-                    <div className="flex justify-center gap-1.5 pt-5">
+                    <div className="flex justify-center gap-1.5 pt-5 px-12">
                         {SLIDES.map((_, i) => (
                             <button
                                 key={i}
@@ -297,12 +297,14 @@ export default function WelcomeGuide({ forceOpen = false, onClose }: WelcomeGuid
 
                     {/* Content */}
                     <div className="px-6 pt-5 pb-6">
-                        {/* Icon */}
-                        <div className="flex justify-center mb-4">
-                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${s.iconBg}`}>
-                                <Icon className={`w-7 h-7 ${s.iconColor}`} />
+                        {/* Icon — skip for welcome slide */}
+                        {s.id !== "welcome" && (
+                            <div className="flex justify-center mb-4">
+                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${s.iconBg}`}>
+                                    <Icon className={`w-7 h-7 ${s.iconColor}`} />
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* Text */}
                         <h2 className="text-xl font-bold text-gray-900 text-center mb-1">{s.title}</h2>

@@ -132,7 +132,7 @@ export default function KeywordsPage() {
                         <Link href="/dashboard/settings" className="inline-flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-xl font-medium transition">
                             {t("keywords.connectAccount")} <ArrowRight className="w-4 h-4" />
                         </Link>
-                        <Link href="/dashboard/chat" className="inline-flex items-center gap-2 bg-card border border-border hover:border-primary px-6 py-3 rounded-xl font-medium transition">
+                        <Link href="/dashboard/chat?intent=keywords" className="inline-flex items-center gap-2 bg-card border border-border hover:border-primary px-6 py-3 rounded-xl font-medium transition">
                             <Zap className="w-4 h-4" /> {t("keywords.researchWithAI")}
                         </Link>
                     </div>
@@ -309,7 +309,7 @@ export default function KeywordsPage() {
                     <p className="text-muted text-sm max-w-md mx-auto mb-6">
                         {t("keywords.noKeywordsDesc")}
                     </p>
-                    <Link href="/dashboard/chat" className="inline-flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-xl font-medium transition">
+                    <Link href="/dashboard/chat?intent=keywords" className="inline-flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-xl font-medium transition">
                         <Zap className="w-4 h-4" /> {t("keywords.researchKeywords")} <ArrowRight className="w-4 h-4" />
                     </Link>
                 </div>
