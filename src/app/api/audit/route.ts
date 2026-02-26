@@ -145,39 +145,38 @@ export async function POST(req: NextRequest) {
         }
 
         // AI Analysis prompt
-        const prompt = `You are an expert digital marketing and Google Ads analyst. Analyze this website for ad-readiness and provide a comprehensive audit report.
+        const prompt = `You are a senior paid-ads strategist who has managed millions in ad spend across dozens of industries. You are reviewing a potential client's website before running ads for them. Write like you're speaking directly to the business owner — be specific, blunt where needed, and skip the filler.
+
+Do NOT sound like a generic AI audit. Reference specific things you see on the page (product names, sections, wording, images described, layout issues). If you can't fetch content, say so honestly instead of guessing.
 
 WEBSITE: ${url}
 BUSINESS NAME: ${businessName}
 INDUSTRY: ${industry || "Not specified"}
 PAGE TITLE: ${pageTitle}
 MONTHLY AD SPEND: ${monthlySpend || "Not specified"}
-${fetchError ? "NOTE: Could not fetch the website directly. Base analysis on URL patterns and industry best practices." : ""}
+${fetchError ? "NOTE: Could not fetch the website directly. Be upfront about this and base analysis on URL patterns and industry context." : ""}
 
 PAGE CONTENT (extracted text):
 ${pageContent}
 
-Provide a detailed audit with these sections. For each section, give:
-- A score (0-100)
-- Status: "excellent" (80-100), "good" (60-79), "needs-work" (40-59), "critical" (0-39)
-- 2-4 specific findings about this website
-- 2-4 actionable recommendations
+Score each section 0-100 with status: "excellent" (80-100), "good" (60-79), "needs-work" (40-59), "critical" (0-39).
+For each section provide 2-4 specific findings (reference what you actually see) and 2-4 actionable recommendations (be concrete — no vague "consider improving").
 
-SECTIONS TO ANALYZE:
-1. Landing Page Quality — Is the page well-structured? Clear value proposition? Professional design signals?
-2. Call-to-Action Effectiveness — Are CTAs visible, compelling, properly placed? Forms easy to find?
-3. Mobile Optimization — Mobile-friendly signals, responsive design indicators, page speed hints
-4. Trust Signals — Reviews, testimonials, certifications, security badges, contact info visible?
-5. Ad-Readiness — Would paid traffic convert well? Landing page quality for Google Ads?
-6. SEO Foundation — Meta tags, heading structure, keyword relevancy, content quality
-7. Competitive Positioning — How does this position vs typical competitors in ${industry || "their"} industry?
-8. Content Quality — Is content compelling, clear, and conversion-oriented?
+SECTIONS:
+1. Landing Page Quality — Structure, clarity of value proposition, professional design signals
+2. Call-to-Action Effectiveness — CTA visibility, placement, wording, form accessibility
+3. Mobile Optimization — Responsive design signals, mobile UX indicators
+4. Trust Signals — Reviews, testimonials, certifications, security badges, contact info
+5. Ad-Readiness — Would paid traffic convert? Landing page quality for Google Ads campaigns
+6. SEO Foundation — Meta tags, heading hierarchy, keyword relevancy, content depth
+7. Competitive Positioning — How this stacks up vs typical competitors in ${industry || "their"} space
+8. Content Quality — Is content compelling, clear, conversion-oriented?
 
 Also provide:
-- An overall summary paragraph (3-4 sentences) about the website's strengths and weaknesses
-- An overall score (0-100 weighted average)
-- Top 3 quick wins (highest impact, easiest to implement)
-- Estimated monthly savings/improvement if recommendations are followed (give a dollar range)
+- An overall summary (3-4 sentences, direct and honest — what's working, what's not, and the single biggest thing to fix first)
+- Overall score (0-100 weighted average)
+- Top 3 quick wins (specific actions, not vague suggestions)
+- Estimated monthly savings/improvement range in dollars
 
 Return as JSON:
 {

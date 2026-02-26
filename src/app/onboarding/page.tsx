@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
     Zap,
     ArrowRight,
@@ -10,33 +11,27 @@ import {
     Upload,
     Globe,
     Building2,
-    MapPin,
     Loader2,
     AlertCircle,
+    FileText,
+    Sparkles,
+    ExternalLink,
 } from "lucide-react";
-import { captureTokenFromHash, isAuthenticated, authFetch, getAuthUser } from "@/lib/auth-client";
+import { captureTokenFromHash, isAuthenticated, authFetch } from "@/lib/auth-client";
 import { useTranslation } from "@/i18n/context";
 
-const stepKeys = [
-    { id: 1, titleKey: "onboarding.step1" },
-    { id: 2, titleKey: "onboarding.step2" },
-    { id: 3, titleKey: "onboarding.step3" },
-    { id: 4, titleKey: "onboarding.step4" },
+const STEPS = [
+    { id: 1, label: "Account" },
+    { id: 2, label: "Your Website" },
+    { id: 3, label: "Scan" },
+    { id: 4, label: "About You" },
+    { id: 5, label: "Upload" },
 ];
 
-interface AuditSection {
+interface CrawlPage {
+    url: string;
     title: string;
-    score: number;
-    summary: string;
-    findings: string[];
-}
-
-interface AuditResult {
-    overallScore: number;
-    overallSummary: string;
-    sections: AuditSection[];
-    quickWins: string[];
-    estimatedSavings: string;
+    snippet: string;
 }
 
 /** Auto-prepend https:// if user enters a bare domain */
@@ -49,20 +44,35 @@ function normalizeUrl(raw: string): string {
 
 export default function OnboardingPage() {
     const { t } = useTranslation();
+    const router = useRouter();
     const [currentStep, setCurrentStep] = useState(1);
+
+    // Step 1 — auth
     const [connected, setConnected] = useState(false);
+
+    // Step 2 — website + business
     const [websiteUrl, setWebsiteUrl] = useState("");
     const [businessName, setBusinessName] = useState("");
     const [businessType, setBusinessType] = useState("");
-    const [location, setLocation] = useState("");
+    const [businessId, setBusinessId] = useState<string | null>(null);
+    const [saving, setSaving] = useState(false);
+    const [saveError, setSaveError] = useState("");
+
+    // Step 3 — crawl
+    const [crawling, setCrawling] = useState(false);
+    const [crawlDone, setCrawlDone] = useState(false);
+    const [crawlPages, setCrawlPages] = useState<CrawlPage[]>([]);
+    const [crawlError, setCrawlError] = useState("");
+    const [crawlProgress, setCrawlProgress] = useState(0);
+    const crawlTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    // Step 4 — about
+    const [aboutText, setAboutText] = useState("");
+    const [aboutSaving, setAboutSaving] = useState(false);
+
+    // Step 5 — upload
     const [uploading, setUploading] = useState(false);
     const [uploadedFiles, setUploadedFiles] = useState<{ name: string; size: string }[]>([]);
-    const [auditing, setAuditing] = useState(false);
-    const [auditDone, setAuditDone] = useState(false);
-    const [auditResult, setAuditResult] = useState<AuditResult | null>(null);
-    const [auditError, setAuditError] = useState("");
-    const [businessSaving, setBusinessSaving] = useState(false);
-    const [businessError, setBusinessError] = useState("");
     const [uploadError, setUploadError] = useState("");
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -75,8 +85,13 @@ export default function OnboardingPage() {
         }
     }, []);
 
+    // Cleanup crawl timer
+    useEffect(() => {
+        return () => { if (crawlTimerRef.current) clearInterval(crawlTimerRef.current); };
+    }, []);
+
+    /* ── Step 1 handlers ────────────────────────────────── */
     const handleConnect = () => {
-        // Redirect to real Google OAuth flow
         window.location.href = "/api/auth/callback?next=/onboarding";
     };
 
@@ -85,40 +100,119 @@ export default function OnboardingPage() {
         setCurrentStep(2);
     };
 
-    const handleSaveBusiness = async () => {
-        if (!businessName.trim()) {
-            setBusinessError(t("onboarding.business.nameRequired"));
-            return;
-        }
-        if (!businessType) {
-            setBusinessError(t("onboarding.business.industryRequired"));
-            return;
-        }
-        setBusinessSaving(true);
-        setBusinessError("");
+    /* ── Step 2 handler — save business, then go to step 3 ── */
+    const handleSaveAndCrawl = async () => {
+        if (!businessName.trim()) { setSaveError("Business name is required"); return; }
+        if (!websiteUrl.trim()) { setSaveError("Website URL is required so we can learn about your business"); return; }
+        setSaving(true);
+        setSaveError("");
+
         try {
+            // 1. Create the business
             const res = await authFetch("/api/businesses", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     name: businessName.trim(),
-                    website: normalizeUrl(websiteUrl) || undefined,
+                    website: normalizeUrl(websiteUrl),
                     industry: businessType || undefined,
-                    location: location.trim() || undefined,
                 }),
             });
             if (!res.ok) {
                 const data = await res.json().catch(() => ({}));
                 throw new Error(data.error || `Failed to save (${res.status})`);
             }
+            const { business } = await res.json();
+            setBusinessId(business.id);
             setCurrentStep(3);
+
+            // 2. Kick off the crawl automatically
+            startCrawl(business.id);
         } catch (err: unknown) {
-            setBusinessError(err instanceof Error ? err.message : "Failed to save business info");
+            setSaveError(err instanceof Error ? err.message : "Failed to save");
         } finally {
-            setBusinessSaving(false);
+            setSaving(false);
         }
     };
 
+    /* ── Step 3 — crawl ───────────────────────────────────── */
+    const startCrawl = async (bId: string) => {
+        setCrawling(true);
+        setCrawlDone(false);
+        setCrawlError("");
+        setCrawlProgress(0);
+        setCrawlPages([]);
+
+        // Simulate progress while crawl runs
+        let prog = 0;
+        crawlTimerRef.current = setInterval(() => {
+            prog = Math.min(prog + Math.random() * 12, 90);
+            setCrawlProgress(Math.round(prog));
+        }, 600);
+
+        try {
+            const res = await authFetch("/api/crawl", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    url: normalizeUrl(websiteUrl),
+                    businessId: bId,
+                    depth: 5,
+                }),
+            });
+
+            if (crawlTimerRef.current) clearInterval(crawlTimerRef.current);
+
+            if (!res.ok) {
+                const d = await res.json().catch(() => ({}));
+                throw new Error(d.error || `Crawl failed (${res.status})`);
+            }
+
+            const data = await res.json();
+            setCrawlProgress(100);
+
+            // Parse crawled pages from response
+            const pages: CrawlPage[] = (data.items || []).map((item: { sourceUrl?: string; title?: string; content?: string }) => ({
+                url: item.sourceUrl || normalizeUrl(websiteUrl),
+                title: item.title || "Untitled page",
+                snippet: (item.content || "").slice(0, 180) + "…",
+            }));
+            setCrawlPages(pages);
+            setCrawlDone(true);
+        } catch (err: unknown) {
+            if (crawlTimerRef.current) clearInterval(crawlTimerRef.current);
+            setCrawlProgress(100);
+            setCrawlError(err instanceof Error ? err.message : "Crawl failed");
+            setCrawlDone(true);
+        } finally {
+            setCrawling(false);
+        }
+    };
+
+    /* ── Step 4 — save about text ─────────────────────────── */
+    const handleSaveAbout = async () => {
+        if (!aboutText.trim()) { setCurrentStep(5); return; }
+        setAboutSaving(true);
+        try {
+            await authFetch("/api/knowledge-base", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    type: "text",
+                    title: "About the Business",
+                    content: aboutText.trim(),
+                    businessId: businessId || undefined,
+                }),
+            });
+        } catch {
+            // non-critical, continue
+        } finally {
+            setAboutSaving(false);
+            setCurrentStep(5);
+        }
+    };
+
+    /* ── Step 5 — file upload ──────────────────────────────── */
     const handleFileUpload = useCallback(async (files: FileList | null) => {
         if (!files || files.length === 0) return;
         setUploading(true);
@@ -144,40 +238,16 @@ export default function OnboardingPage() {
         }
     }, []);
 
-    const handleAudit = async () => {
-        setAuditing(true);
-        setAuditError("");
-        setAuditResult(null);
-        try {
-            const user = getAuthUser();
-            const res = await authFetch("/api/audit", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    websiteUrl: normalizeUrl(websiteUrl) || `https://${businessName.toLowerCase().replace(/[^a-z0-9]/g, "")}.com`,
-                    businessName: businessName.trim(),
-                    industry: businessType || undefined,
-                    email: user?.email || "user@admasterai.com",
-                }),
-            });
-            if (!res.ok) {
-                const data = await res.json().catch(() => ({}));
-                throw new Error(data.error || `Audit failed (${res.status})`);
-            }
-            const data = await res.json();
-            setAuditResult(data.result || null);
-            setAuditDone(true);
-        } catch (err: unknown) {
-            setAuditError(err instanceof Error ? err.message : "Audit failed");
-            setAuditDone(true);
-        } finally {
-            setAuditing(false);
-        }
+    const handleFinish = () => {
+        router.push("/dashboard/chat");
     };
 
+    /* ══════════════════════════════════════════════════════════
+       RENDER
+       ══════════════════════════════════════════════════════════ */
     return (
         <div className="min-h-screen bg-background flex flex-col">
-            {/* Header */}
+            {/* ── Header ─────────────────────────────────────── */}
             <div className="border-b border-border bg-card">
                 <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
                     <Link href="/" className="flex items-center gap-2">
@@ -187,57 +257,50 @@ export default function OnboardingPage() {
                         <span className="font-bold text-lg">AdMaster Pro</span>
                     </Link>
                     <Link href="/login" className="text-sm text-muted hover:text-foreground">
-                        {t("onboarding.haveAccount")}
+                        Already have an account?
                     </Link>
                 </div>
             </div>
 
-            {/* Progress */}
+            {/* ── Progress bar ────────────────────────────────── */}
             <div className="max-w-3xl mx-auto w-full px-4 py-6">
                 <div className="flex items-center justify-between mb-8">
-                    {stepKeys.map((step, i) => (
+                    {STEPS.map((step, i) => (
                         <div key={step.id} className="flex items-center">
                             <div className="flex items-center gap-2">
                                 <div
-                                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep > step.id
-                                        ? "bg-success text-white"
-                                        : currentStep === step.id
+                                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
+                                        currentStep > step.id
+                                            ? "bg-emerald-500 text-white"
+                                            : currentStep === step.id
                                             ? "bg-primary text-white"
                                             : "bg-border text-muted"
-                                        }`}
+                                    }`}
                                 >
-                                    {currentStep > step.id ? (
-                                        <CheckCircle className="w-4 h-4" />
-                                    ) : (
-                                        step.id
-                                    )}
+                                    {currentStep > step.id ? <CheckCircle className="w-4 h-4" /> : step.id}
                                 </div>
-                                <span
-                                    className={`text-sm hidden sm:block ${currentStep === step.id ? "font-medium" : "text-muted"
-                                        }`}
-                                >
-                                    {t(step.titleKey)}
+                                <span className={`text-xs hidden sm:block ${currentStep === step.id ? "font-medium text-foreground" : "text-muted"}`}>
+                                    {step.label}
                                 </span>
                             </div>
-                            {i < stepKeys.length - 1 && (
-                                <div
-                                    className={`w-12 sm:w-24 h-0.5 mx-2 ${currentStep > step.id ? "bg-success" : "bg-border"
-                                        }`}
-                                />
+                            {i < STEPS.length - 1 && (
+                                <div className={`w-8 sm:w-16 h-0.5 mx-2 transition-colors ${currentStep > step.id ? "bg-emerald-500" : "bg-border"}`} />
                             )}
                         </div>
                     ))}
                 </div>
 
-                {/* Step 1: Connect */}
+                {/* ─────────────────────────────────────────────────
+                    STEP 1 — Create Account
+                   ───────────────────────────────────────────────── */}
                 {currentStep === 1 && (
-                    <div className="bg-card border border-border rounded-xl p-8 text-center">
-                        <div className="w-16 h-16 bg-primary-light rounded-2xl flex items-center justify-center mx-auto mb-6">
+                    <div className="bg-card border border-border rounded-xl p-8 text-center max-w-lg mx-auto">
+                        <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
                             <Globe className="w-8 h-8 text-primary" />
                         </div>
-                        <h2 className="text-2xl font-bold mb-2">{t("onboarding.connect.title")}</h2>
-                        <p className="text-muted mb-8 max-w-md mx-auto">
-                            {t("onboarding.connect.desc")}
+                        <h2 className="text-2xl font-bold mb-2">Create your account</h2>
+                        <p className="text-muted mb-8 max-w-sm mx-auto">
+                            Sign in with Google so we can save your progress and keep your data private.
                         </p>
 
                         {!connected ? (
@@ -247,73 +310,58 @@ export default function OnboardingPage() {
                                     className="bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-50 transition inline-flex items-center gap-3 shadow-sm"
                                 >
                                     <svg className="w-5 h-5" viewBox="0 0 24 24">
-                                        <path
-                                            fill="#4285F4"
-                                            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
-                                        />
-                                        <path
-                                            fill="#34A853"
-                                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                                        />
-                                        <path
-                                            fill="#FBBC05"
-                                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                                        />
-                                        <path
-                                            fill="#EA4335"
-                                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                                        />
+                                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
+                                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                                     </svg>
-                                    {t("onboarding.connect.google")}
+                                    Continue with Google
                                 </button>
                                 <div>
-                                    <button
-                                        onClick={handleSkipConnect}
-                                        className="text-sm text-muted hover:text-foreground transition underline"
-                                    >
-                                        {t("onboarding.connect.skip")}
+                                    <button onClick={handleSkipConnect} className="text-sm text-muted hover:text-foreground transition underline">
+                                        Skip for now
                                     </button>
                                 </div>
                             </div>
                         ) : (
-                            <div className="inline-flex items-center gap-2 text-success bg-success/10 px-4 py-2 rounded-lg">
-                                <CheckCircle className="w-5 h-5" />
-                                {t("onboarding.connect.success")}
+                            <div className="space-y-6">
+                                <div className="inline-flex items-center gap-2 text-emerald-600 bg-emerald-50 px-4 py-2 rounded-lg">
+                                    <CheckCircle className="w-5 h-5" />
+                                    Connected
+                                </div>
+                                <div>
+                                    <button
+                                        onClick={() => setCurrentStep(2)}
+                                        className="bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-lg font-medium transition inline-flex items-center gap-2"
+                                    >
+                                        Continue <ArrowRight className="w-4 h-4" />
+                                    </button>
+                                </div>
                             </div>
                         )}
 
                         <p className="text-xs text-muted mt-6">
-                            {t("onboarding.connect.readOnly")}
+                            We only read your ad data — we never make changes without your permission.
                         </p>
-
-                        {connected && (
-                            <div className="mt-8">
-                                <button
-                                    onClick={() => setCurrentStep(2)}
-                                    className="bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-lg font-medium transition inline-flex items-center gap-2"
-                                >
-                                    {t("common.continue")}
-                                    <ArrowRight className="w-4 h-4" />
-                                </button>
-                            </div>
-                        )}
                     </div>
                 )}
 
-                {/* Step 2: Business Info */}
+                {/* ─────────────────────────────────────────────────
+                    STEP 2 — Enter Website + Business Name
+                   ───────────────────────────────────────────────── */}
                 {currentStep === 2 && (
-                    <div className="bg-card border border-border rounded-xl p-8">
-                        <div className="w-16 h-16 bg-primary-light rounded-2xl flex items-center justify-center mx-auto mb-6">
+                    <div className="bg-card border border-border rounded-xl p-8 max-w-lg mx-auto">
+                        <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
                             <Building2 className="w-8 h-8 text-primary" />
                         </div>
-                        <h2 className="text-2xl font-bold mb-2 text-center">{t("onboarding.business.title")}</h2>
-                        <p className="text-muted mb-8 text-center max-w-md mx-auto">
-                            {t("onboarding.business.desc")}
+                        <h2 className="text-2xl font-bold mb-2 text-center">Tell us about your business</h2>
+                        <p className="text-muted mb-8 text-center max-w-sm mx-auto">
+                            We&apos;ll scan your website to understand your business so we can write better ads.
                         </p>
 
-                        <div className="max-w-md mx-auto space-y-4">
+                        <div className="space-y-4">
                             <div>
-                                <label className="text-sm font-medium mb-1 block">{t("onboarding.business.name")} <span className="text-red-400">*</span></label>
+                                <label className="text-sm font-medium mb-1 block">Business name <span className="text-red-400">*</span></label>
                                 <input
                                     type="text"
                                     value={businessName}
@@ -323,43 +371,7 @@ export default function OnboardingPage() {
                                 />
                             </div>
                             <div>
-                                <label className="text-sm font-medium mb-1 block">{t("onboarding.business.type")} <span className="text-red-400">*</span></label>
-                                <select
-                                    value={businessType}
-                                    onChange={(e) => setBusinessType(e.target.value)}
-                                    className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary transition"
-                                >
-                                    <option value="">{t("onboarding.business.select")}</option>
-                                    <option value="plumber">{t("industry.plumber")}</option>
-                                    <option value="electrician">{t("industry.electrician")}</option>
-                                    <option value="hvac">{t("industry.hvac")}</option>
-                                    <option value="dentist">{t("industry.dentist")}</option>
-                                    <option value="lawyer">{t("industry.lawyer")}</option>
-                                    <option value="restaurant">{t("industry.restaurant")}</option>
-                                    <option value="retail">{t("industry.retail")}</option>
-                                    <option value="ecommerce">{t("industry.ecommerce")}</option>
-                                    <option value="other">{t("industry.other")}</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="text-sm font-medium mb-1 block">
-                                    <MapPin className="w-3 h-3 inline mr-1" />
-                                    {t("onboarding.business.serviceArea")}
-                                </label>
-                                <input
-                                    type="text"
-                                    value={location}
-                                    onChange={(e) => setLocation(e.target.value)}
-                                    placeholder="e.g., Miami, FL (25-mile radius)"
-                                    className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary transition"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="text-sm font-medium mb-1 block">
-                                    <Globe className="w-3 h-3 inline mr-1" />
-                                    {t("onboarding.business.website")}
-                                </label>
+                                <label className="text-sm font-medium mb-1 block">Website URL <span className="text-red-400">*</span></label>
                                 <input
                                     type="text"
                                     value={websiteUrl}
@@ -369,244 +381,286 @@ export default function OnboardingPage() {
                                     className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary transition"
                                 />
                             </div>
+                            <div>
+                                <label className="text-sm font-medium mb-1 block">Industry</label>
+                                <select
+                                    value={businessType}
+                                    onChange={(e) => setBusinessType(e.target.value)}
+                                    className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary transition"
+                                >
+                                    <option value="">Select industry…</option>
+                                    <option value="plumber">Plumber</option>
+                                    <option value="electrician">Electrician</option>
+                                    <option value="hvac">HVAC</option>
+                                    <option value="dentist">Dentist</option>
+                                    <option value="lawyer">Lawyer</option>
+                                    <option value="restaurant">Restaurant</option>
+                                    <option value="retail">Retail</option>
+                                    <option value="ecommerce">E-Commerce</option>
+                                    <option value="real-estate">Real Estate</option>
+                                    <option value="automotive">Automotive</option>
+                                    <option value="beauty-salon">Beauty / Salon</option>
+                                    <option value="healthcare">Healthcare</option>
+                                    <option value="fitness">Fitness / Gym</option>
+                                    <option value="photography">Photography</option>
+                                    <option value="consulting">Consulting</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
                         </div>
 
-                        {businessError && (
-                            <div className="max-w-md mx-auto mt-4 p-3 bg-danger/10 border border-danger/20 rounded-lg text-sm text-danger flex items-center gap-2">
+                        {saveError && (
+                            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600 flex items-center gap-2">
                                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                                {businessError}
+                                {saveError}
                             </div>
                         )}
 
-                        <div className="flex justify-between mt-8 max-w-md mx-auto">
+                        <div className="flex justify-between mt-8">
                             <button
                                 onClick={() => setCurrentStep(1)}
                                 className="border border-border text-foreground px-4 py-2.5 rounded-lg text-sm transition hover:border-primary flex items-center gap-2"
                             >
-                                <ArrowLeft className="w-4 h-4" />
-                                {t("common.back")}
+                                <ArrowLeft className="w-4 h-4" /> Back
                             </button>
                             <button
-                                onClick={handleSaveBusiness}
-                                disabled={businessSaving}
+                                onClick={handleSaveAndCrawl}
+                                disabled={saving}
                                 className="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg text-sm font-medium transition flex items-center gap-2 disabled:opacity-50"
                             >
-                                {businessSaving ? (
-                                    <>
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                        {t("onboarding.business.saving")}
-                                    </>
+                                {saving ? (
+                                    <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
                                 ) : (
-                                    <>
-                                        {t("common.continue")}
-                                        <ArrowRight className="w-4 h-4" />
-                                    </>
+                                    <>Scan My Website <ArrowRight className="w-4 h-4" /></>
                                 )}
                             </button>
                         </div>
                     </div>
                 )}
 
-                {/* Step 3: Knowledge Base */}
+                {/* ─────────────────────────────────────────────────
+                    STEP 3 — Website Scan / Crawl
+                   ───────────────────────────────────────────────── */}
                 {currentStep === 3 && (
-                    <div className="bg-card border border-border rounded-xl p-8">
-                        <div className="w-16 h-16 bg-primary-light rounded-2xl flex items-center justify-center mx-auto mb-6">
-                            <Upload className="w-8 h-8 text-primary" />
-                        </div>
-                        <h2 className="text-2xl font-bold mb-2 text-center">{t("onboarding.kb.title")}</h2>
-                        <p className="text-muted mb-8 text-center max-w-md mx-auto">
-                            {t("onboarding.kb.desc")}
-                        </p>
+                    <div className="bg-card border border-border rounded-xl p-8 max-w-lg mx-auto">
+                        {!crawlDone ? (
+                            /* Scanning in progress */
+                            <div className="text-center py-8">
+                                <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                                    <Sparkles className="w-8 h-8 text-primary animate-pulse" />
+                                </div>
+                                <h2 className="text-xl font-bold mb-2">Scanning your website…</h2>
+                                <p className="text-muted text-sm mb-6">
+                                    We&apos;re reading your pages to learn about your products, services, and brand voice.
+                                </p>
 
-                        <div className="max-w-md mx-auto">
-                            {/* Hidden file input */}
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                multiple
-                                accept="image/jpeg,image/png,image/gif,image/webp"
-                                className="hidden"
-                                onChange={(e) => handleFileUpload(e.target.files)}
-                            />
+                                {/* Progress bar */}
+                                <div className="max-w-xs mx-auto mb-4">
+                                    <div className="h-2 bg-border rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-primary rounded-full transition-all duration-500"
+                                            style={{ width: `${crawlProgress}%` }}
+                                        />
+                                    </div>
+                                    <p className="text-xs text-muted mt-2">{crawlProgress}% complete</p>
+                                </div>
 
-                            {/* Upload zone */}
-                            <div
-                                className={`border-2 border-dashed rounded-xl p-8 text-center transition cursor-pointer ${uploadedFiles.length > 0
-                                    ? "border-success bg-success/5"
-                                    : "border-border hover:border-primary"
-                                    }`}
-                                onClick={() => !uploading && fileInputRef.current?.click()}
-                            >
-                                {uploading ? (
-                                    <div className="flex flex-col items-center gap-2">
-                                        <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                                        <p className="text-sm text-muted">{t("onboarding.kb.uploading")}</p>
+                                <div className="flex items-center justify-center gap-2 text-xs text-muted">
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                    Fetching pages from {normalizeUrl(websiteUrl).replace(/^https?:\/\//, "").split("/")[0]}
+                                </div>
+                            </div>
+                        ) : (
+                            /* Scan complete */
+                            <div>
+                                <div className="text-center mb-6">
+                                    <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                        <CheckCircle className="w-8 h-8 text-emerald-500" />
                                     </div>
-                                ) : uploadedFiles.length > 0 ? (
-                                    <div className="flex flex-col items-center gap-2">
-                                        <CheckCircle className="w-8 h-8 text-success" />
-                                        <p className="text-sm font-medium">{t("onboarding.kb.uploaded", { count: uploadedFiles.length })}</p>
-                                        <div className="text-xs text-muted space-y-0.5">
-                                            {uploadedFiles.map((f, i) => (
-                                                <p key={i}>{f.name} ({f.size})</p>
-                                            ))}
-                                        </div>
-                                        <p className="text-xs text-primary mt-2">{t("onboarding.kb.uploadMore")}</p>
-                                    </div>
-                                ) : (
-                                    <div className="flex flex-col items-center gap-2">
-                                        <Upload className="w-8 h-8 text-muted" />
-                                        <p className="text-sm font-medium">{t("onboarding.kb.dropFiles")}</p>
-                                        <p className="text-xs text-muted">
-                                            {t("onboarding.kb.fileTypes")}
-                                        </p>
+                                    <h2 className="text-xl font-bold mb-2">
+                                        {crawlError ? "Scan had issues" : "Scan complete!"}
+                                    </h2>
+                                    <p className="text-muted text-sm">
+                                        {crawlError
+                                            ? "We couldn't fetch all pages, but you can add info manually in the next step."
+                                            : `We found ${crawlPages.length} page${crawlPages.length !== 1 ? "s" : ""} and saved the content to your Knowledge Base.`}
+                                    </p>
+                                </div>
+
+                                {crawlError && (
+                                    <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700 flex items-start gap-2">
+                                        <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                                        <span>{crawlError}</span>
                                     </div>
                                 )}
-                            </div>
 
-                            {uploadError && (
-                                <div className="mt-3 p-3 bg-danger/10 border border-danger/20 rounded-lg text-sm text-danger flex items-center gap-2">
-                                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                                    {uploadError}
+                                {/* Pages found */}
+                                {crawlPages.length > 0 && (
+                                    <div className="space-y-2 max-h-64 overflow-y-auto mb-6">
+                                        {crawlPages.map((page, i) => (
+                                            <div key={i} className="border border-border rounded-lg p-3 bg-background">
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="flex items-center gap-1.5 mb-1">
+                                                            <FileText className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                                                            <span className="text-sm font-medium truncate">{page.title}</span>
+                                                        </div>
+                                                        <p className="text-xs text-muted line-clamp-2">{page.snippet}</p>
+                                                    </div>
+                                                    <a href={page.url} target="_blank" rel="noopener noreferrer" className="text-muted hover:text-primary">
+                                                        <ExternalLink className="w-3.5 h-3.5" />
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                <div className="flex justify-between">
+                                    <button
+                                        onClick={() => setCurrentStep(2)}
+                                        className="border border-border text-foreground px-4 py-2.5 rounded-lg text-sm transition hover:border-primary flex items-center gap-2"
+                                    >
+                                        <ArrowLeft className="w-4 h-4" /> Back
+                                    </button>
+                                    <button
+                                        onClick={() => setCurrentStep(4)}
+                                        className="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg text-sm font-medium transition flex items-center gap-2"
+                                    >
+                                        Continue <ArrowRight className="w-4 h-4" />
+                                    </button>
                                 </div>
-                            )}
-
-                            <div className="mt-4 text-center text-sm text-muted">
-                                <p>{t("onboarding.kb.addLater")}</p>
                             </div>
-                        </div>
+                        )}
+                    </div>
+                )}
 
-                        <div className="flex justify-between mt-8 max-w-md mx-auto">
+                {/* ─────────────────────────────────────────────────
+                    STEP 4 — Tell us more (free-text, skippable)
+                   ───────────────────────────────────────────────── */}
+                {currentStep === 4 && (
+                    <div className="bg-card border border-border rounded-xl p-8 max-w-lg mx-auto">
+                        <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                            <FileText className="w-8 h-8 text-primary" />
+                        </div>
+                        <h2 className="text-xl font-bold mb-2 text-center">Anything else we should know?</h2>
+                        <p className="text-muted text-sm mb-6 text-center max-w-sm mx-auto">
+                            Tell us about promotions, your target audience, what makes you different — anything that helps us write better ads. You can skip this for now.
+                        </p>
+
+                        <textarea
+                            value={aboutText}
+                            onChange={(e) => setAboutText(e.target.value)}
+                            rows={5}
+                            placeholder="e.g., We're running a 20% off summer sale. Our main customers are homeowners aged 30-55 in the Miami area. We pride ourselves on same-day service…"
+                            className="w-full bg-background border border-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-primary transition resize-none"
+                        />
+
+                        <div className="flex justify-between mt-8">
                             <button
-                                onClick={() => setCurrentStep(2)}
+                                onClick={() => setCurrentStep(3)}
                                 className="border border-border text-foreground px-4 py-2.5 rounded-lg text-sm transition hover:border-primary flex items-center gap-2"
                             >
-                                <ArrowLeft className="w-4 h-4" />
-                                {t("common.back")}
+                                <ArrowLeft className="w-4 h-4" /> Back
+                            </button>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={() => setCurrentStep(5)}
+                                    className="text-sm text-muted hover:text-foreground transition"
+                                >
+                                    Skip for now
+                                </button>
+                                <button
+                                    onClick={handleSaveAbout}
+                                    disabled={aboutSaving}
+                                    className="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg text-sm font-medium transition flex items-center gap-2 disabled:opacity-50"
+                                >
+                                    {aboutSaving ? (
+                                        <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
+                                    ) : (
+                                        <>Continue <ArrowRight className="w-4 h-4" /></>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ─────────────────────────────────────────────────
+                    STEP 5 — Upload banners / creative (skippable)
+                   ───────────────────────────────────────────────── */}
+                {currentStep === 5 && (
+                    <div className="bg-card border border-border rounded-xl p-8 max-w-lg mx-auto">
+                        <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                            <Upload className="w-8 h-8 text-primary" />
+                        </div>
+                        <h2 className="text-xl font-bold mb-2 text-center">Upload ad creatives</h2>
+                        <p className="text-muted text-sm mb-6 text-center max-w-sm mx-auto">
+                            Have existing banners, logos, or product photos? Upload them so we can use them in your ads. You can always add more later.
+                        </p>
+
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            multiple
+                            accept="image/jpeg,image/png,image/gif,image/webp"
+                            className="hidden"
+                            onChange={(e) => handleFileUpload(e.target.files)}
+                        />
+
+                        <div
+                            className={`border-2 border-dashed rounded-xl p-8 text-center transition cursor-pointer ${
+                                uploadedFiles.length > 0 ? "border-emerald-300 bg-emerald-50/50" : "border-border hover:border-primary"
+                            }`}
+                            onClick={() => !uploading && fileInputRef.current?.click()}
+                        >
+                            {uploading ? (
+                                <div className="flex flex-col items-center gap-2">
+                                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                                    <p className="text-sm text-muted">Uploading…</p>
+                                </div>
+                            ) : uploadedFiles.length > 0 ? (
+                                <div className="flex flex-col items-center gap-2">
+                                    <CheckCircle className="w-8 h-8 text-emerald-500" />
+                                    <p className="text-sm font-medium">{uploadedFiles.length} file{uploadedFiles.length !== 1 ? "s" : ""} uploaded</p>
+                                    <div className="text-xs text-muted space-y-0.5">
+                                        {uploadedFiles.map((f, i) => (
+                                            <p key={i}>{f.name} ({f.size})</p>
+                                        ))}
+                                    </div>
+                                    <p className="text-xs text-primary mt-2">Click to upload more</p>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center gap-2">
+                                    <Upload className="w-8 h-8 text-muted" />
+                                    <p className="text-sm font-medium">Drop files here or click to browse</p>
+                                    <p className="text-xs text-muted">JPG, PNG, GIF, WebP — up to 10 MB each</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {uploadError && (
+                            <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600 flex items-center gap-2">
+                                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                                {uploadError}
+                            </div>
+                        )}
+
+                        <div className="flex justify-between mt-8">
+                            <button
+                                onClick={() => setCurrentStep(4)}
+                                className="border border-border text-foreground px-4 py-2.5 rounded-lg text-sm transition hover:border-primary flex items-center gap-2"
+                            >
+                                <ArrowLeft className="w-4 h-4" /> Back
                             </button>
                             <button
-                                onClick={() => {
-                                    setCurrentStep(4);
-                                    handleAudit();
-                                }}
+                                onClick={handleFinish}
                                 className="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg text-sm font-medium transition flex items-center gap-2"
                             >
-                                {t("onboarding.kb.runAudit")}
+                                {uploadedFiles.length > 0 ? "Go to Dashboard" : "Skip & Go to Dashboard"}
                                 <ArrowRight className="w-4 h-4" />
                             </button>
                         </div>
-                    </div>
-                )}
-
-                {/* Step 4: Audit */}
-                {currentStep === 4 && (
-                    <div className="bg-card border border-border rounded-xl p-8">
-                        {auditing ? (
-                            <div className="text-center py-12">
-                                <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
-                                <h2 className="text-xl font-bold mb-2">{t("onboarding.audit.analyzing")}</h2>
-                                <p className="text-muted text-sm">
-                                    {t("onboarding.audit.usingAI")}
-                                </p>
-                            </div>
-                        ) : auditDone ? (
-                            <div>
-                                <div className="text-center mb-8">
-                                    <div className="w-16 h-16 bg-success/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                                        <CheckCircle className="w-8 h-8 text-success" />
-                                    </div>
-                                    <h2 className="text-2xl font-bold mb-2">{t("onboarding.audit.ready")}</h2>
-                                    <p className="text-muted">{t("onboarding.audit.found")}</p>
-                                </div>
-
-                                {auditError ? (
-                                    <div className="max-w-lg mx-auto p-4 bg-danger/10 border border-danger/20 rounded-xl">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <AlertCircle className="w-5 h-5 text-danger" />
-                                            <h3 className="font-semibold text-sm">{t("onboarding.audit.failed")}</h3>
-                                        </div>
-                                        <p className="text-xs text-muted">{auditError}</p>
-                                        <p className="text-xs text-muted mt-2">
-                                            {t("onboarding.audit.failedDesc")}
-                                        </p>
-                                    </div>
-                                ) : auditResult ? (
-                                    <div className="space-y-4 max-w-lg mx-auto">
-                                        <div className="bg-primary-light border border-primary/20 rounded-xl p-4">
-                                            <div className="font-semibold text-sm mb-1">
-                                                {t("onboarding.audit.overallScore", { score: auditResult.overallScore })}
-                                            </div>
-                                            <p className="text-xs text-muted">{auditResult.overallSummary}</p>
-                                        </div>
-
-                                        {auditResult.sections?.slice(0, 4).map((section, i) => (
-                                            <div
-                                                key={i}
-                                                className={`rounded-xl p-4 ${section.score >= 70
-                                                    ? "bg-success/5 border border-success/20"
-                                                    : section.score >= 40
-                                                        ? "bg-warning/5 border border-warning/20"
-                                                        : "bg-danger/5 border border-danger/20"
-                                                    }`}
-                                            >
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <span className="text-lg">
-                                                        {section.score >= 70 ? "✅" : section.score >= 40 ? "⚠️" : "🚨"}
-                                                    </span>
-                                                    <h3 className="font-semibold text-sm">{section.title} ({section.score}/100)</h3>
-                                                </div>
-                                                <p className="text-xs text-muted">{section.summary}</p>
-                                                {section.findings?.length > 0 && (
-                                                    <ul className="mt-2 space-y-1">
-                                                        {section.findings.slice(0, 3).map((finding, j) => (
-                                                            <li key={j} className="text-xs text-muted">• {finding}</li>
-                                                        ))}
-                                                    </ul>
-                                                )}
-                                            </div>
-                                        ))}
-
-                                        {auditResult.quickWins?.length > 0 && (
-                                            <div className="bg-primary-light border border-primary/20 rounded-xl p-4">
-                                                <h3 className="font-semibold text-sm mb-2">💡 {t("onboarding.audit.quickWins")}</h3>
-                                                <ul className="space-y-1">
-                                                    {auditResult.quickWins.slice(0, 5).map((win, i) => (
-                                                        <li key={i} className="text-xs text-muted">• {win}</li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        )}
-
-                                        {auditResult.estimatedSavings && (
-                                            <div className="bg-success/5 border border-success/20 rounded-xl p-4">
-                                                <div className="font-semibold text-sm mb-1">
-                                                    {t("onboarding.audit.savings")}: {auditResult.estimatedSavings}
-                                                </div>
-                                                <p className="text-xs text-muted">
-                                                    Implementing these recommendations could significantly improve your ad performance.
-                                                </p>
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : null}
-
-                                <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">
-                                    <Link
-                                        href="/dashboard/chat"
-                                        className="bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-lg font-medium transition flex items-center justify-center gap-2"
-                                    >
-                                        {t("onboarding.audit.goDashboard")}
-                                        <ArrowRight className="w-4 h-4" />
-                                    </Link>
-                                    <Link
-                                        href="/dashboard/chat"
-                                        className="border border-border hover:border-primary px-6 py-3 rounded-lg font-medium transition text-center"
-                                    >
-                                        {t("onboarding.audit.startChat")}
-                                    </Link>
-                                </div>
-                            </div>
-                        ) : null}
                     </div>
                 )}
             </div>

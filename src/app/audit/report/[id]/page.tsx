@@ -242,10 +242,10 @@ export default function AuditReportPage() {
                         </div>
                     </div>
 
-                    {/* Executive Summary */}
+                    {/* Summary */}
                     <div className="bg-card border border-border rounded-xl p-6 mb-8">
-                        <h2 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                            <FileText className="w-5 h-5 text-primary" /> Executive Summary
+                        <h2 className="text-lg font-semibold text-foreground mb-3">
+                            Summary
                         </h2>
                         <p className="text-muted leading-relaxed">{result.overallSummary}</p>
                         {result.estimatedSavings && result.estimatedSavings !== "N/A" && (
@@ -261,8 +261,8 @@ export default function AuditReportPage() {
                     {/* Quick Wins */}
                     {result.quickWins && result.quickWins.length > 0 && (
                         <div className="bg-card border border-border rounded-xl p-6 mb-8">
-                            <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                                <Lightbulb className="w-5 h-5 text-amber-400" /> Top Quick Wins
+                            <h2 className="text-lg font-semibold text-foreground mb-4">
+                                Top Quick Wins
                             </h2>
                             <div className="space-y-3">
                                 {result.quickWins.map((win, i) => (
@@ -280,8 +280,8 @@ export default function AuditReportPage() {
                     {/* Score overview bar chart */}
                     {result.sections && result.sections.length > 0 && (
                         <div className="bg-card border border-border rounded-xl p-6 mb-8">
-                            <h2 className="text-lg font-semibold text-foreground mb-6 flex items-center gap-2">
-                                <BarChart3 className="w-5 h-5 text-primary" /> Score Overview
+                            <h2 className="text-lg font-semibold text-foreground mb-6">
+                                Score Overview
                             </h2>
                             <div className="space-y-4">
                                 {result.sections.map((section, i) => (
@@ -353,8 +353,8 @@ export default function AuditReportPage() {
                     {/* Competitor insight */}
                     {result.competitorInsight && result.competitorInsight !== "N/A" && (
                         <div className="bg-card border border-border rounded-xl p-6 mb-8">
-                            <h2 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                                <Star className="w-5 h-5 text-pink-400" /> Competitive Insight
+                            <h2 className="text-lg font-semibold text-foreground mb-3">
+                                Competitive Insight
                             </h2>
                             <p className="text-muted leading-relaxed">{result.competitorInsight}</p>
                         </div>
@@ -363,18 +363,18 @@ export default function AuditReportPage() {
                     {/* CTA */}
                     <div className="bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-2xl p-8 text-center mb-8 no-print">
                         <h2 className="text-xl font-bold text-foreground mb-3">
-                            Ready to Fix These Issues Automatically?
+                            Let&apos;s put this to work
                         </h2>
                         <p className="text-muted mb-6 max-w-lg mx-auto">
-                            AdMaster Pro uses AI to manage your Google Ads campaigns, fix wasteful spending,
-                            and optimize your ads — all on autopilot.
+                            Your audit is saved. Continue to set up your Knowledge Base so the AI can write ads
+                            that actually match your business — not generic copy.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-3 justify-center">
                             <Link href="/onboarding" className="inline-flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-lg font-semibold transition">
-                                Start Free Trial <ArrowRight className="w-4 h-4" />
+                                Continue to Knowledge Base <ArrowRight className="w-4 h-4" />
                             </Link>
                             <Link href="/pricing" className="inline-flex items-center gap-2 bg-card border border-border text-foreground px-6 py-3 rounded-lg font-medium hover:border-primary/30 transition">
-                                View Pricing
+                                View Plans
                             </Link>
                         </div>
                     </div>
