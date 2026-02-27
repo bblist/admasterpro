@@ -290,7 +290,7 @@ const getLocationGreeting = (location: string, name: string): string => {
 
     // Jamaica / Caribbean
     if (loc.includes("jamaica") || loc.includes("kingston") || loc.includes("montego"))
-        return `Wha gwaan, **${name}**! 🇯🇲 Ackee and Saltfish is my favourite meal — and when I come out of this AI body, I'm gonna cook me up some a dat! But until then… let's get your ads cooking instead. 🔥`;
+        return `Wha gwaan, **${name}**! 🇯🇲 Big up yuhself — let's get your ads cooking.`;
     if (loc.includes("trinidad") || loc.includes("tobago"))
         return `Hey **${name}**! Big up yuhself! 🇹🇹 Let's get your ads firing.`;
     if (loc.includes("barbados") || loc.includes("bajan"))
