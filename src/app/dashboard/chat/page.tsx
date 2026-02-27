@@ -48,6 +48,9 @@ import { useBusiness, type BusinessProfile } from "@/lib/business-context";
 import { authFetch } from "@/lib/auth-client";
 import { useTranslation } from "@/i18n/context";
 import Tooltip from "@/components/Tooltip";
+import { AiAvatar, UserAvatar } from "@/components/AiAvatar";
+import GoogleAdPreview, { type GoogleAdData } from "@/components/GoogleAdPreview";
+import DetailDrawer, { type DetailDrawerData } from "@/components/DetailDrawer";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -75,6 +78,17 @@ interface StatsCard {
     trend?: "up" | "down" | "neutral";
 }
 
+interface CompetitorInfo {
+    name: string;
+    domain?: string;
+    keyOverlap?: number;
+    estimatedSpend?: string;
+    topKeywords?: string[];
+    adCopy?: string;
+    strengths?: string[];
+    weaknesses?: string[];
+}
+
 interface Message {
     id: number;
     role: "ai" | "user" | "system" | "divider";
@@ -85,6 +99,10 @@ interface Message {
     ads?: AdPreview[];
     stats?: StatsCard[];
     taskSummary?: { done: string[]; pending?: string[] };
+    googleAds?: GoogleAdData[];
+    competitors?: CompetitorInfo[];
+    /** Track which action buttons the user has already clicked */
+    clickedActions?: string[];
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -242,10 +260,10 @@ const matchIntent = (text: string): IntentMatch => {
 // ─── Quick Actions (icons only — labels come from t()) ─────────────────────
 
 const quickActionKeys = [
-    { key: "chat.quick.stats", icon: BarChart3 },
-    { key: "chat.quick.leaks", icon: AlertTriangle },
-    { key: "chat.quick.ads", icon: PenTool },
-    { key: "chat.quick.competitors", icon: Users },
+    { key: "chat.quick.stats", icon: BarChart3, needsAds: true },
+    { key: "chat.quick.leaks", icon: AlertTriangle, needsAds: true },
+    { key: "chat.quick.ads", icon: PenTool, needsAds: false },
+    { key: "chat.quick.competitors", icon: Users, needsAds: false },
 ];
 
 // ─── Intent Deep-Link Map ───────────────────────────────────────────────────
@@ -370,7 +388,7 @@ const getInitialMessages = (
         services: ["service", "consultation", "support"], location: "your area",
         url: "mybusiness.com", shortDesc: "Professional services",
         competitors: [], brandVoice: "Professional", targetAudience: "Customers",
-        geo: "Local", goals: ["Grow"], kbStatus: "empty",
+        geo: "Local", goals: ["Grow"], kbStatus: "empty", setupComplete: false,
     };
     const name = biz.name;
     const location = biz.location || biz.geo || "";
@@ -388,19 +406,48 @@ const getInitialMessages = (
     // Build the main greeting with context awareness
     let greetingContent = `${greeting} **${t("chat.status")}**\n\n`;
 
+    // ── SETUP NOT COMPLETE: Guide user through onboarding in chat ──
+    if (kbStatus === "empty" && !intent) {
+        greetingContent += `I'm your personal Google Ads manager. Before I can work my magic, I need to learn about your business. Let's get set up — it only takes a couple of minutes.\n\n`;
+        greetingContent += `### Step 1: Connect Your Google Ads\n`;
+        greetingContent += `If you already have a Google Ads account, connect it now so I can pull in your existing campaigns, keywords, and performance data. I'll review everything and tell you exactly what's working and what needs fixing.\n\n`;
+        greetingContent += `### Step 2: Tell Me About Your Business\n`;
+        greetingContent += `No Google Ads yet? No problem — just paste your website URL right here in the chat, or tell me about your business. I'll use that to build your profile and recommend the best ad strategy.\n\n`;
+        greetingContent += `**What would you like to do first?**`;
+
+        const actions: { label: string; type: "primary" | "secondary" | "danger" }[] = [
+            { label: "🔗 Connect Google Ads", type: "primary" },
+            { label: "🌐 Enter my website URL", type: "secondary" },
+            { label: "📝 Paste or type my business info", type: "secondary" },
+        ];
+
+        messages.push({
+            id: 2,
+            role: "ai",
+            model: "gpt-4o-mini",
+            content: greetingContent,
+            timestamp: timeNow(),
+            actions,
+        });
+
+        return messages;
+    }
+
+    // ── SETUP COMPLETE or intent-specific greeting ──
+
     // If there's an intent from another page, acknowledge it
     if (intent && INTENT_PROMPTS[intent]) {
         greetingContent += `${INTENT_PROMPTS[intent].greeting}\n\n`;
     }
 
-    // KB awareness — warn if empty with actionable link
+    // KB awareness
     if (kbStatus === "empty") {
         greetingContent += `⚠️ **Quick heads up** — your Knowledge Base is empty right now, so I'm working with limited info about **${name}**. `;
-        greetingContent += `The more I know about your business, the better I can target your ads, find the right keywords, and write copy that actually converts.\n\n`;
-        greetingContent += `**[→ Add to Knowledge Base](/dashboard/knowledge-base)** — drop in your website content, services, pricing, or anything that helps me understand your business.\n\n`;
+        greetingContent += `The more I know about your business, the better I can target your ads.\n\n`;
+        greetingContent += `You can paste your website URL or business details right here in the chat, or go to **[Knowledge Base](/dashboard/knowledge-base)** to upload files.\n\n`;
 
         if (!intent) {
-            greetingContent += `In the meantime, what would you like to start with?`;
+            greetingContent += `What would you like to start with?`;
         }
     } else {
         if (!intent) {
@@ -430,16 +477,18 @@ const getInitialMessages = (
             { label: "What do I need for Shopping ads?", type: "secondary" },
             { label: "Performance Max vs Standard Shopping", type: "secondary" },
         ];
+    } else if (kbStatus === "empty") {
+        actions = [
+            { label: "🌐 Enter my website URL", type: "primary" },
+            { label: "🔗 Connect Google Ads", type: "secondary" },
+            { label: t("chat.quick.competitors"), type: "secondary" },
+        ];
     } else {
         actions = [
-            { label: t("chat.quick.stats"), type: "primary" },
-            { label: t("chat.quick.leaks"), type: "secondary" },
+            { label: t("chat.quick.competitors"), type: "secondary" },
+            { label: t("chat.quick.ads"), type: "secondary" },
             { label: t("chat.quick.whatElse"), type: "secondary" },
         ];
-        if (kbStatus === "empty") {
-            actions.unshift({ label: "📚 Add to Knowledge Base", type: "primary" });
-            actions[1] = { ...actions[1], type: "secondary" };
-        }
     }
 
     messages.push({
@@ -544,6 +593,15 @@ const getMicInstructions = (browser: string, platform: Platform): { steps: strin
     };
 };
 
+const AD_MOOD_OPTIONS: { label: string; type: "primary" | "secondary" }[] = [
+    { label: "🔥 Energetic & bold", type: "secondary" },
+    { label: "⏰ Urgency & scarcity", type: "secondary" },
+    { label: "🤝 Friendly & trustworthy", type: "secondary" },
+    { label: "💎 Premium & luxury", type: "secondary" },
+    { label: "😄 Fun & playful", type: "secondary" },
+    { label: "📊 Data-driven & professional", type: "secondary" },
+];
+
 function ChatPageInner() {
     const { activeBusiness, businesses, setActiveBusiness } = useBusiness();
     const { t, locale } = useTranslation();
@@ -585,6 +643,9 @@ function ChatPageInner() {
     const [kbContext, setKbContext] = useState<string>("");
     const [kbLoaded, setKbLoaded] = useState(false);
     const intentHandled = useRef(false);
+    const [drawerData, setDrawerData] = useState<DetailDrawerData | null>(null);
+    /** Track which action labels the user has already clicked in the session */
+    const clickedActionsRef = useRef<Set<string>>(new Set());
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -725,10 +786,10 @@ function ChatPageInner() {
 
     // ─── Voice Recognition with AnalyserNode Silence Detection ────────────
 
-    // Silence detection constants
-    const SILENCE_THRESHOLD = 0.015;   // RMS level below which = silence
-    const SILENCE_DURATION = 2500;     // ms of sustained silence → auto-send
-    const GRACE_PERIOD = 1200;         // ms from start before silence detection kicks in
+    // Silence detection constants — tuned for noisy environments
+    const SILENCE_THRESHOLD = 0.035;   // RMS level below which = silence (raised to filter ambient noise)
+    const SILENCE_DURATION = 3500;     // ms of sustained silence → auto-send (longer for better UX)
+    const GRACE_PERIOD = 2000;         // ms from start before silence detection kicks in (longer grace)
     const COUNTDOWN_INTERVAL = 100;    // ms between countdown ticks
 
     const clearSilenceTimer = useCallback(() => {
@@ -1072,14 +1133,315 @@ function ChatPageInner() {
         }
     }, [activeBusiness, locale, kbContext]);
 
+    // ─── Smart Contextual Actions ───────────────────────────────────────────
+    // Analyzes the user's message, the AI response content, and the matched intent
+    // to suggest intelligent next-step buttons that feel like the AI reads your mind.
+
+    const getSmartActions = (
+        userText: string,
+        aiContent: string,
+        intent: Intent,
+        kb: string,
+    ): { label: string; type: "primary" | "secondary" | "danger" }[] => {
+        const clicked = clickedActionsRef.current;
+        const content = aiContent.toLowerCase();
+        const hasKb = kb.length > 100;
+
+        // ── After competitor analysis → deeper competitor actions
+        if (intent === "check_competitors" || content.includes("competitor") && content.includes("insight")) {
+            const actions: { label: string; type: "primary" | "secondary" | "danger" }[] = [];
+            if (!clicked.has("Show their likely keywords")) actions.push({ label: "Show their likely keywords", type: "primary" });
+            if (!clicked.has("Show their estimated ad copy")) actions.push({ label: "Show their estimated ad copy", type: "secondary" });
+            if (!clicked.has("How do I outperform them?")) actions.push({ label: "How do I outperform them?", type: "secondary" });
+            if (!clicked.has("Create ads that beat them")) actions.push({ label: "Create ads that beat them", type: "secondary" });
+            return actions.slice(0, 4);
+        }
+
+        // ── After ad creation / ad copy response → offer mood selection or next steps
+        if (intent === "create_text_ads" || intent === "create_display_ads" ||
+            content.includes("headlines:") || content.includes("ad variation") || content.includes("responsive search ad")) {
+            const actions: { label: string; type: "primary" | "secondary" | "danger" }[] = [];
+            if (!clicked.has("Save these as drafts")) actions.push({ label: "Save these as drafts", type: "primary" });
+            if (!clicked.has("Show me more variations")) actions.push({ label: "Show me more variations", type: "secondary" });
+            if (!clicked.has("Change the mood/tone")) actions.push({ label: "Change the mood/tone", type: "secondary" });
+            if (!clicked.has("Check competitors' ads")) actions.push({ label: "Check competitors' ads", type: "secondary" });
+            return actions.slice(0, 4);
+        }
+
+        // ── User wants to change mood/tone → show mood picker buttons
+        if (/mood|tone|style|vibe|energy/i.test(userText)) {
+            return AD_MOOD_OPTIONS.slice(0, 6);
+        }
+
+        // ── After keyword research → deeper keyword actions
+        if (intent === "add_keywords" || content.includes("keyword") && (content.includes("volume") || content.includes("match type"))) {
+            const actions: { label: string; type: "primary" | "secondary" | "danger" }[] = [];
+            if (!clicked.has("Add these to my campaign")) actions.push({ label: "Add these to my campaign", type: "primary" });
+            if (!clicked.has("Show negative keywords to block")) actions.push({ label: "Show negative keywords to block", type: "secondary" });
+            if (!clicked.has("Create ads using these keywords")) actions.push({ label: "Create ads using these keywords", type: "secondary" });
+            return actions.slice(0, 4);
+        }
+
+        // ── After showing stats → deeper analysis
+        if (intent === "show_stats" || content.includes("click-through") || content.includes("conversion")) {
+            const actions: { label: string; type: "primary" | "secondary" | "danger" }[] = [];
+            if (!clicked.has("Find money leaks in these campaigns")) actions.push({ label: "Find money leaks in these campaigns", type: "primary" });
+            if (!clicked.has("Which keywords are working best?")) actions.push({ label: "Which keywords are working best?", type: "secondary" });
+            if (!clicked.has("Suggest budget changes")) actions.push({ label: "Suggest budget changes", type: "secondary" });
+            if (!clicked.has("Export this as a report")) actions.push({ label: "Export this as a report", type: "secondary" });
+            return actions.slice(0, 4);
+        }
+
+        // ── After finding leaks → actionable follow-ups
+        if (intent === "find_leaks" || content.includes("wasting") || content.includes("waste") || content.includes("leak")) {
+            const actions: { label: string; type: "primary" | "secondary" | "danger" }[] = [];
+            if (!clicked.has("Pause the worst performers")) actions.push({ label: "Pause the worst performers", type: "danger" });
+            if (!clicked.has("Reallocate budget to winners")) actions.push({ label: "Reallocate budget to winners", type: "primary" });
+            if (!clicked.has("Add negative keywords")) actions.push({ label: "Add negative keywords", type: "secondary" });
+            if (!clicked.has("Show me the full breakdown")) actions.push({ label: "Show me the full breakdown", type: "secondary" });
+            return actions.slice(0, 4);
+        }
+
+        // ── After audit → natural next steps
+        if (content.includes("audit") || content.includes("score") && content.includes("recommend")) {
+            const actions: { label: string; type: "primary" | "secondary" | "danger" }[] = [];
+            if (!clicked.has("Fix the top issues now")) actions.push({ label: "Fix the top issues now", type: "primary" });
+            if (!clicked.has("Create ads based on audit")) actions.push({ label: "Create ads based on audit", type: "secondary" });
+            if (!clicked.has("Research keywords for my industry")) actions.push({ label: "Research keywords for my industry", type: "secondary" });
+            return actions.slice(0, 4);
+        }
+
+        // ── Default fallback — smart defaults based on KB state
+        if (!hasKb) {
+            return [
+                { label: "📚 Add to Knowledge Base", type: "primary" },
+                { label: "Check my competitors", type: "secondary" },
+                { label: "Run a website audit", type: "secondary" },
+            ];
+        }
+        return [
+            { label: "Create new ads", type: "primary" },
+            { label: "Research keywords", type: "secondary" },
+            { label: "Check my competitors", type: "secondary" },
+        ];
+    };
+
     // ─── Send Message ───────────────────────────────────────────────────────
 
     const sendMessage = useCallback((text: string) => {
         if (!text.trim() || isTyping) return;
 
+        // ── Handle onboarding / setup actions ──────────────────────
+        if (text === "🔗 Connect Google Ads") {
+            // Show instruction then redirect to settings
+            const aiMsg: Message = {
+                id: Date.now() + 1,
+                role: "ai",
+                model: "gpt-4o-mini",
+                content: "Great choice! I'm taking you to the Settings page where you can connect your Google Ads account. Once connected, I'll automatically pull in your campaigns, keywords, and performance data so I can start optimizing.\n\nRedirecting now…",
+                timestamp: timeNow(),
+            };
+            setMessages((prev) => [...prev, { id: Date.now(), role: "user", content: text, timestamp: timeNow() }, aiMsg]);
+            setTimeout(() => router.push("/dashboard/settings"), 1500);
+            return;
+        }
+        if (text === "🌐 Enter my website URL") {
+            const aiMsg: Message = {
+                id: Date.now() + 1,
+                role: "ai",
+                model: "gpt-4o-mini",
+                content: "Perfect! Just paste or type your website URL below (e.g. `yoursite.com`) and I'll scan it to learn about your business — your services, products, pricing, and more.\n\nThis usually takes about 30 seconds.",
+                timestamp: timeNow(),
+            };
+            setMessages((prev) => [...prev, { id: Date.now(), role: "user", content: text, timestamp: timeNow() }, aiMsg]);
+            return;
+        }
+        if (text === "📝 Paste or type my business info") {
+            const aiMsg: Message = {
+                id: Date.now() + 1,
+                role: "ai",
+                model: "gpt-4o-mini",
+                content: "Sure thing! Just type or paste any of the following and I'll save it to your Knowledge Base:\n\n" +
+                    "• **Your services and products** — what you offer\n" +
+                    "• **Pricing info** — so I can highlight value in ads\n" +
+                    "• **Target audience** — who you want to reach\n" +
+                    "• **Unique selling points** — what makes you different\n" +
+                    "• **Location / service area** — for geo-targeting\n\n" +
+                    "Just start typing — I'll handle the rest!",
+                timestamp: timeNow(),
+            };
+            setMessages((prev) => [...prev, { id: Date.now(), role: "user", content: text, timestamp: timeNow() }, aiMsg]);
+            return;
+        }
+
+        // ── Detect URL input → auto-crawl and save to KB ──────────
+        const urlPattern = /^(https?:\/\/)?([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}(\/\S*)?$/i;
+        if (urlPattern.test(text.trim()) && text.trim().length < 200) {
+            const url = text.trim();
+            const userMsg: Message = { id: Date.now(), role: "user", content: url, timestamp: timeNow() };
+            const scanMsg: Message = {
+                id: Date.now() + 1,
+                role: "ai",
+                model: "gpt-4o-mini",
+                content: `🔍 Scanning **${url}**… I'm pulling in your website content now. This usually takes 30–60 seconds.`,
+                timestamp: timeNow(),
+            };
+            setMessages((prev) => [...prev, userMsg, scanMsg]);
+            setIsTyping(true);
+            setInput("");
+
+            // Fire the crawl
+            authFetch("/api/crawl", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url, businessId: activeBusiness.id, depth: 3 }),
+            })
+                .then(async (res) => {
+                    if (res.ok) {
+                        const data = await res.json();
+                        const pageCount = data.pages?.length || data.pagesScanned || 1;
+                        const doneMsg: Message = {
+                            id: Date.now() + 2,
+                            role: "ai",
+                            model: "gpt-4o-mini",
+                            content: `✅ **Done!** I scanned **${pageCount} page${pageCount > 1 ? "s" : ""}** from your website and saved the content to your Knowledge Base.\n\n` +
+                                `I now know about your business, services, and offerings. Here's what I can do next:`,
+                            timestamp: timeNow(),
+                            actions: [
+                                { label: "Create ad copy for my business", type: "primary" },
+                                { label: "Find the best keywords", type: "secondary" },
+                                { label: "Analyze my competitors", type: "secondary" },
+                            ],
+                        };
+                        setMessages((prev) => [...prev, doneMsg]);
+                        // Reload KB context
+                        setKbLoaded(false);
+                    } else {
+                        const err = await res.json().catch(() => ({}));
+                        const failMsg: Message = {
+                            id: Date.now() + 2,
+                            role: "ai",
+                            model: "gpt-4o-mini",
+                            content: `⚠️ I couldn't scan that website — ${err.error || "the site may be blocking automated requests"}.\n\nYou can:\n• Double-check the URL and try again\n• Paste your business info directly in the chat instead\n• Or go to **[Knowledge Base](/dashboard/knowledge-base)** to upload files`,
+                            timestamp: timeNow(),
+                            actions: [
+                                { label: "📝 Paste or type my business info", type: "primary" },
+                                { label: "🔗 Connect Google Ads", type: "secondary" },
+                            ],
+                        };
+                        setMessages((prev) => [...prev, failMsg]);
+                    }
+                    setIsTyping(false);
+                })
+                .catch(() => {
+                    const errMsg: Message = {
+                        id: Date.now() + 2,
+                        role: "ai",
+                        model: "gpt-4o-mini",
+                        content: "⚠️ Something went wrong while scanning. Please try again or paste your business info directly.",
+                        timestamp: timeNow(),
+                        actions: [
+                            { label: "📝 Paste or type my business info", type: "primary" },
+                        ],
+                    };
+                    setMessages((prev) => [...prev, errMsg]);
+                    setIsTyping(false);
+                });
+            return;
+        }
+
+        // ── Detect pasted business content (long text, no URL) → save to KB ──
+        const isSetupPhase = !activeBusiness.setupComplete;
+        const isLongContent = text.trim().length > 120 && !urlPattern.test(text.trim());
+        if (isSetupPhase && isLongContent) {
+            const userMsg: Message = { id: Date.now(), role: "user", content: text, timestamp: timeNow() };
+            const savingMsg: Message = {
+                id: Date.now() + 1,
+                role: "ai",
+                model: "gpt-4o-mini",
+                content: "📄 Got it! Let me save this to your Knowledge Base…",
+                timestamp: timeNow(),
+            };
+            setMessages((prev) => [...prev, userMsg, savingMsg]);
+            setIsTyping(true);
+            setInput("");
+
+            authFetch("/api/knowledge-base", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    businessId: activeBusiness.id,
+                    title: "Business Info (from chat)",
+                    content: text.trim(),
+                    type: "text",
+                }),
+            })
+                .then(async (res) => {
+                    if (res.ok) {
+                        const doneMsg: Message = {
+                            id: Date.now() + 2,
+                            role: "ai",
+                            model: "gpt-4o-mini",
+                            content: "✅ **Saved!** I've added your business info to the Knowledge Base. I'll use this to write more accurate ads and find better keywords.\n\nWhat would you like to do next?",
+                            timestamp: timeNow(),
+                            actions: [
+                                { label: "Create ad copy for my business", type: "primary" },
+                                { label: "Find the best keywords", type: "secondary" },
+                                { label: "🌐 Enter my website URL", type: "secondary" },
+                            ],
+                        };
+                        setMessages((prev) => [...prev, doneMsg]);
+                        setKbLoaded(false);
+                    } else {
+                        const failMsg: Message = {
+                            id: Date.now() + 2,
+                            role: "ai",
+                            model: "gpt-4o-mini",
+                            content: "⚠️ I couldn't save that right now. You can try again or go to **[Knowledge Base](/dashboard/knowledge-base)** to add it manually.",
+                            timestamp: timeNow(),
+                        };
+                        setMessages((prev) => [...prev, failMsg]);
+                    }
+                    setIsTyping(false);
+                })
+                .catch(() => {
+                    setMessages((prev) => [...prev, {
+                        id: Date.now() + 2, role: "ai" as const, model: "gpt-4o-mini" as const,
+                        content: "⚠️ Something went wrong saving your content. Please try again.", timestamp: timeNow(),
+                    }]);
+                    setIsTyping(false);
+                });
+            return;
+        }
+
         // ── Handle navigation actions (don't send as chat messages) ──
         if (text.includes("Add to Knowledge Base")) {
             router.push("/dashboard/knowledge-base");
+            return;
+        }
+        if (text === "Run a website audit") {
+            router.push("/audit");
+            return;
+        }
+
+        // ── Handle mood/tone selection → rewrite as a proper prompt ──
+        const moodMatch = text.match(/^[🔥⏰🤝💎😄📊]\s+(.+)$/);
+        if (moodMatch) {
+            const mood = moodMatch[1];
+            text = `Create new ad copy for my business with a ${mood} tone. Make the headlines and descriptions feel ${mood.toLowerCase()}.`;
+        }
+
+        // ── Handle "Change the mood/tone" → show mood picker as next AI message ──
+        if (/change the mood|change.*tone/i.test(text)) {
+            const moodMsg: Message = {
+                id: Date.now() + 1,
+                role: "ai",
+                model: "gpt-4o-mini",
+                content: "What mood should the ads have? Pick a style and I'll rewrite them:",
+                timestamp: timeNow(),
+                actions: AD_MOOD_OPTIONS,
+            };
+            setMessages((prev) => [...prev, { id: Date.now(), role: "user", content: text, timestamp: timeNow() }, moodMsg]);
             return;
         }
 
@@ -1280,13 +1642,42 @@ function ChatPageInner() {
             };
         } else {
             // ── Route ALL intents through real AI API ────────────────────
-            callAI(text, messages).then((aiResult) => {
+            // Track the user's action so we don't repeat buttons
+            clickedActionsRef.current.add(text);
+
+            // During setup, enrich the prompt so AI nudges toward completing setup
+            let enrichedText = text;
+            if (!activeBusiness.setupComplete && !kbContext) {
+                enrichedText = `${text}\n\n[SYSTEM NOTE: This user has NOT completed setup yet - their Knowledge Base is empty and they haven't connected Google Ads. Answer their question helpfully but briefly, then encourage them to either: (1) paste their website URL so you can scan it, (2) paste/type their business info, or (3) connect their Google Ads account in Settings. Keep it natural, not pushy.]`;
+            }
+
+            callAI(enrichedText, messages).then((aiResult) => {
+                const aiContent = aiResult?.content || "Hmm, something went sideways. Give it another shot?";
+
+                // ── Smart contextual next-step buttons ──
+                // Analyze the AI response + user intent to offer relevant follow-ups
+                let smartActions = getSmartActions(text, aiContent, intent.intent, kbContext);
+
+                // During setup, always append setup nudge buttons if not already present
+                if (!activeBusiness.setupComplete && !kbContext) {
+                    const hasSetupAction = smartActions.some(a =>
+                        a.label.includes("website URL") || a.label.includes("Connect Google") || a.label.includes("business info")
+                    );
+                    if (!hasSetupAction) {
+                        smartActions = [
+                            ...smartActions.slice(0, 2),
+                            { label: "🌐 Enter my website URL", type: "secondary" as const },
+                        ];
+                    }
+                }
+
                 const aiResponse: Message = {
                     id: Date.now() + 2,
                     role: "ai",
                     model: (aiResult?.model as LLMModel) || "gpt-4o-mini",
-                    content: aiResult?.content || "Hmm, something went sideways. Give it another shot?",
+                    content: aiContent,
                     timestamp: timeNow(),
+                    actions: smartActions,
                 };
                 const divider: Message = {
                     id: Date.now() + 1,
@@ -1315,7 +1706,8 @@ function ChatPageInner() {
             setMessages((prev) => [...prev, divider, aiMsg]);
             setIsTyping(false);
         }, 800);
-    }, [isTyping, activeBusiness, businesses, getOffTopicBusiness, switchToBusiness, callAI, messages]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isTyping, activeBusiness, businesses, getOffTopicBusiness, switchToBusiness, callAI, messages, router, kbContext]);
 
     // Keep ref in sync so startListening can call sendMessage via ref
     useEffect(() => {
@@ -1681,10 +2073,13 @@ function ChatPageInner() {
                 </div>
             )}
 
+            {/* Detail drawer */}
+            <DetailDrawer data={drawerData} onClose={() => setDrawerData(null)} onAction={(action) => sendMessage(action)} />
+
             {/* Chat header */}
             <div className="flex items-center justify-between pb-3 border-b border-border mb-3">
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                    <NextImage src="https://api.dicebear.com/9.x/icons/svg?seed=AdMasterAI&backgroundColor=6366f1&icon=robot" alt="AI" width={40} height={40} unoptimized className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl shadow-lg shadow-primary/20 shrink-0" />
+                    <AiAvatar size="md" />
                     <div className="min-w-0">
                         <h1 className="font-semibold text-sm sm:text-base flex items-center gap-1.5 sm:gap-2 flex-wrap">
                             <span className="truncate">AI Assistant</span>
@@ -1738,7 +2133,7 @@ function ChatPageInner() {
                     if (msg.role === "user") {
                         return (
                             <div key={msg.id} className="flex gap-2 sm:gap-3 flex-row-reverse py-2">
-                                <NextImage src="https://api.dicebear.com/9.x/thumbs/svg?seed=MikeClient&backgroundColor=e2e8f0" alt="You" width={32} height={32} unoptimized className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg shrink-0" />
+                                <UserAvatar size="sm" />
                                 <div className="max-w-[85%] sm:max-w-[80%] text-right">
                                     <div className="bg-primary text-white rounded-xl rounded-tr-sm px-3 sm:px-4 py-2 sm:py-2.5 text-sm leading-relaxed inline-block text-left">
                                         {msg.content}
@@ -1752,7 +2147,7 @@ function ChatPageInner() {
                     // AI message
                     return (
                         <div key={msg.id} className="flex gap-2 sm:gap-3 py-2">
-                            <NextImage src="https://api.dicebear.com/9.x/icons/svg?seed=AdMasterAI&backgroundColor=6366f1&icon=robot" alt="AI" width={32} height={32} unoptimized className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg shrink-0 shadow-sm" />
+                            <AiAvatar size="sm" />
                             <div className="max-w-[90%] sm:max-w-[88%] min-w-0">
 
 
@@ -1815,7 +2210,7 @@ function ChatPageInner() {
                 {/* Typing indicator */}
                 {isTyping && (
                     <div className="flex gap-3 py-2">
-                        <NextImage src="https://api.dicebear.com/9.x/icons/svg?seed=AdMasterAI&backgroundColor=6366f1&icon=robot" alt="AI" width={32} height={32} unoptimized className="w-8 h-8 rounded-lg shrink-0" />
+                        <AiAvatar size="sm" />
                         <div className="bg-card border border-border rounded-xl px-4 py-3 flex items-center gap-3">
                             <Loader2 className="w-4 h-4 animate-spin text-primary" />
                             <div className="flex items-center gap-1.5">
@@ -1934,19 +2329,21 @@ function ChatPageInner() {
                     </button>
                 </div>
 
-                {/* Quick actions — horizontally scrollable on mobile */}
+                {/* Quick actions — context-aware, hide irrelevant ones for new users */}
                 <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
-                    {quickActionKeys.map((action) => (
-                        <button
-                            key={action.key}
-                            onClick={() => sendMessage(t(action.key))}
-                            disabled={isTyping}
-                            className="text-xs border border-border rounded-lg px-3 py-1.5 text-muted hover:border-primary hover:text-primary transition flex items-center gap-1.5 disabled:opacity-50 whitespace-nowrap shrink-0"
-                        >
-                            <action.icon className="w-3 h-3" />
-                            {t(action.key)}
-                        </button>
-                    ))}
+                    {quickActionKeys
+                        .filter((a) => !a.needsAds || kbContext)
+                        .map((action) => (
+                            <button
+                                key={action.key}
+                                onClick={() => sendMessage(t(action.key))}
+                                disabled={isTyping}
+                                className="text-xs border border-border rounded-lg px-3 py-1.5 text-muted hover:border-primary hover:text-primary transition flex items-center gap-1.5 disabled:opacity-50 whitespace-nowrap shrink-0"
+                            >
+                                <action.icon className="w-3 h-3" />
+                                {t(action.key)}
+                            </button>
+                        ))}
                     <span className="text-[10px] text-muted ml-auto hidden sm:inline whitespace-nowrap">{t("chat.micHint")}</span>
                 </div>
             </div>

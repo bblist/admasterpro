@@ -72,20 +72,20 @@ const notificationIcons: Record<NotificationType, { bg: string; text: string; ic
 // ─── Nav items ─────────────────────────────────────────────────────────────
 
 const mainNavItems = [
-    { href: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard, tip: "Overview of your account, plan usage, and quick actions" },
-    { href: "/dashboard/chat", labelKey: "nav.aiAssistant", icon: MessageCircle, tip: "Chat with AI to create ads, analyze performance, and find budget leaks" },
-    { href: "/dashboard/campaigns", labelKey: "nav.campaigns", icon: FileText, tip: "View and manage your live Google Ads campaigns" },
-    { href: "/dashboard/keywords", labelKey: "nav.keywords", icon: Search, tip: "Discover keyword opportunities and manage negative keywords" },
-    { href: "/dashboard/analytics", labelKey: "nav.analytics", icon: BarChart3, tip: "Charts and trends for your Google Ads performance" },
-    { href: "/dashboard/calls", labelKey: "nav.callTracking", icon: Phone, tip: "Track phone calls driven by your ads" },
-    { href: "/dashboard/drafts", labelKey: "nav.adDrafts", icon: FileText, tip: "Review and edit AI-generated ad drafts before publishing" },
-    { href: "/dashboard/ad-copy", labelKey: "nav.adCopyGenerator", icon: Sparkles, tip: "Generate Google Ads headlines, descriptions, and keywords" },
-    { href: "/dashboard/budget", labelKey: "nav.budgetOptimizer", icon: DollarSign, tip: "AI recommendations to optimize your ad spend and bids" },
-    { href: "/dashboard/shopping", labelKey: "nav.shoppingAds", icon: ShoppingBag, shoppingOnly: true, tip: "Manage product listing and shopping ads" },
-    { href: "/dashboard/knowledge-base", labelKey: "nav.knowledgeBase", icon: BookOpen, tip: "Upload brand assets and info to train the AI on your business" },
-    { href: "/dashboard/demo/examples", labelKey: "nav.aiExamples", icon: Lightbulb, tip: "See example prompts and what the AI can do for you" },
-    { href: "/dashboard/faq", labelKey: "nav.faq", icon: HelpCircle, tip: "Frequently asked questions about features and billing" },
-    { href: "/dashboard/settings", labelKey: "nav.settings", icon: Settings, tip: "Account settings, billing, notifications, and integrations" },
+    { href: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard, tip: "Overview of your account, plan usage, and quick actions", requiresSetup: true },
+    { href: "/dashboard/chat", labelKey: "nav.aiAssistant", icon: MessageCircle, tip: "Chat with AI to create ads, analyze performance, and find budget leaks", requiresSetup: false },
+    { href: "/dashboard/campaigns", labelKey: "nav.campaigns", icon: FileText, tip: "View and manage your live Google Ads campaigns", requiresSetup: true },
+    { href: "/dashboard/keywords", labelKey: "nav.keywords", icon: Search, tip: "Discover keyword opportunities and manage negative keywords", requiresSetup: true },
+    { href: "/dashboard/analytics", labelKey: "nav.analytics", icon: BarChart3, tip: "Charts and trends for your Google Ads performance", requiresSetup: true },
+    { href: "/dashboard/calls", labelKey: "nav.callTracking", icon: Phone, tip: "Track phone calls driven by your ads", requiresSetup: true },
+    { href: "/dashboard/drafts", labelKey: "nav.adDrafts", icon: FileText, tip: "Review and edit AI-generated ad drafts before publishing", requiresSetup: true },
+    { href: "/dashboard/ad-copy", labelKey: "nav.adCopyGenerator", icon: Sparkles, tip: "Generate Google Ads headlines, descriptions, and keywords", requiresSetup: true },
+    { href: "/dashboard/budget", labelKey: "nav.budgetOptimizer", icon: DollarSign, tip: "AI recommendations to optimize your ad spend and bids", requiresSetup: true },
+    { href: "/dashboard/shopping", labelKey: "nav.shoppingAds", icon: ShoppingBag, shoppingOnly: true, tip: "Manage product listing and shopping ads", requiresSetup: true },
+    { href: "/dashboard/knowledge-base", labelKey: "nav.knowledgeBase", icon: BookOpen, tip: "Upload brand assets and info to train the AI on your business", requiresSetup: false },
+    { href: "/dashboard/demo/examples", labelKey: "nav.aiExamples", icon: Lightbulb, tip: "See example prompts and what the AI can do for you", requiresSetup: true },
+    { href: "/dashboard/faq", labelKey: "nav.faq", icon: HelpCircle, tip: "Frequently asked questions about features and billing", requiresSetup: false },
+    { href: "/dashboard/settings", labelKey: "nav.settings", icon: Settings, tip: "Account settings, billing, notifications, and integrations", requiresSetup: false },
 ];
 
 // Industries that can use shopping ads
@@ -259,6 +259,15 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
         activeBusiness.industry.toLowerCase().includes(kw.toLowerCase())
     ) : false;
 
+    const setupDone = activeBusiness?.setupComplete ?? false;
+
+    // Redirect new users to chat on first load (non-setup pages)
+    useEffect(() => {
+        if (!setupDone && pathname !== "/dashboard/chat" && pathname !== "/dashboard/settings" && pathname !== "/dashboard/knowledge-base" && pathname !== "/dashboard/faq") {
+            window.location.href = "/dashboard/chat";
+        }
+    }, [setupDone, pathname]);
+
     return (
         <div className="min-h-screen bg-background flex">
             {/* Mobile overlay */}
@@ -298,6 +307,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                     <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
                         {mainNavItems
                             .filter((item) => !(item as { shoppingOnly?: boolean }).shoppingOnly || hasShoppingAds)
+                            .filter((item) => setupDone || !item.requiresSetup)
                             .map((item) => {
                                 const isActive = pathname === item.href;
                                 return (
@@ -317,7 +327,15 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                                 );
                             })}
 
-
+                        {/* Setup progress hint when not complete */}
+                        {!setupDone && (
+                            <div className="mt-4 mx-1 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                                <div className="text-xs font-semibold text-amber-600 mb-1">⚡ Setup Required</div>
+                                <p className="text-[11px] text-amber-600/80 leading-relaxed">
+                                    Connect your Google Ads account or add content to your Knowledge Base to unlock all features.
+                                </p>
+                            </div>
+                        )}
                     </nav>
 
                     {/* Bottom */}

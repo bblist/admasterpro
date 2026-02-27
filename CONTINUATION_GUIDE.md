@@ -1,26 +1,14 @@
-# AdMaster Pro — Continuation Guide (Post-Restart)
+# AdMaster Pro — Continuation Guide
 
-> **Last Updated:** February 24, 2026  
-> **Purpose:** Everything needed to continue development after a machine restart
+> **Last Updated:** February 27, 2026  
+> **Purpose:** Resume development exactly where we left off. Share this file with the AI assistant and say "Read CONTINUATION_GUIDE.md and continue with the open issues starting from Issue 1."
 
 ---
 
-## 1. Quick Resume Checklist
-
-After restarting your Mac, run these commands to get back up and running:
+## 0. Quick Resume
 
 ```bash
-# 1. Navigate to the project
-cd ~/admasterpro
-
-# 2. Start the local dev server
-npm run dev
-
-# 3. SSH into the production server
-ssh -i ~/.ssh/lightsail-admasterpro.pem ubuntu@3.225.249.236
-
-# 4. Check the production app is running
-ssh -i ~/.ssh/lightsail-admasterpro.pem ubuntu@3.225.249.236 'pm2 list && curl -sI http://localhost:3000 | head -3'
+cd ~/admasterpro && npm run dev
 ```
 
 ---

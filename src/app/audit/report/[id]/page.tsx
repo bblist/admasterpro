@@ -203,10 +203,13 @@ export default function AuditReportPage() {
                             <span className="text-xl font-bold text-foreground">AdMaster <span className="text-primary">Pro</span></span>
                         </Link>
                         <div className="flex items-center gap-2">
-                            <button onClick={handlePrint} className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition">
+                            <Link href="/onboarding" className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition">
+                                Continue Setup <ArrowRight className="w-4 h-4" />
+                            </Link>
+                            <button onClick={handlePrint} className="flex items-center gap-2 px-4 py-2 bg-card border border-border text-foreground rounded-lg text-sm font-medium hover:border-primary/30 transition">
                                 <Printer className="w-4 h-4" /> Print / Save PDF
                             </button>
-                            <Link href="/audit" className="flex items-center gap-2 px-4 py-2 bg-card border border-border text-foreground rounded-lg text-sm font-medium hover:border-primary/30 transition">
+                            <Link href="/audit" className="flex items-center gap-2 px-4 py-2 bg-card border border-border text-foreground rounded-lg text-sm font-medium hover:border-primary/30 transition hidden sm:flex">
                                 New Audit
                             </Link>
                         </div>

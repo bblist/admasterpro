@@ -127,11 +127,11 @@ export default function LandingPage() {
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center mb-12">
             <Link href="/onboarding" className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg font-medium text-sm transition-all shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2">
-              {t("landing.ctaAudit")}
+              {t("landing.ctaDemo")}
               <ArrowRight className="w-4 h-4" />
             </Link>
-            <Link href="/onboarding" className="bg-white border border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50 text-neutral-900 px-6 py-2.5 rounded-lg font-medium text-sm transition-all flex items-center justify-center shadow-sm">
-              {t("landing.ctaDemo")}
+            <Link href="/audit" className="bg-white border border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50 text-neutral-500 px-6 py-2.5 rounded-lg font-medium text-sm transition-all flex items-center justify-center shadow-sm">
+              {t("landing.ctaAudit")}
             </Link>
           </div>
 
@@ -317,7 +317,7 @@ export default function LandingPage() {
                   className={`block text-center py-2.5 rounded-lg font-medium text-xs transition-colors ${plan.accent
                     ? "bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
                     : "border border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50 text-neutral-900"
-                  }`}
+                    }`}
                 >
                   {plan.cta}
                 </Link>

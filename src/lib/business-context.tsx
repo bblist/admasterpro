@@ -24,6 +24,8 @@ export interface BusinessProfile {
     geo: string;
     goals: string[];
     kbStatus: string;
+    /** True once user has connected Google Ads OR added content to KB */
+    setupComplete: boolean;
 }
 
 interface BusinessContextValue {
@@ -91,6 +93,7 @@ const DEFAULT_BUSINESS: BusinessProfile = {
     initials: "MB",
     color: "from-blue-500 to-blue-700",
     ...withLegacyFields({ name: "My Business" }),
+    setupComplete: false,
 };
 
 // ─── Context ────────────────────────────────────────────────────────────────
@@ -121,6 +124,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
                     color: getColor(i),
                     ...withLegacyFields(b),
                     kbStatus: b.kbStatus || "empty",
+                    setupComplete: !!(b.googleAdsId || (b.kbStatus && b.kbStatus !== "empty")),
                 })
             );
             setBusinesses(biz);
@@ -165,6 +169,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
                 initials: getInitials(data.business.name),
                 color: getColor(businesses.length),
                 ...withLegacyFields(data.business),
+                setupComplete: false,
             };
             setBusinesses(prev => [...prev, newBiz]);
             setActiveId(newBiz.id);
