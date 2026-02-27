@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Suspense, useState } from "react";
-import { Zap, Mail, ArrowRight, Shield } from "lucide-react";
-import { setAuth, decodeTokenPayload, clearAuth } from "@/lib/auth-client";
+import { Suspense, useState, useEffect } from "react";
+import { Zap, Mail, ArrowRight, Shield, CheckCircle } from "lucide-react";
+import { setAuth, decodeTokenPayload, captureTokenFromHash, isAuthenticated } from "@/lib/auth-client";
 import { useTranslation } from "@/i18n/context";
 
 const emailLoginEnabled = process.env.NEXT_PUBLIC_ENABLE_EMAIL_LOGIN !== "false";
@@ -22,6 +22,15 @@ function LoginForm() {
     const [email, setEmail] = useState("");
     const [loading, setLoading] = useState(false);
     const [emailError, setEmailError] = useState("");
+    const [magicLinkSent, setMagicLinkSent] = useState(false);
+
+    // If already authenticated, redirect to dashboard
+    useEffect(() => {
+        captureTokenFromHash();
+        if (isAuthenticated()) {
+            router.replace(redirectTo);
+        }
+    }, [router, redirectTo]);
 
     const handleGoogleSignIn = () => {
         setLoading(true);
@@ -48,18 +57,14 @@ function LoginForm() {
             const res = await fetch("/api/auth/email", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email }),
+                body: JSON.stringify({ email, next: redirectTo }),
             });
             if (res.ok) {
-                const data = await res.json();
-                // Store JWT token in localStorage (works when cookies fail)
-                if (data.token) {
-                    const user = decodeTokenPayload(data.token);
-                    setAuth(data.token, user || undefined);
-                }
-                router.push(redirectTo);
+                setMagicLinkSent(true);
+                setLoading(false);
             } else {
-                setEmailError(t("login.error.signInFailed"));
+                const data = await res.json().catch(() => ({}));
+                setEmailError(data.error || t("login.error.signInFailed"));
                 setLoading(false);
             }
         } catch {
@@ -127,8 +132,34 @@ function LoginForm() {
                             {error === "auth_failed" && t("login.error.googleFailed")}
                             {error === "auth_error" && t("login.error.authFailed")}
                             {error === "no_ads_account" && t("login.error.authFailed")}
+                            {error === "invalid_link" && "This sign-in link has expired or is invalid. Please request a new one."}
+                            {error === "missing_token" && "Invalid sign-in link. Please request a new one."}
+                            {error === "server_error" && "Something went wrong. Please try again."}
                         </div>
                     )}
+
+                    {/* Magic link sent confirmation */}
+                    {magicLinkSent ? (
+                        <div className="text-center py-6">
+                            <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <CheckCircle className="w-8 h-8 text-green-500" />
+                            </div>
+                            <h2 className="text-lg font-semibold mb-2">Check your email</h2>
+                            <p className="text-muted text-sm mb-4">
+                                We sent a sign-in link to <strong>{email}</strong>. Click the link to sign in — it expires in 15 minutes.
+                            </p>
+                            <p className="text-xs text-muted mb-6">
+                                Don&apos;t see it? Check your spam folder.
+                            </p>
+                            <button
+                                onClick={() => { setMagicLinkSent(false); setEmail(""); }}
+                                className="text-sm text-primary hover:underline"
+                            >
+                                Use a different email
+                            </button>
+                        </div>
+                    ) : (
+                    <>
 
                     {/* Google Sign In — Primary */}
                     <button
@@ -192,6 +223,8 @@ function LoginForm() {
                             {t("login.noAccount")}
                         </Link>
                     </div>
+                    </>
+                    )}
 
                     {/* Trust badges */}
                     <div className="mt-8 pt-6 border-t border-border">

@@ -266,6 +266,50 @@ Return as JSON:
                     costEstimate,
                 },
             });
+
+            // Auto-create a Business record if user doesn't have one for this domain yet
+            // This way they don't have to re-enter business info in onboarding
+            const existingBiz = await prisma.business.findFirst({
+                where: { userId: session.id, website: url },
+            });
+            if (!existingBiz) {
+                const bizCount = await prisma.business.count({ where: { userId: session.id } });
+                const sub = await prisma.subscription.findUnique({ where: { userId: session.id }, select: { adsAccountsLimit: true } });
+                const limit = sub?.adsAccountsLimit || 1;
+                if (bizCount < limit) {
+                    await prisma.business.create({
+                        data: {
+                            userId: session.id,
+                            name: businessName,
+                            website: url,
+                            industry: industry || null,
+                        },
+                    });
+                }
+            }
+
+            // Save crawled page content as a KB item so the AI has context
+            if (pageContent && pageContent.length > 50 && !fetchError) {
+                const biz = existingBiz || await prisma.business.findFirst({
+                    where: { userId: session.id, website: url },
+                });
+                if (biz) {
+                    const existingKB = await prisma.knowledgeBaseItem.findFirst({
+                        where: { businessId: biz.id, title: "Website Content (from audit)" },
+                    });
+                    if (!existingKB) {
+                        await prisma.knowledgeBaseItem.create({
+                            data: {
+                                businessId: biz.id,
+                                userId: session.id,
+                                title: "Website Content (from audit)",
+                                content: pageContent.slice(0, 10000),
+                                type: "text",
+                            },
+                        });
+                    }
+                }
+            }
         } catch (dbErr) {
             console.warn("[Audit] Failed to persist report to DB:", dbErr);
             // Non-fatal — continue returning the result inline

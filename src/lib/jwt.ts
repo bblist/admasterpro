@@ -65,3 +65,31 @@ export function extractBearerToken(authHeader: string | null): string | null {
     if (!authHeader?.startsWith("Bearer ")) return null;
     return authHeader.slice(7).trim() || null;
 }
+
+/**
+ * Sign a short-lived magic link token (15 minutes).
+ * Used for passwordless email authentication.
+ */
+export async function signMagicLinkToken(email: string): Promise<string> {
+    const secret = getJwtSecret();
+    return new SignJWT({ email, purpose: "magic-link" })
+        .setProtectedHeader({ alg: "HS256" })
+        .setIssuedAt()
+        .setIssuer("admasterpro")
+        .setExpirationTime("15m")
+        .sign(secret);
+}
+
+/**
+ * Verify a magic link token. Returns the email or null.
+ */
+export async function verifyMagicLinkToken(token: string): Promise<string | null> {
+    try {
+        const secret = getJwtSecret();
+        const { payload } = await jwtVerify(token, secret, { issuer: "admasterpro" });
+        if (payload.purpose !== "magic-link") return null;
+        return (payload.email as string) || null;
+    } catch {
+        return null;
+    }
+}

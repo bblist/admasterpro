@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Mic,
   ArrowRight,
@@ -22,6 +22,7 @@ import {
   X,
 } from "lucide-react";
 import { useTranslation } from "@/i18n/context";
+import { isAuthenticated } from "@/lib/auth-client";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 const features = [
@@ -66,6 +67,11 @@ const pricingPlans = [
 export default function LandingPage() {
   const { t } = useTranslation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  useEffect(() => {
+    setLoggedIn(isAuthenticated());
+  }, []);
 
   return (
     <div className="bg-white text-neutral-900 antialiased selection:bg-indigo-100 selection:text-indigo-900 min-h-screen flex flex-col">
@@ -85,12 +91,20 @@ export default function LandingPage() {
           </div>
           <div className="flex items-center gap-4">
             <LanguageSwitcher compact />
-            <Link href="/login" className="text-sm font-normal text-neutral-500 hover:text-neutral-900 transition-colors hidden sm:block">
-              {t("common.logIn")}
-            </Link>
-            <Link href="/onboarding" className="bg-neutral-900 hover:bg-neutral-800 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors shadow-sm">
-              {t("common.startFree")}
-            </Link>
+            {loggedIn ? (
+              <Link href="/dashboard" className="bg-neutral-900 hover:bg-neutral-800 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors shadow-sm">
+                Go to Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link href="/login" className="text-sm font-normal text-neutral-500 hover:text-neutral-900 transition-colors hidden sm:block">
+                  {t("common.logIn")}
+                </Link>
+                <Link href="/onboarding" className="bg-neutral-900 hover:bg-neutral-800 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors shadow-sm">
+                  {t("common.startFree")}
+                </Link>
+              </>
+            )}
             <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-1.5 text-neutral-500 hover:text-neutral-900" aria-label="Toggle menu">
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>

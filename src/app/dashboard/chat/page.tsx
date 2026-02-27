@@ -406,20 +406,34 @@ const getInitialMessages = (
     // Build the main greeting with context awareness
     let greetingContent = `${greeting} **${t("chat.status")}**\n\n`;
 
-    // ── SETUP NOT COMPLETE: Guide user through onboarding in chat ──
-    if (kbStatus === "empty" && !intent) {
-        greetingContent += `I'm your personal Google Ads manager. Before I can work my magic, I need to learn about your business. Let's get set up — it only takes a couple of minutes.\n\n`;
-        greetingContent += `### Step 1: Connect Your Google Ads\n`;
-        greetingContent += `If you already have a Google Ads account, connect it now so I can pull in your existing campaigns, keywords, and performance data. I'll review everything and tell you exactly what's working and what needs fixing.\n\n`;
-        greetingContent += `### Step 2: Tell Me About Your Business\n`;
-        greetingContent += `No Google Ads yet? No problem — just paste your website URL right here in the chat, or tell me about your business. I'll use that to build your profile and recommend the best ad strategy.\n\n`;
-        greetingContent += `**What would you like to do first?**`;
+    // Use setupComplete from business profile — not just kbStatus
+    // A user who has only done an audit has some KB content but isn't truly set up
+    const isSetup = biz.setupComplete && kbStatus === "has-content";
 
-        const actions: { label: string; type: "primary" | "secondary" | "danger" }[] = [
-            { label: "🔗 Connect Google Ads", type: "primary" },
-            { label: "🌐 Enter my website URL", type: "secondary" },
-            { label: "📝 Paste or type my business info", type: "secondary" },
-        ];
+    // ── SETUP NOT COMPLETE: Guide user through getting more business info ──
+    if (!isSetup && !intent) {
+        if (kbStatus === "has-content") {
+            // They have SOME data (e.g. from an audit crawl) but setup isn't complete
+            greetingContent += `I'm your personal Google Ads manager. I see we've already scanned your website — great start! To give you the best results, I'd love to learn a bit more about **${name}**.\n\n`;
+            greetingContent += `**What kind of business do you run?** Tell me about your main services, your ideal customers, and what makes you different from competitors. The more I know, the better I can target your ads.\n\n`;
+            greetingContent += `You can also connect your Google Ads account if you have one — I'll pull in your existing campaigns and show you exactly what's working.`;
+        } else {
+            greetingContent += `I'm your personal Google Ads manager. Before I can work my magic, I need to learn about your business. Let's get set up — it only takes a couple of minutes.\n\n`;
+            greetingContent += `**Just paste your website URL** right here in the chat and I'll scan it to learn about your business. Or tell me about what you do — your services, customers, and goals.\n\n`;
+            greetingContent += `If you already have a Google Ads account, you can connect it in **[Settings](/dashboard/settings)** so I can pull in your existing campaigns.`;
+        }
+
+        const actions: { label: string; type: "primary" | "secondary" | "danger" }[] = kbStatus === "has-content"
+            ? [
+                { label: "📝 Tell you about my business", type: "primary" },
+                { label: "🔗 Connect Google Ads", type: "secondary" },
+                { label: "What can you do for me?", type: "secondary" },
+            ]
+            : [
+                { label: "🌐 Enter my website URL", type: "primary" },
+                { label: "📝 Paste or type my business info", type: "secondary" },
+                { label: "🔗 Connect Google Ads", type: "secondary" },
+            ];
 
         messages.push({
             id: 2,
@@ -477,11 +491,12 @@ const getInitialMessages = (
             { label: "What do I need for Shopping ads?", type: "secondary" },
             { label: "Performance Max vs Standard Shopping", type: "secondary" },
         ];
-    } else if (kbStatus === "empty") {
+    } else if (!isSetup) {
+        // Setup not complete but has intent — show intent actions + setup nudge
         actions = [
-            { label: "🌐 Enter my website URL", type: "primary" },
+            { label: "📝 Tell you about my business", type: "primary" },
+            { label: "🌐 Enter my website URL", type: "secondary" },
             { label: "🔗 Connect Google Ads", type: "secondary" },
-            { label: t("chat.quick.competitors"), type: "secondary" },
         ];
     } else {
         actions = [
@@ -593,14 +608,19 @@ const getMicInstructions = (browser: string, platform: Platform): { steps: strin
     };
 };
 
-const AD_MOOD_OPTIONS: { label: string; type: "primary" | "secondary" }[] = [
-    { label: "🔥 Energetic & bold", type: "secondary" },
-    { label: "⏰ Urgency & scarcity", type: "secondary" },
-    { label: "🤝 Friendly & trustworthy", type: "secondary" },
-    { label: "💎 Premium & luxury", type: "secondary" },
-    { label: "😄 Fun & playful", type: "secondary" },
-    { label: "📊 Data-driven & professional", type: "secondary" },
-];
+const AD_MOOD_LABELS = [
+    "Energetic & bold",
+    "Urgency & scarcity",
+    "Friendly & trustworthy",
+    "Premium & luxury",
+    "Fun & playful",
+    "Data-driven & professional",
+] as const;
+
+const AD_MOOD_OPTIONS: { label: string; type: "primary" | "secondary" }[] =
+    AD_MOOD_LABELS.map((l) => ({ label: l, type: "secondary" as const }));
+
+const AD_MOOD_SET = new Set<string>(AD_MOOD_LABELS);
 
 function ChatPageInner() {
     const { activeBusiness, businesses, setActiveBusiness } = useBusiness();
@@ -1211,7 +1231,16 @@ function ChatPageInner() {
             return actions.slice(0, 4);
         }
 
-        // ── Default fallback — smart defaults based on KB state
+        // ── Default fallback — smart defaults based on setup state
+        const isSetupDone = activeBusiness.setupComplete;
+        if (!isSetupDone) {
+            // Still in setup — nudge toward providing more business info
+            return [
+                { label: "📝 Tell you about my business", type: "primary" },
+                { label: "🌐 Enter my website URL", type: "secondary" },
+                { label: "What can you do for me?", type: "secondary" },
+            ];
+        }
         if (!hasKb) {
             return [
                 { label: "📚 Add to Knowledge Base", type: "primary" },
@@ -1256,7 +1285,7 @@ function ChatPageInner() {
             setMessages((prev) => [...prev, { id: Date.now(), role: "user", content: text, timestamp: timeNow() }, aiMsg]);
             return;
         }
-        if (text === "📝 Paste or type my business info") {
+        if (text === "📝 Paste or type my business info" || text === "📝 Tell you about my business") {
             const aiMsg: Message = {
                 id: Date.now() + 1,
                 role: "ai",
@@ -1425,9 +1454,8 @@ function ChatPageInner() {
         }
 
         // ── Handle mood/tone selection → rewrite as a proper prompt ──
-        const moodMatch = text.match(/^[🔥⏰🤝💎😄📊]\s+(.+)$/);
-        if (moodMatch) {
-            const mood = moodMatch[1];
+        if (AD_MOOD_SET.has(text)) {
+            const mood = text;
             text = `Create new ad copy for my business with a ${mood} tone. Make the headlines and descriptions feel ${mood.toLowerCase()}.`;
         }
 
@@ -2329,7 +2357,8 @@ function ChatPageInner() {
                     </button>
                 </div>
 
-                {/* Quick actions — context-aware, hide irrelevant ones for new users */}
+                {/* Quick actions — only show when setup is complete, since the AI already shows contextual buttons in messages */}
+                {activeBusiness.setupComplete && (
                 <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
                     {quickActionKeys
                         .filter((a) => !a.needsAds || kbContext)
@@ -2346,6 +2375,7 @@ function ChatPageInner() {
                         ))}
                     <span className="text-[10px] text-muted ml-auto hidden sm:inline whitespace-nowrap">{t("chat.micHint")}</span>
                 </div>
+                )}
             </div>
         </div>
     );

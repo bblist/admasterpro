@@ -12,6 +12,7 @@ import {
     ArrowRight,
     Loader2,
     CheckCircle2,
+    CheckCircle,
     Globe,
     Building2,
     DollarSign,
@@ -20,7 +21,7 @@ import {
     X,
 } from "lucide-react";
 import { useTranslation } from "@/i18n/context";
-import { authFetch, captureTokenFromHash, decodeTokenPayload, isAuthenticated, setAuth } from "@/lib/auth-client";
+import { authFetch, captureTokenFromHash, isAuthenticated } from "@/lib/auth-client";
 import Tooltip from "@/components/Tooltip";
 
 const auditFeatures = [
@@ -157,6 +158,8 @@ export default function AuditPage() {
         window.location.href = "/api/auth/callback?next=/audit?resume=1";
     };
 
+    const [magicLinkSent, setMagicLinkSent] = useState(false);
+
     const handleEmailAuth = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!authEmail.trim() || !authEmail.includes("@")) {
@@ -168,30 +171,22 @@ export default function AuditPage() {
         setAuthLoading(true);
 
         try {
+            // Save pending audit payload so we can resume after magic link verification
+            savePendingPayload(getPayload());
+
             const res = await fetch("/api/auth/email", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email: authEmail.trim() }),
+                body: JSON.stringify({ email: authEmail.trim(), next: "/audit?resume=1" }),
             });
 
             if (!res.ok) {
-                throw new Error("Sign in failed. Please try again.");
+                throw new Error("Failed to send sign-in link. Please try again.");
             }
 
-            const data = await res.json();
-            if (data.token) {
-                const user = decodeTokenPayload(data.token);
-                setAuth(data.token, user || undefined);
-            }
-
-            setShowAuthModal(false);
-            const pendingRaw = localStorage.getItem(PENDING_AUDIT_KEY);
-            if (pendingRaw) {
-                const pending = JSON.parse(pendingRaw) as AuditPayload;
-                await runAudit(pending);
-            }
+            setMagicLinkSent(true);
         } catch (err: any) {
-            setAuthError(err.message || "Could not sign in.");
+            setAuthError(err.message || "Could not send sign-in email.");
         } finally {
             setAuthLoading(false);
         }
@@ -442,6 +437,16 @@ export default function AuditPage() {
                         </div>
 
                         <form onSubmit={handleEmailAuth} className="space-y-3">
+                            {magicLinkSent ? (
+                                <div className="text-center py-4">
+                                    <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                                        <CheckCircle className="w-6 h-6 text-green-500" />
+                                    </div>
+                                    <p className="text-sm font-medium text-foreground mb-1">Check your email</p>
+                                    <p className="text-xs text-muted">We sent a sign-in link to <strong>{authEmail}</strong>. Click it to continue your audit.</p>
+                                </div>
+                            ) : (
+                            <>
                             <div className="relative">
                                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                                 <input
@@ -459,8 +464,10 @@ export default function AuditPage() {
                                 className="w-full bg-primary hover:bg-primary-dark text-white py-2.5 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 disabled:opacity-50"
                             >
                                 {authLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                                Continue with Email
+                                Send Sign-In Link
                             </button>
+                            </>
+                            )}
                         </form>
                     </div>
                 </div>

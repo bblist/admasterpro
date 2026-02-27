@@ -25,7 +25,24 @@ export async function GET(req: NextRequest) {
             orderBy: { createdAt: "desc" },
         });
 
-        return NextResponse.json({ businesses });
+        // Count KB items per business to determine setup state
+        const kbCounts = await prisma.knowledgeBaseItem.groupBy({
+            by: ["businessId"],
+            where: { userId: session.id, businessId: { in: businesses.map(b => b.id) } },
+            _count: true,
+        });
+        const countMap = new Map(kbCounts.map(c => [c.businessId, c._count]));
+
+        const enriched = businesses.map((b) => {
+            const kbItemCount = countMap.get(b.id) || 0;
+            return {
+                ...b,
+                kbStatus: kbItemCount > 0 ? "has-content" : "empty",
+                kbItemCount,
+            };
+        });
+
+        return NextResponse.json({ businesses: enriched });
     } catch (error) {
         console.error("[Business] List error:", error);
         return NextResponse.json({ error: "Failed to fetch businesses" }, { status: 500 });

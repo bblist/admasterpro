@@ -167,6 +167,27 @@ function baseTemplate(title: string, body: string): string {
 </html>`;
 }
 
+// ─── Magic Link Email ───────────────────────────────────────────────────────
+
+export async function sendMagicLinkEmail(to: string, magicLinkUrl: string): Promise<EmailResult> {
+    const html = baseTemplate("Sign in to AdMaster Pro", `
+        <h2>Sign in to AdMaster Pro</h2>
+        <p>Click the button below to securely sign in to your account. This link expires in 15 minutes.</p>
+        <p style="text-align: center;">
+            <a href="${escapeHtml(magicLinkUrl)}" class="btn">Sign In to AdMaster Pro</a>
+        </p>
+        <p style="font-size: 13px; color: #6b7280;">If the button doesn't work, copy and paste this link into your browser:</p>
+        <p style="font-size: 12px; color: #9ca3af; word-break: break-all;">${escapeHtml(magicLinkUrl)}</p>
+        <div style="margin-top: 24px; padding: 16px; background: #f9fafb; border-radius: 8px;">
+            <p style="margin: 0; font-size: 12px; color: #6b7280;">
+                <strong>Didn't request this?</strong> You can safely ignore this email. Someone may have entered your email address by mistake.
+            </p>
+        </div>
+    `);
+
+    return sendEmail(to, "Sign in to AdMaster Pro", html);
+}
+
 // ─── Welcome Email ──────────────────────────────────────────────────────────
 
 export async function sendWelcomeEmail(to: string, name: string): Promise<EmailResult> {

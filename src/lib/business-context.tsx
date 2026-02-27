@@ -114,7 +114,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
             }
             const data = await res.json();
             const biz: BusinessProfile[] = (data.businesses || []).map(
-                (b: { id: string; name: string; industry?: string; website?: string; googleAdsId?: string; kbStatus?: string }, i: number) => ({
+                (b: { id: string; name: string; industry?: string; website?: string; googleAdsId?: string; kbStatus?: string; kbItemCount?: number }, i: number) => ({
                     id: b.id,
                     name: b.name,
                     industry: b.industry || "",
@@ -124,7 +124,9 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
                     color: getColor(i),
                     ...withLegacyFields(b),
                     kbStatus: b.kbStatus || "empty",
-                    setupComplete: !!(b.googleAdsId || (b.kbStatus && b.kbStatus !== "empty")),
+                    // Setup is complete when user has Google Ads connected OR
+                    // has meaningful KB content (2+ items = user added their own beyond auto-crawl)
+                    setupComplete: !!(b.googleAdsId || (b.kbItemCount && b.kbItemCount >= 2)),
                 })
             );
             setBusinesses(biz);

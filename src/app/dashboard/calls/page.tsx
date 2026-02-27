@@ -9,6 +9,7 @@ import {
 import Link from "next/link";
 import { authFetch } from "@/lib/auth-client";
 import { useBusiness } from "@/lib/business-context";
+import { useTranslation } from "@/i18n/context";
 
 interface CallData {
     date: string;
@@ -36,6 +37,7 @@ function getCallStatusIcon(status: string) {
 
 export default function CallsPage() {
     const { activeBusiness } = useBusiness();
+    const { t } = useTranslation();
     const [calls, setCalls] = useState<CallData[]>([]);
     const [loading, setLoading] = useState(true);
     const [connected, setConnected] = useState(false);
@@ -78,21 +80,21 @@ export default function CallsPage() {
     if (!loading && !connected) {
         return (
             <div className="max-w-4xl mx-auto space-y-6">
-                <h1 className="text-2xl font-bold">Call Tracking</h1>
+                <h1 className="text-2xl font-bold">{t("calls.title")}</h1>
                 <div className="bg-card border border-border rounded-2xl p-12 text-center">
                     <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
                         <Phone className="w-8 h-8 text-primary" />
                     </div>
-                    <h2 className="text-xl font-bold mb-2">Connect Google Ads for Call Tracking</h2>
+                    <h2 className="text-xl font-bold mb-2">{t("calls.connectTitle")}</h2>
                     <p className="text-muted text-sm max-w-md mx-auto mb-8">
-                        Link your Google Ads account with call extensions enabled to track phone calls from your ads.
+                        {t("calls.connectDesc")}
                     </p>
                     <div className="flex flex-col sm:flex-row gap-3 justify-center">
                         <Link href="/dashboard/settings" className="inline-flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-xl font-medium transition">
-                            Connect Account <ArrowRight className="w-4 h-4" />
+                            {t("calls.connectAccount")} <ArrowRight className="w-4 h-4" />
                         </Link>
                         <Link href="/dashboard/chat" className="inline-flex items-center gap-2 bg-card border border-border hover:border-primary px-6 py-3 rounded-xl font-medium transition">
-                            <Zap className="w-4 h-4" /> Set Up Call Tracking with AI
+                            <Zap className="w-4 h-4" /> {t("calls.setupWithAi")}
                         </Link>
                     </div>
                 </div>
@@ -102,22 +104,22 @@ export default function CallsPage() {
                         <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mb-3">
                             <PhoneCall className="w-5 h-5 text-green-600" />
                         </div>
-                        <h3 className="font-semibold mb-1">Call Extensions</h3>
-                        <p className="text-xs text-muted">Add your phone number to ads so customers can call directly from search results.</p>
+                        <h3 className="font-semibold mb-1">{t("calls.callExtensions")}</h3>
+                        <p className="text-xs text-muted">{t("calls.callExtensionsDesc")}</p>
                     </div>
                     <div className="bg-card border border-border rounded-xl p-5">
                         <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-3">
                             <BarChart3 className="w-5 h-5 text-blue-600" />
                         </div>
-                        <h3 className="font-semibold mb-1">Call Analytics</h3>
-                        <p className="text-xs text-muted">Track call duration, answered vs. missed, and which campaigns drive the most calls.</p>
+                        <h3 className="font-semibold mb-1">{t("calls.callAnalytics")}</h3>
+                        <p className="text-xs text-muted">{t("calls.callAnalyticsDesc")}</p>
                     </div>
                     <div className="bg-card border border-border rounded-xl p-5">
                         <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mb-3">
                             <TrendingUp className="w-5 h-5 text-purple-600" />
                         </div>
-                        <h3 className="font-semibold mb-1">Call Conversions</h3>
-                        <p className="text-xs text-muted">Set up call conversion tracking to measure calls as conversions in Google Ads.</p>
+                        <h3 className="font-semibold mb-1">{t("calls.callConversions")}</h3>
+                        <p className="text-xs text-muted">{t("calls.callConversionsDesc")}</p>
                     </div>
                 </div>
             </div>
@@ -129,17 +131,17 @@ export default function CallsPage() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold">Call Tracking</h1>
-                    <p className="text-muted text-sm mt-1">Track phone calls from your Google Ads</p>
+                    <h1 className="text-2xl font-bold">{t("calls.title")}</h1>
+                    <p className="text-muted text-sm mt-1">{t("calls.subtitle")}</p>
                 </div>
                 <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-muted" />
                     <select value={dateRange} onChange={(e) => setDateRange(e.target.value)}
                         className="bg-card border border-border rounded-lg px-3 py-2 text-sm">
-                        <option value="LAST_7_DAYS">Last 7 days</option>
-                        <option value="LAST_14_DAYS">Last 14 days</option>
-                        <option value="LAST_30_DAYS">Last 30 days</option>
-                        <option value="THIS_MONTH">This month</option>
+                        <option value="LAST_7_DAYS">{t("calls.last7")}</option>
+                        <option value="LAST_14_DAYS">{t("calls.last14")}</option>
+                        <option value="LAST_30_DAYS">{t("calls.last30")}</option>
+                        <option value="THIS_MONTH">{t("calls.thisMonth")}</option>
                     </select>
                     <button onClick={fetchCalls} className="p-2 bg-card border border-border rounded-lg hover:border-primary transition">
                         <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
@@ -150,23 +152,23 @@ export default function CallsPage() {
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div className="bg-card border border-border rounded-xl p-4">
-                    <div className="flex items-center gap-2 text-sm text-muted mb-1"><Phone className="w-4 h-4" /> Total Calls</div>
+                    <div className="flex items-center gap-2 text-sm text-muted mb-1"><Phone className="w-4 h-4" /> {t("calls.totalCalls")}</div>
                     <div className="text-2xl font-bold">{totalCalls}</div>
                 </div>
                 <div className="bg-card border border-border rounded-xl p-4">
-                    <div className="flex items-center gap-2 text-sm text-muted mb-1"><PhoneCall className="w-4 h-4 text-green-500" /> Answered</div>
+                    <div className="flex items-center gap-2 text-sm text-muted mb-1"><PhoneCall className="w-4 h-4 text-green-500" /> {t("calls.answered")}</div>
                     <div className="text-2xl font-bold text-green-600">{answeredCalls}</div>
                 </div>
                 <div className="bg-card border border-border rounded-xl p-4">
-                    <div className="flex items-center gap-2 text-sm text-muted mb-1"><PhoneMissed className="w-4 h-4 text-red-500" /> Missed</div>
+                    <div className="flex items-center gap-2 text-sm text-muted mb-1"><PhoneMissed className="w-4 h-4 text-red-500" /> {t("calls.missed")}</div>
                     <div className="text-2xl font-bold text-red-600">{missedCalls}</div>
                 </div>
                 <div className="bg-card border border-border rounded-xl p-4">
-                    <div className="flex items-center gap-2 text-sm text-muted mb-1"><Clock className="w-4 h-4" /> Avg Duration</div>
+                    <div className="flex items-center gap-2 text-sm text-muted mb-1"><Clock className="w-4 h-4" /> {t("calls.avgDuration")}</div>
                     <div className="text-2xl font-bold">{formatDuration(avgDuration)}</div>
                 </div>
                 <div className="bg-card border border-border rounded-xl p-4">
-                    <div className="flex items-center gap-2 text-sm text-muted mb-1"><TrendingUp className="w-4 h-4" /> Quality Calls</div>
+                    <div className="flex items-center gap-2 text-sm text-muted mb-1"><TrendingUp className="w-4 h-4" /> {t("calls.qualityCalls")}</div>
                     <div className="text-2xl font-bold">{longCalls}</div>
                     <div className="text-xs text-muted">60s+</div>
                 </div>
@@ -191,18 +193,18 @@ export default function CallsPage() {
             {!loading && calls.length > 0 && (
                 <div className="bg-card border border-border rounded-xl overflow-hidden">
                     <div className="p-4 border-b border-border">
-                        <h2 className="text-lg font-semibold">Call Log</h2>
+                        <h2 className="text-lg font-semibold">{t("calls.callLog")}</h2>
                     </div>
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b border-border bg-muted/30">
-                                    <th className="text-left p-3 font-medium">Status</th>
-                                    <th className="text-left p-3 font-medium">Date</th>
-                                    <th className="text-left p-3 font-medium">Campaign</th>
-                                    <th className="text-left p-3 font-medium">Area Code</th>
-                                    <th className="text-right p-3 font-medium">Duration</th>
-                                    <th className="text-left p-3 font-medium">Source</th>
+                                    <th className="text-left p-3 font-medium">{t("calls.status")}</th>
+                                    <th className="text-left p-3 font-medium">{t("calls.date")}</th>
+                                    <th className="text-left p-3 font-medium">{t("calls.campaign")}</th>
+                                    <th className="text-left p-3 font-medium">{t("calls.areaCode")}</th>
+                                    <th className="text-right p-3 font-medium">{t("calls.duration")}</th>
+                                    <th className="text-left p-3 font-medium">{t("calls.source")}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -233,13 +235,12 @@ export default function CallsPage() {
             {!loading && calls.length === 0 && connected && (
                 <div className="bg-card border border-border rounded-2xl p-12 text-center">
                     <PhoneOff className="w-12 h-12 text-muted mx-auto mb-4" />
-                    <h2 className="text-xl font-bold mb-2">No call data found</h2>
+                    <h2 className="text-xl font-bold mb-2">{t("calls.noCallsTitle")}</h2>
                     <p className="text-muted text-sm max-w-md mx-auto mb-6">
-                        Your account may not have call extensions set up, or there are no recorded calls in the selected period.
-                        Ask the AI how to enable call tracking in your campaigns.
+                        {t("calls.noCallsDesc")}
                     </p>
                     <Link href="/dashboard/chat" className="inline-flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-xl font-medium transition">
-                        <Zap className="w-4 h-4" /> Set Up Call Tracking <ArrowRight className="w-4 h-4" />
+                        <Zap className="w-4 h-4" /> {t("calls.setupCallTracking")} <ArrowRight className="w-4 h-4" />
                     </Link>
                 </div>
             )}
@@ -248,8 +249,7 @@ export default function CallsPage() {
             {calls.length > 0 && (
                 <div className="bg-primary-light border border-primary/20 rounded-xl p-4">
                     <p className="text-sm">
-                        <strong>\ud83d\udca1 Pro tip:</strong> Ask the AI &mdash; &ldquo;How can I improve my call conversion rate?&rdquo;
-                        to get specific recommendations for call extensions, scheduling, and bidding strategies.
+                        <strong>💡 Pro tip:</strong> {t("calls.proTip")}
                     </p>
                 </div>
             )}

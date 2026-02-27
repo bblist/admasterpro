@@ -21,6 +21,8 @@ interface UserSettings {
         budgetAlerts: boolean;
         weeklyReports: boolean;
         performanceAlerts: boolean;
+        dailySummary: boolean;
+        summaryTime: string;
     };
     safetyRules: {
         requireApproval: boolean;
@@ -37,6 +39,8 @@ const DEFAULT_SETTINGS: UserSettings = {
         budgetAlerts: true,
         weeklyReports: true,
         performanceAlerts: true,
+        dailySummary: false,
+        summaryTime: "09:00",
     },
     safetyRules: {
         requireApproval: true,
@@ -145,8 +149,10 @@ export async function POST(req: NextRequest) {
             notifications: {
                 email: updates.notifications?.email !== false,
                 budgetAlerts: updates.notifications?.budgetAlerts !== false,
-                weeklyReports: updates.notifications?.weeklyReports !== false,
-                performanceAlerts: updates.notifications?.performanceAlerts !== false,
+                weeklyReports: (updates.notifications?.weeklyReports ?? updates.notifications?.weeklyReport) !== false,
+                performanceAlerts: (updates.notifications?.performanceAlerts ?? updates.notifications?.instantAlerts) !== false,
+                dailySummary: updates.notifications?.dailySummary !== false,
+                summaryTime: updates.notifications?.summaryTime || "09:00",
             },
             safetyRules: {
                 requireApproval: updates.safetyRules?.requireApproval !== false,
