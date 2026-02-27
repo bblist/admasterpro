@@ -12,6 +12,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { chatLimiter, checkRateLimit } from "@/lib/rate-limit";
 import { getSessionDual } from "@/lib/session";
+import { checkCSRF } from "@/lib/csrf";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
@@ -667,6 +668,9 @@ async function callAnthropic(body: ChatRequest) {
 export async function POST(req: NextRequest) {
     const rateLimited = checkRateLimit(req, chatLimiter);
     if (rateLimited) return rateLimited;
+
+    const csrfError = await checkCSRF(req);
+    if (csrfError) return csrfError;
 
     try {
         const body: ChatRequest = await req.json();

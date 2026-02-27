@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { signMagicLinkToken } from "@/lib/jwt";
 import { sendMagicLinkEmail } from "@/lib/email";
 import { authLimiter, checkRateLimit } from "@/lib/rate-limit";
+import { checkCSRF } from "@/lib/csrf";
 
 const emailLoginEnabled = process.env.ENABLE_EMAIL_LOGIN !== "false";
 const APP_URL = process.env.NEXTAUTH_URL || "https://admasterai.nobleblocks.com";
@@ -23,6 +24,9 @@ export async function POST(req: NextRequest) {
 
     const rateLimited = checkRateLimit(req, authLimiter);
     if (rateLimited) return rateLimited;
+
+    const csrfError = await checkCSRF(req);
+    if (csrfError) return csrfError;
 
     try {
         const { email, next } = await req.json();

@@ -16,9 +16,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { sendWeeklyReport, WeeklyReportData } from "@/lib/email";
 
-const CRON_SECRET = process.env.CRON_SECRET || process.env.ADMIN_SECRET || "";
+const CRON_SECRET = process.env.CRON_SECRET || process.env.ADMIN_SECRET;
 
 export async function GET(req: NextRequest) {
+    // Reject if secret is not configured on the server
+    if (!CRON_SECRET) {
+        return NextResponse.json({ error: "Cron secret not configured" }, { status: 503 });
+    }
+
     // Verify secret
     const secret = req.nextUrl.searchParams.get("secret");
     if (!secret || secret !== CRON_SECRET) {

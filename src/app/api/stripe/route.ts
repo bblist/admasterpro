@@ -19,6 +19,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionDual } from "@/lib/session";
 import { stripeLimiter, checkRateLimit } from "@/lib/rate-limit";
+import { checkCSRF } from "@/lib/csrf";
 import {
     isStripeConfigured,
     createSubscriptionCheckout,
@@ -42,10 +43,14 @@ export async function POST(req: NextRequest) {
     const rateLimited = checkRateLimit(req, stripeLimiter);
     if (rateLimited) return rateLimited;
 
-    // Stripe webhook — must check after rate limit
+    // Stripe webhook — must check before CSRF (webhooks don't have CSRF tokens)
     if (req.headers.get("stripe-signature")) {
         return handleWebhook(req);
     }
+
+    // CSRF check for checkout creation (not webhooks)
+    const csrfError = await checkCSRF(req);
+    if (csrfError) return csrfError;
 
     // Checkout session creation
     return handleCheckout(req);

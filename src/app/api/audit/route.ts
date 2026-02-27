@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { auditLimiter, checkRateLimit } from "@/lib/rate-limit";
 import { getSessionDual } from "@/lib/session";
+import { checkCSRF } from "@/lib/csrf";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
 
@@ -23,13 +24,18 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: "Audit report not found" }, { status: 404 });
         }
 
+        // Check if the requester owns this report (by session email)
+        const session = await getSessionDual(req);
+        const isOwner = session?.email && session.email === report.email;
+
         return NextResponse.json({
             auditId: report.id,
             websiteUrl: report.websiteUrl,
             businessName: report.businessName,
             industry: report.industry,
-            email: report.email,
-            monthlySpend: report.monthlySpend,
+            // Redact PII for non-owners (report URLs use UUIDs so hard to guess)
+            email: isOwner ? report.email : undefined,
+            monthlySpend: isOwner ? report.monthlySpend : undefined,
             pageTitle: report.pageTitle,
             result: JSON.parse(report.result),
             createdAt: report.createdAt.toISOString(),
@@ -80,6 +86,9 @@ interface AuditSection {
 export async function POST(req: NextRequest) {
     const rateLimited = checkRateLimit(req, auditLimiter);
     if (rateLimited) return rateLimited;
+
+    const csrfError = await checkCSRF(req);
+    if (csrfError) return csrfError;
 
     // Require authentication to prevent anonymous API abuse
     const session = await getSessionDual(req);

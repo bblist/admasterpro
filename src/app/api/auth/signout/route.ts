@@ -4,9 +4,17 @@
  * Clears the session cookie and the session_init cookie.
  */
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { checkCSRF } from "@/lib/csrf";
+import { authLimiter, checkRateLimit } from "@/lib/rate-limit";
 
-export async function POST() {
+export async function POST(req: NextRequest) {
+    const rateLimited = checkRateLimit(req, authLimiter);
+    if (rateLimited) return rateLimited;
+
+    const csrfError = await checkCSRF(req);
+    if (csrfError) return csrfError;
+
     const response = NextResponse.json({ success: true });
 
     // Clear session cookie

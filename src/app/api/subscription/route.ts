@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionDual } from "@/lib/session";
+import { apiLimiter, checkRateLimit } from "@/lib/rate-limit";
 
 export async function GET(req: NextRequest) {
+    const rateLimited = checkRateLimit(req, apiLimiter);
+    if (rateLimited) return rateLimited;
+
     const session = await getSessionDual(req);
 
     if (!session?.id) {

@@ -12,7 +12,8 @@ import { isGoogleAdsConfigured } from "@/lib/google-ads";
 export async function GET(req: Request) {
     const healthSecret = process.env.HEALTH_CHECK_SECRET;
     const suppliedSecret = req.headers.get("x-health-secret");
-    const includeDetails = !healthSecret || suppliedSecret === healthSecret;
+    // Default to hiding details unless correct secret is provided
+    const includeDetails = !!healthSecret && suppliedSecret === healthSecret;
 
     const checks: Record<string, { status: string; latency?: number; error?: string }> = {};
 

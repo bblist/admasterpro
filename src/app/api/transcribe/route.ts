@@ -11,12 +11,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { transcribeLimiter, checkRateLimit } from "@/lib/rate-limit";
 import { getSessionDual } from "@/lib/session";
+import { checkCSRF } from "@/lib/csrf";
 
 const DEEPGRAM_API_KEY = process.env.DEEPGRAM_API_KEY;
 
 export async function POST(req: NextRequest) {
     const rateLimited = checkRateLimit(req, transcribeLimiter);
     if (rateLimited) return rateLimited;
+
+    const csrfError = await checkCSRF(req);
+    if (csrfError) return csrfError;
 
     // Require authentication
     const session = await getSessionDual(req);

@@ -51,6 +51,7 @@ interface AccessTokenResult {
 }
 
 import crypto from "crypto";
+import { decrypt, isEncrypted } from "@/lib/crypto";
 
 // Simple in-memory cache (per-process). Key = SHA-256 hash of refreshToken.
 const tokenCache = new Map<string, { token: string; expiresAt: number }>();
@@ -59,8 +60,14 @@ function hashToken(token: string): string {
     return crypto.createHash("sha256").update(token).digest("hex").slice(0, 32);
 }
 
+/**
+ * Transparently decrypt refresh token if encrypted, then exchange for access token.
+ */
 export async function getAccessToken(refreshToken: string): Promise<string> {
-    const cacheKey = hashToken(refreshToken);
+    // Decrypt the refresh token if it was stored encrypted
+    const plainRefreshToken = isEncrypted(refreshToken) ? decrypt(refreshToken) : refreshToken;
+
+    const cacheKey = hashToken(plainRefreshToken);
     const cached = tokenCache.get(cacheKey);
     if (cached && Date.now() < cached.expiresAt - 60_000) {
         return cached.token;
@@ -72,7 +79,7 @@ export async function getAccessToken(refreshToken: string): Promise<string> {
         body: new URLSearchParams({
             client_id: GOOGLE_CLIENT_ID,
             client_secret: GOOGLE_CLIENT_SECRET,
-            refresh_token: refreshToken,
+            refresh_token: plainRefreshToken,
             grant_type: "refresh_token",
         }),
     });

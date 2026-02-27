@@ -19,6 +19,7 @@ import { prisma } from "@/lib/db";
 import { PLANS } from "@/lib/plans";
 import { signToken } from "@/lib/jwt";
 import { authLimiter, checkRateLimit } from "@/lib/rate-limit";
+import { encrypt } from "@/lib/crypto";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -161,6 +162,9 @@ export async function GET(req: NextRequest) {
         const userInfo = await userRes.json();
 
         // ─── Persist to Database ────────────────────────────────────────────
+        // Encrypt refresh token before storage
+        const encryptedRefreshToken = tokens.refresh_token ? encrypt(tokens.refresh_token) : undefined;
+
         let user;
         try {
             user = await prisma.user.upsert({
@@ -171,7 +175,7 @@ export async function GET(req: NextRequest) {
                     googleId: userInfo.id,
                     authMethod: "google",
                     hasAdsAccess,
-                    refreshToken: tokens.refresh_token || undefined,
+                    refreshToken: encryptedRefreshToken || undefined,
                     lastActiveAt: new Date(),
                 },
                 create: {
@@ -181,7 +185,7 @@ export async function GET(req: NextRequest) {
                     googleId: userInfo.id,
                     authMethod: "google",
                     hasAdsAccess,
-                    refreshToken: tokens.refresh_token || undefined,
+                    refreshToken: encryptedRefreshToken || undefined,
                 },
             });
 
@@ -242,7 +246,7 @@ export async function GET(req: NextRequest) {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             sameSite: "lax",
-            maxAge: 60 * 60 * 24 * 7, // 7 days
+            maxAge: 60 * 60 * 24 * 30, // 30 days — aligned with JWT expiry
             path: "/",
         });
         response.cookies.set(OAUTH_STATE_COOKIE, "", {

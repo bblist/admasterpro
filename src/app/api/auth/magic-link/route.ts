@@ -84,8 +84,8 @@ export async function GET(req: NextRequest) {
         const isSafeRedirect = /^\/[a-zA-Z]/.test(next) && !next.includes(":");
         const redirectTo = isSafeRedirect ? next : "/dashboard/chat";
 
-        // Set cookie with the token in it so client can extract it
-        const response = NextResponse.redirect(new URL(redirectTo + `#session_token=${jwt}`, APP_URL));
+        // Redirect — session cookie and session_init cookie handle auth transfer
+        const response = NextResponse.redirect(new URL(redirectTo, APP_URL));
 
         response.cookies.set("session", jwt, {
             httpOnly: true,

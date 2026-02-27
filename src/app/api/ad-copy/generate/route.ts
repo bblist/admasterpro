@@ -21,6 +21,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionDual } from "@/lib/session";
 import { apiLimiter, checkRateLimit } from "@/lib/rate-limit";
+import { checkCSRF } from "@/lib/csrf";
 import { prisma } from "@/lib/db";
 import { isAtMessageLimit, PLANS } from "@/lib/plans";
 
@@ -136,6 +137,9 @@ async function callAnthropic(systemPrompt: string, userMessage: string): Promise
 export async function POST(req: NextRequest) {
     const rateLimited = checkRateLimit(req, apiLimiter);
     if (rateLimited) return rateLimited;
+
+    const csrfError = await checkCSRF(req);
+    if (csrfError) return csrfError;
 
     const session = await getSessionDual(req);
     if (!session) {

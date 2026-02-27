@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionDual } from "@/lib/session";
 import { apiLimiter, checkRateLimit } from "@/lib/rate-limit";
+import { checkCSRF } from "@/lib/csrf";
 import { prisma } from "@/lib/db";
 import { getCampaigns, isGoogleAdsConfigured } from "@/lib/google-ads";
 import { isAtMessageLimit } from "@/lib/plans";
@@ -101,6 +102,9 @@ async function callAI(systemPrompt: string, userMessage: string) {
 export async function POST(req: NextRequest) {
     const rateLimited = checkRateLimit(req, apiLimiter);
     if (rateLimited) return rateLimited;
+
+    const csrfError = await checkCSRF(req);
+    if (csrfError) return csrfError;
 
     const session = await getSessionDual(req);
     if (!session) {
