@@ -300,17 +300,17 @@ const getLocationGreeting = (location: string, name: string): string => {
 
     // US Regional
     if (loc.includes("new york") || loc.includes("brooklyn") || loc.includes("manhattan") || loc.includes("nyc"))
-        return `Yo **${name}**! 🗽 Let's get this bread — your ads need some NYC energy.`;
+        return `Hey **${name}**! 🗽 Welcome — let's bring some NYC energy to your ads.`;
     if (loc.includes("miami") || loc.includes("fort lauderdale"))
-        return `What's good, **${name}**! ☀️ Let's get those ads running hot down here.`;
+        return `Hey **${name}**! ☀️ Welcome — let's get those ads shining down here in the sunshine.`;
     if (loc.includes("texas") || loc.includes("houston") || loc.includes("dallas") || loc.includes("austin"))
         return `Howdy, **${name}**! 🤠 Let's make your ads as big as Texas.`;
     if (loc.includes("los angeles") || loc.includes("la") || loc.includes("california") || loc.includes("san francisco"))
         return `Hey **${name}**! 🌴 Let's get those ads vibing out here on the West Coast.`;
     if (loc.includes("chicago"))
-        return `What's up, **${name}**! 🌆 Chi-town energy — let's get your ads moving.`;
+        return `Hey **${name}**! 🌆 Welcome from the Windy City — let's get your ads moving.`;
     if (loc.includes("atlanta") || loc.includes("georgia"))
-        return `What's good, **${name}**! 🍑 ATL in the building — let's boost those ads.`;
+        return `Hey **${name}**! 🍑 Welcome from the Peach State — let's boost those ads.`;
 
     // UK
     if (loc.includes("london") || loc.includes("uk") || loc.includes("united kingdom") || loc.includes("england") || loc.includes("manchester") || loc.includes("birmingham"))
