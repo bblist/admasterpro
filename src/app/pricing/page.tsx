@@ -468,7 +468,7 @@ function PricingContent() {
                             {t("pricing.ctaButton")}
                             <ArrowRight className="w-5 h-5" />
                         </Link>
-                        <div className="flex items-center justify-center gap-6 mt-6 text-sm opacity-80">
+                        <div className="flex flex-wrap items-center justify-center gap-6 mt-6 text-sm opacity-80">
                             <div className="flex items-center gap-1.5">
                                 <Shield className="w-4 h-4" />
                                 {t("pricing.trustSsl")}

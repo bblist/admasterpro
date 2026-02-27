@@ -237,6 +237,7 @@ async function handleWebhook(req: NextRequest) {
                     cancel_at_period_end?: boolean;
                     current_period_end?: number;
                     metadata?: Record<string, string>;
+                    items?: { data: Array<{ price?: { id?: string } }> };
                 };
 
                 if (sub.id) {
@@ -245,12 +246,47 @@ async function handleWebhook(req: NextRequest) {
                     });
 
                     if (existing) {
+                        // Detect plan change via price ID
+                        const newPriceId = sub.items?.data?.[0]?.price?.id;
+                        let planUpdate: Record<string, unknown> = {};
+
+                        if (newPriceId && newPriceId !== existing.stripePriceId) {
+                            // Map Stripe price ID → plan name
+                            const priceToplan: Record<string, string> = {
+                                [process.env.STRIPE_STARTER_PRICE_ID || ""]: "starter",
+                                [process.env.STRIPE_PRO_PRICE_ID || ""]: "pro",
+                            };
+                            const newPlan = priceToplan[newPriceId];
+
+                            if (newPlan && PLANS[newPlan]) {
+                                const planConfig = PLANS[newPlan];
+                                planUpdate = {
+                                    plan: newPlan,
+                                    stripePriceId: newPriceId,
+                                    aiMessagesLimit: planConfig.aiMessages,
+                                    campaignsLimit: planConfig.campaigns,
+                                    adsAccountsLimit: planConfig.adsAccounts,
+                                };
+                                console.log(`[Stripe] Plan changed: ${existing.plan} → ${newPlan} for subscription ${sub.id}`);
+
+                                // Send email about plan change
+                                try {
+                                    const user = await prisma.user.findUnique({ where: { id: existing.userId }, select: { email: true, name: true } });
+                                    if (user?.email) {
+                                        const amount = newPlan === "pro" ? 149 : 49;
+                                        await sendSubscriptionEmail(user.email, user.name || "there", newPlan === "pro" ? "Pro" : "Starter", amount);
+                                    }
+                                } catch (e) { console.error("[Stripe] Plan change email failed:", e); }
+                            }
+                        }
+
                         await prisma.subscription.update({
                             where: { id: existing.id },
                             data: {
                                 status: sub.status === "active" ? "active" : sub.status === "past_due" ? "past_due" : existing.status,
                                 cancelAtPeriodEnd: sub.cancel_at_period_end || false,
                                 currentPeriodEnd: sub.current_period_end ? new Date(sub.current_period_end * 1000) : undefined,
+                                ...planUpdate,
                             },
                         });
                     }

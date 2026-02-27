@@ -202,7 +202,7 @@ export default function AuditReportPage() {
                             </div>
                             <span className="text-xl font-bold text-foreground">AdMaster <span className="text-primary">Pro</span></span>
                         </Link>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                             <Link href="/onboarding" className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition">
                                 Continue Setup <ArrowRight className="w-4 h-4" />
                             </Link>

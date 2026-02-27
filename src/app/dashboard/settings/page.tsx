@@ -280,7 +280,7 @@ export default function SettingsPage() {
                   <Package className="w-4 h-4 text-muted" />
                   <span className="text-sm font-medium">{t("settings.needMore")}</span>
                 </div>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   {[
                     { amount: 30, messages: 50, label: "$30" },
                     { amount: 50, messages: 100, label: "$50", badge: "Best Value" },
