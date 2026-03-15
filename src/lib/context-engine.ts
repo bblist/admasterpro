@@ -24,6 +24,24 @@ export interface Holiday {
   leadTimeDays: number; // how many days before to start ramping ads
 }
 
+/** Region groupings — when a user is in the UK, they also see EU + GLOBAL holidays */
+const REGION_GROUPS: Record<string, string[]> = {
+  US: ["US", "GLOBAL"],
+  UK: ["UK", "EU", "GLOBAL"],
+  AU: ["AU", "UK", "GLOBAL"], // Boxing Day etc.
+  CA: ["CA", "US", "GLOBAL"],
+  SE: ["SE", "EU", "GLOBAL"],
+  NO: ["NO", "EU", "GLOBAL"],
+  DK: ["DK", "EU", "GLOBAL"],
+  FI: ["FI", "EU", "GLOBAL"],
+  DE: ["DE", "EU", "GLOBAL"],
+  FR: ["FR", "EU", "GLOBAL"],
+  ES: ["ES", "EU", "GLOBAL"],
+  IT: ["IT", "EU", "GLOBAL"],
+  NL: ["NL", "EU", "GLOBAL"],
+  PL: ["PL", "EU", "GLOBAL"],
+};
+
 export interface SeasonalContext {
   season: "spring" | "summer" | "fall" | "winter";
   hemisphere: "northern" | "southern";
@@ -91,56 +109,56 @@ export interface FullContext {
 
 const HOLIDAYS: Holiday[] = [
   // ─── Q1: January – March ────────────────────────────────────
-  { name: "New Year's Day", date: "01-01", region: "GLOBAL", adImpact: "high", category: "shopping", budgetMultiplier: 1.3, cpcChange: 15, leadTimeDays: 7, tips: ["Push New Year resolutions products", "Gym/health subscriptions peak", "\"New Year, New You\" messaging"] },
-  { name: "Epiphany / Three Kings", date: "01-06", region: "ES", adImpact: "high", category: "gifts", budgetMultiplier: 1.5, cpcChange: 20, leadTimeDays: 10, tips: ["Huge gift-giving day in Spain", "Last Christmas push in Hispanic markets"] },
-  { name: "Martin Luther King Jr. Day", date: "01-15", region: "US", adImpact: "medium", category: "awareness", budgetMultiplier: 1.1, cpcChange: 5, leadTimeDays: 3, tips: ["Community-focused messaging", "Sales events common"] },
-  { name: "Chinese New Year", date: "01-29", region: "CN", adImpact: "critical", category: "cultural", budgetMultiplier: 2.0, cpcChange: 40, leadTimeDays: 21, tips: ["Global supply chain slowdowns", "Gold/red themed products surge", "Massive gift-giving in Asian markets"] },
-  { name: "Super Bowl Sunday", date: "02-09", region: "US", adImpact: "critical", category: "sports", budgetMultiplier: 2.0, cpcChange: 50, leadTimeDays: 14, tips: ["Food/snack ads peak", "TV & electronics surge", "Party supplies, sports merch"] },
-  { name: "Valentine's Day", date: "02-14", region: "GLOBAL", adImpact: "critical", category: "gifts", budgetMultiplier: 1.8, cpcChange: 35, leadTimeDays: 14, tips: ["Jewelry, flowers, chocolates peak", "Restaurant reservations surge", "\"Last minute\" urgency works well", "Gift guides drive CTR"] },
-  { name: "Presidents' Day", date: "02-17", region: "US", adImpact: "medium", category: "shopping", budgetMultiplier: 1.2, cpcChange: 10, leadTimeDays: 5, tips: ["Major mattress/furniture sales", "Auto industry promotions"] },
-  { name: "International Women's Day", date: "03-08", region: "GLOBAL", adImpact: "medium", category: "awareness", budgetMultiplier: 1.2, cpcChange: 10, leadTimeDays: 5, tips: ["Female-owned business promotions", "Self-care products", "Empowerment messaging resonates"] },
-  { name: "St. Patrick's Day", date: "03-17", region: "GLOBAL", adImpact: "medium", category: "food", budgetMultiplier: 1.2, cpcChange: 10, leadTimeDays: 5, tips: ["Green-themed products", "Bar/restaurant promotions", "Irish heritage products"] },
-  { name: "Spring Equinox", date: "03-20", region: "GLOBAL", adImpact: "low", category: "shopping", budgetMultiplier: 1.1, cpcChange: 5, leadTimeDays: 7, tips: ["Gardening supplies surge", "Spring cleaning campaigns", "Outdoor activity gear"] },
+  { name: "New Year's Day", date: "01-01", region: "GLOBAL", adImpact: "high", category: "shopping", budgetMultiplier: 1.3, cpcChange: 15, leadTimeDays: 7, tips: ["Great time for 'new year, new you' style campaigns — fitness, health, and self-improvement products fly off the shelves", "People are in resolution mode, so lean into fresh-start messaging", "Jan 2-3 often have lower CPCs than Dec — a good window to snap up bargain clicks"] },
+  { name: "Martin Luther King Jr. Day", date: "01-15", region: "US", adImpact: "medium", category: "awareness", budgetMultiplier: 1.1, cpcChange: 5, leadTimeDays: 3, tips: ["Lots of retailers run sales around this long weekend", "Community and purpose-driven messaging tends to land well"] },
+  { name: "Australia Day", date: "01-26", region: "AU", adImpact: "high", category: "shopping", budgetMultiplier: 1.3, cpcChange: 15, leadTimeDays: 7, tips: ["Huge long weekend in Australia — outdoor gear, BBQs, and party supplies do well", "Summer is in full swing down under, so think hot-weather products"] },
+  { name: "Super Bowl Sunday", date: "02-09", region: "US", adImpact: "critical", category: "sports", budgetMultiplier: 2.0, cpcChange: 50, leadTimeDays: 14, tips: ["The snack and party supply ads absolutely explode around this time", "Electronics, TVs, and streaming subscriptions also see a big bump", "Even if you're not in food/sports, piggybacking on Super Bowl buzz can work"] },
+  { name: "Valentine's Day", date: "02-14", region: "GLOBAL", adImpact: "critical", category: "gifts", budgetMultiplier: 1.8, cpcChange: 35, leadTimeDays: 14, tips: ["Jewellery, flowers, and chocolate searches go through the roof", "Last-minute urgency messaging genuinely works — people procrastinate on this one", "Gift guides tend to get really strong click-through rates", "Don't forget the 'Galentine's' angle — it's grown massively"] },
+  { name: "Presidents' Day", date: "02-17", region: "US", adImpact: "medium", category: "shopping", budgetMultiplier: 1.2, cpcChange: 10, leadTimeDays: 5, tips: ["One of the big mattress and furniture sale weekends in the US", "Car dealerships push hard too — expect auto industry CPCs to climb"] },
+  { name: "International Women's Day", date: "03-08", region: "GLOBAL", adImpact: "medium", category: "awareness", budgetMultiplier: 1.2, cpcChange: 10, leadTimeDays: 5, tips: ["Self-care and wellness products see a nice lift", "Campaigns celebrating women founders or female-led brands tend to resonate", "Keep it genuine — people can spot performative messaging a mile off"] },
+  { name: "St. Patrick's Day", date: "03-17", region: "GLOBAL", adImpact: "medium", category: "food", budgetMultiplier: 1.2, cpcChange: 10, leadTimeDays: 5, tips: ["Green-themed anything gets attention, especially in food and drink", "Bar and restaurant ads see a spike", "Works well in the US, UK, and Ireland especially"] },
+  { name: "UK Mother's Day", date: "03-30", region: "UK", adImpact: "critical", category: "gifts", budgetMultiplier: 1.8, cpcChange: 35, leadTimeDays: 14, tips: ["This is earlier than the US one — catches a lot of UK advertisers off guard", "Flowers, hampers, jewellery, and experience gifts all spike", "Urgency works brilliantly here — 'don't leave it too late' style messaging"] },
 
   // ─── Q2: April – June ──────────────────────────────────────
-  { name: "Easter", date: "04-20", region: "GLOBAL", adImpact: "high", category: "gifts", budgetMultiplier: 1.5, cpcChange: 25, leadTimeDays: 14, tips: ["Chocolate/candy massive surge", "Spring fashion launches", "Family travel bookings", "Religious products"] },
-  { name: "Earth Day", date: "04-22", region: "GLOBAL", adImpact: "medium", category: "awareness", budgetMultiplier: 1.1, cpcChange: 5, leadTimeDays: 5, tips: ["Sustainability messaging", "Eco-friendly products spike", "Green certifications boost CTR"] },
-  { name: "Cinco de Mayo", date: "05-05", region: "US", adImpact: "medium", category: "food", budgetMultiplier: 1.2, cpcChange: 10, leadTimeDays: 5, tips: ["Food & beverage promotions", "Party supplies", "Mexican-themed products"] },
-  { name: "Mother's Day (US/EU)", date: "05-11", region: "GLOBAL", adImpact: "critical", category: "gifts", budgetMultiplier: 1.8, cpcChange: 40, leadTimeDays: 14, tips: ["#1 flower delivery day", "Jewelry, spa gifts surge", "Personalized gifts perform well", "\"Don't forget Mom\" urgency messaging"] },
-  { name: "Memorial Day", date: "05-26", region: "US", adImpact: "high", category: "shopping", budgetMultiplier: 1.4, cpcChange: 20, leadTimeDays: 7, tips: ["Major sale weekend", "Outdoor/BBQ/pool products", "Summer kickoff campaigns", "Auto sales events"] },
-  { name: "Father's Day", date: "06-15", region: "GLOBAL", adImpact: "high", category: "gifts", budgetMultiplier: 1.5, cpcChange: 30, leadTimeDays: 14, tips: ["Tools, tech, sports gifts", "Grilling/outdoor equipment", "Experience gifts trending", "\"For the dad who has everything\""] },
-  { name: "Summer Solstice", date: "06-21", region: "GLOBAL", adImpact: "low", category: "travel", budgetMultiplier: 1.1, cpcChange: 5, leadTimeDays: 7, tips: ["Peak travel booking season", "Outdoor recreation equipment", "Summer fashion/swimwear"] },
-  { name: "Pride Month", date: "06-01", dateEnd: "06-30", region: "GLOBAL", adImpact: "medium", category: "awareness", budgetMultiplier: 1.1, cpcChange: 5, leadTimeDays: 14, tips: ["Inclusive messaging performs well", "Rainbow-themed products", "Authenticity matters — avoid tokenism"] },
+  { name: "Easter", date: "04-20", region: "GLOBAL", adImpact: "high", category: "gifts", budgetMultiplier: 1.5, cpcChange: 25, leadTimeDays: 14, tips: ["Chocolate and confectionery ads go wild", "Spring fashion launches tend to cluster around Easter too", "Family travel bookings get a bump — it's school holidays in most places"] },
+  { name: "Anzac Day", date: "04-25", region: "AU", adImpact: "medium", category: "awareness", budgetMultiplier: 1.1, cpcChange: 5, leadTimeDays: 3, tips: ["Public holiday in Australia and New Zealand", "Keep ad messaging respectful — it's a commemorative day", "Retail tends to be quieter, but online browsing stays steady"] },
+  { name: "King's Day (Koningsdag)", date: "04-27", region: "NL", adImpact: "medium", category: "cultural", budgetMultiplier: 1.2, cpcChange: 10, leadTimeDays: 5, tips: ["Everything turns orange in the Netherlands — great for themed promotions", "Huge outdoor festival vibe, so party and outdoor products do well"] },
+  { name: "May Bank Holiday", date: "05-05", region: "UK", adImpact: "medium", category: "shopping", budgetMultiplier: 1.2, cpcChange: 10, leadTimeDays: 5, tips: ["Long weekend in the UK — DIY, gardening, and home improvement searches rise", "Good time for travel and experience ads too"] },
+  { name: "Mother's Day (US/Global)", date: "05-11", region: "GLOBAL", adImpact: "critical", category: "gifts", budgetMultiplier: 1.8, cpcChange: 40, leadTimeDays: 14, tips: ["The single biggest day for flower delivery searches", "Jewellery, spa days, personalised gifts — all see huge demand", "The 'don't forget mum' angle has been done to death but it still works every single year", "Start your ads early — the competition heats up fast in the last week"] },
+  { name: "Memorial Day", date: "05-26", region: "US", adImpact: "high", category: "shopping", budgetMultiplier: 1.4, cpcChange: 20, leadTimeDays: 7, tips: ["One of the really big sale weekends in the US", "Outdoor, BBQ, and pool products do brilliantly", "Many brands use it as their 'summer kickoff' sale moment"] },
+  { name: "Spring Bank Holiday", date: "05-26", region: "UK", adImpact: "medium", category: "shopping", budgetMultiplier: 1.2, cpcChange: 10, leadTimeDays: 5, tips: ["Another UK long weekend — good for travel and outdoor products", "Garden centre and DIY ads tend to perform well"] },
+  { name: "Father's Day", date: "06-15", region: "GLOBAL", adImpact: "high", category: "gifts", budgetMultiplier: 1.5, cpcChange: 30, leadTimeDays: 14, tips: ["Tools, tech, and sports gear are the classic winners", "Experience gifts have been growing year on year", "Grilling and outdoor equipment do really well", "'For the dad who's impossible to buy for' is a surprisingly effective hook"] },
+  { name: "Pride Month", date: "06-01", dateEnd: "06-30", region: "GLOBAL", adImpact: "medium", category: "awareness", budgetMultiplier: 1.1, cpcChange: 5, leadTimeDays: 14, tips: ["Inclusive messaging genuinely resonates — but only if it's authentic", "Rainbow-themed products can work, but avoid looking like you're cashing in", "If your brand has a genuine connection to the community, lean into it"] },
+  { name: "EOFY (End of Financial Year)", date: "06-30", region: "AU", adImpact: "high", category: "shopping", budgetMultiplier: 1.5, cpcChange: 25, leadTimeDays: 14, tips: ["Massive sale period in Australia — everyone's clearing stock", "Business purchases spike as companies use up remaining budgets", "Great time for B2B ads targeting Australian businesses"] },
 
   // ─── Q3: July – September ──────────────────────────────────
-  { name: "Independence Day (US)", date: "07-04", region: "US", adImpact: "high", category: "shopping", budgetMultiplier: 1.4, cpcChange: 20, leadTimeDays: 7, tips: ["Outdoor/BBQ/fireworks products", "Patriotic-themed items", "Travel deals peak", "Major auto sales"] },
-  { name: "Amazon Prime Day", date: "07-15", dateEnd: "07-16", region: "GLOBAL", adImpact: "critical", category: "shopping", budgetMultiplier: 2.0, cpcChange: 45, leadTimeDays: 14, tips: ["Compete or counter-program Prime Day", "Shopify stores should prepare alternatives", "CPCs spike across all e-commerce", "Price-match messaging effective"] },
-  { name: "Back to School", date: "08-01", dateEnd: "09-01", region: "US", adImpact: "critical", category: "shopping", budgetMultiplier: 1.6, cpcChange: 30, leadTimeDays: 21, tips: ["Electronics, supplies, clothing", "College move-in products peak", "Parent & student targeting", "Second-largest retail season after holidays"] },
-  { name: "Labor Day", date: "09-01", region: "US", adImpact: "high", category: "shopping", budgetMultiplier: 1.3, cpcChange: 15, leadTimeDays: 7, tips: ["End-of-summer clearance", "Mattress/furniture sales", "Last outdoor events", "Fall fashion launches"] },
+  { name: "Independence Day (US)", date: "07-04", region: "US", adImpact: "high", category: "shopping", budgetMultiplier: 1.4, cpcChange: 20, leadTimeDays: 7, tips: ["Outdoor, BBQ, and fireworks products surge", "Travel deals see strong engagement", "Big auto sales events happen around this time too"] },
+  { name: "Amazon Prime Day", date: "07-15", dateEnd: "07-16", region: "GLOBAL", adImpact: "critical", category: "shopping", budgetMultiplier: 2.0, cpcChange: 45, leadTimeDays: 14, tips: ["Even if you don't sell on Amazon, CPCs spike across all e-commerce during Prime Day", "Running your own counter-sale can be really effective", "Shopify stores should prepare their own deals to capture the shopping frenzy", "Price-match messaging tends to convert well around this time"] },
+  { name: "Bastille Day", date: "07-14", region: "FR", adImpact: "medium", category: "cultural", budgetMultiplier: 1.2, cpcChange: 10, leadTimeDays: 5, tips: ["Public holiday in France — B2B traffic drops but consumer browsing stays steady", "Good time for travel and tourism ads targeting French audiences"] },
+  { name: "Back to School", date: "08-01", dateEnd: "09-01", region: "US", adImpact: "critical", category: "shopping", budgetMultiplier: 1.6, cpcChange: 30, leadTimeDays: 21, tips: ["This is the second-biggest retail season after Christmas — don't sleep on it", "Electronics, stationery, clothing, and dorm supplies all see massive demand", "College move-in products peak mid-August", "Parent targeting works incredibly well here"] },
+  { name: "August Bank Holiday", date: "08-25", region: "UK", adImpact: "medium", category: "shopping", budgetMultiplier: 1.2, cpcChange: 10, leadTimeDays: 5, tips: ["Last summer long weekend in the UK — travel and outdoor ads perform well", "End-of-summer sales tend to kick off around here"] },
+  { name: "Labor Day", date: "09-01", region: "US", adImpact: "high", category: "shopping", budgetMultiplier: 1.3, cpcChange: 15, leadTimeDays: 7, tips: ["End-of-summer clearance sales are everywhere", "Mattress and furniture brands go heavy on promotions", "Fall fashion starts to trend — a good time to launch autumn collections"] },
 
   // ─── Q4: October – December (The Money Quarter) ────────────
-  { name: "Halloween", date: "10-31", region: "GLOBAL", adImpact: "high", category: "shopping", budgetMultiplier: 1.4, cpcChange: 20, leadTimeDays: 21, tips: ["Costumes, candy, decorations", "Horror-themed entertainment", "Pet costumes trending", "Party supplies surge"] },
-  { name: "Diwali", date: "11-01", region: "IN", adImpact: "critical", category: "gifts", budgetMultiplier: 2.0, cpcChange: 40, leadTimeDays: 21, tips: ["Massive gift-giving festival", "Gold, electronics, clothing", "Home renovation products", "Target Indian diaspora globally"] },
-  { name: "Singles' Day (11.11)", date: "11-11", region: "CN", adImpact: "critical", category: "shopping", budgetMultiplier: 2.0, cpcChange: 50, leadTimeDays: 14, tips: ["World's largest shopping day", "Alibaba ecosystem focus", "Growing global awareness", "Pre-Black Friday warm-up"] },
-  { name: "Thanksgiving", date: "11-27", region: "US", adImpact: "high", category: "food", budgetMultiplier: 1.4, cpcChange: 20, leadTimeDays: 7, tips: ["Food/grocery surge", "Travel bookings peak", "Decorations & tableware", "Gratitude-themed messaging"] },
-  { name: "Black Friday", date: "11-28", region: "GLOBAL", adImpact: "critical", category: "shopping", budgetMultiplier: 2.5, cpcChange: 60, leadTimeDays: 21, tips: ["HIGHEST CPCs of the year", "Start ads early — don't wait until the day", "Countdown timers boost conversions", "Mobile traffic dominates", "Retargeting audiences are gold"] },
-  { name: "Small Business Saturday", date: "11-29", region: "US", adImpact: "high", category: "shopping", budgetMultiplier: 1.5, cpcChange: 25, leadTimeDays: 7, tips: ["\"Shop Local\" messaging resonates", "Highlight owner stories", "Community-focused ads perform well"] },
-  { name: "Cyber Monday", date: "12-01", region: "GLOBAL", adImpact: "critical", category: "shopping", budgetMultiplier: 2.2, cpcChange: 55, leadTimeDays: 21, tips: ["Pure e-commerce focus", "Free shipping is expected", "Flash deals drive urgency", "Email + display retargeting critical"] },
-  { name: "Green Monday", date: "12-08", region: "US", adImpact: "high", category: "shopping", budgetMultiplier: 1.5, cpcChange: 25, leadTimeDays: 5, tips: ["Panic buying begins", "\"Guaranteed delivery by Christmas\"", "Gift card promotions work well"] },
-  { name: "Free Shipping Day", date: "12-14", region: "US", adImpact: "high", category: "shopping", budgetMultiplier: 1.4, cpcChange: 20, leadTimeDays: 3, tips: ["Offer free shipping or lose", "Last push before shipping cutoffs", "Express shipping upsells"] },
-  { name: "Hanukkah", date: "12-14", dateEnd: "12-22", region: "GLOBAL", adImpact: "medium", category: "gifts", budgetMultiplier: 1.3, cpcChange: 15, leadTimeDays: 7, tips: ["8-day gift-giving opportunity", "Don't only target Christmas", "Inclusive messaging important"] },
-  { name: "Christmas", date: "12-25", region: "GLOBAL", adImpact: "critical", category: "gifts", budgetMultiplier: 2.0, cpcChange: 45, leadTimeDays: 30, tips: ["THE biggest gift season", "Start ads in October/November", "Last-minute gift guides", "Gift card ads peak Dec 20-24", "Post-Christmas clearance Dec 26+"] },
-  { name: "Boxing Day", date: "12-26", region: "UK", adImpact: "high", category: "shopping", budgetMultiplier: 1.5, cpcChange: 25, leadTimeDays: 3, tips: ["Major clearance sales", "UK/AU/CA focus", "New Year prep shopping"] },
-  { name: "New Year's Eve", date: "12-31", region: "GLOBAL", adImpact: "medium", category: "food", budgetMultiplier: 1.2, cpcChange: 10, leadTimeDays: 5, tips: ["Party supplies", "Champagne/alcohol ads", "Event tickets", "Set up January campaigns NOW"] },
+  { name: "German Unity Day", date: "10-03", region: "DE", adImpact: "low", category: "cultural", budgetMultiplier: 1.0, cpcChange: 0, leadTimeDays: 3, tips: ["Bank holiday in Germany — B2B traffic drops, so adjust your bids accordingly"] },
+  { name: "Halloween", date: "10-31", region: "GLOBAL", adImpact: "high", category: "shopping", budgetMultiplier: 1.4, cpcChange: 20, leadTimeDays: 21, tips: ["Costumes, sweets, and decorations are the obvious winners", "Pet costumes have become genuinely huge — don't overlook that niche", "Party supplies and horror-themed entertainment see strong demand", "It's also the unofficial start of the holiday shopping mindset"] },
+  { name: "Thanksgiving", date: "11-27", region: "US", adImpact: "high", category: "food", budgetMultiplier: 1.4, cpcChange: 20, leadTimeDays: 7, tips: ["Food and grocery ads see a big spike", "Travel bookings also climb as families get together", "Gratitude-themed messaging tends to feel genuine and perform well"] },
+  { name: "Black Friday", date: "11-28", region: "GLOBAL", adImpact: "critical", category: "shopping", budgetMultiplier: 2.5, cpcChange: 60, leadTimeDays: 21, tips: ["This is where CPCs hit their absolute peak for the year — budget accordingly", "Start your ads before the day itself — the early birds get much cheaper clicks", "Countdown timers and scarcity messaging genuinely boost conversions", "Mobile traffic absolutely dominates on the day", "Your retargeting audiences from the previous weeks are worth their weight in gold"] },
+  { name: "Small Business Saturday", date: "11-29", region: "US", adImpact: "high", category: "shopping", budgetMultiplier: 1.5, cpcChange: 25, leadTimeDays: 7, tips: ["'Shop local' messaging resonates strongly", "Highlighting your story as a small business owner works really well", "Community-focused ads tend to outperform generic sale messaging"] },
+  { name: "Cyber Monday", date: "12-01", region: "GLOBAL", adImpact: "critical", category: "shopping", budgetMultiplier: 2.2, cpcChange: 55, leadTimeDays: 21, tips: ["Pure e-commerce day — if you sell online, this is your moment", "Free shipping isn't a nice-to-have, it's expected", "Flash deals and limited-time offers create genuine urgency", "Your email retargeting and display campaigns should be firing on all cylinders"] },
+  { name: "Green Monday", date: "12-08", region: "US", adImpact: "high", category: "shopping", budgetMultiplier: 1.5, cpcChange: 25, leadTimeDays: 5, tips: ["This is when the panic buying really kicks in", "'Guaranteed delivery by Christmas' is the messaging that converts", "Gift cards start to become a major category"] },
+  { name: "Lucia / Saint Lucy's Day", date: "12-13", region: "SE", adImpact: "medium", category: "cultural", budgetMultiplier: 1.1, cpcChange: 5, leadTimeDays: 5, tips: ["A beloved Swedish and Nordic tradition — candles and light products do well", "Good time for cosy, atmospheric product marketing in Nordic markets"] },
+  { name: "Free Shipping Day", date: "12-14", region: "US", adImpact: "high", category: "shopping", budgetMultiplier: 1.4, cpcChange: 20, leadTimeDays: 3, tips: ["If you aren't offering free shipping around this time, you're leaving money on the table", "Last real push before shipping cutoff dates", "Express shipping upsells can boost average order values nicely"] },
+  { name: "Hanukkah", date: "12-14", dateEnd: "12-22", region: "GLOBAL", adImpact: "medium", category: "gifts", budgetMultiplier: 1.3, cpcChange: 15, leadTimeDays: 7, tips: ["Eight-day gift-giving window — that's eight chances to convert", "Make sure your ad copy isn't exclusively Christmas-focused", "Inclusive holiday messaging shows you've thought about all your customers"] },
+  { name: "Christmas", date: "12-25", region: "GLOBAL", adImpact: "critical", category: "gifts", budgetMultiplier: 2.0, cpcChange: 45, leadTimeDays: 30, tips: ["The single biggest gifting period of the year — plan your budget well in advance", "If you haven't started your campaign by early November, you're already behind", "Last-minute gift guides get incredible engagement from Dec 15 onwards", "Gift card ads peak Dec 20-24 for the true last-minute shoppers", "Don't switch everything off on Dec 26 — post-Christmas clearance is a goldmine"] },
+  { name: "Boxing Day", date: "12-26", region: "UK", adImpact: "high", category: "shopping", budgetMultiplier: 1.5, cpcChange: 25, leadTimeDays: 3, tips: ["Massive clearance sales in the UK, Australia, and Canada", "Online shopping on Boxing Day has overtaken in-store in recent years", "People are already spending their Christmas money and gift cards"] },
+  { name: "New Year's Eve", date: "12-31", region: "GLOBAL", adImpact: "medium", category: "food", budgetMultiplier: 1.2, cpcChange: 10, leadTimeDays: 5, tips: ["Party supplies, drinks, and event tickets see a bump", "Use this quiet period to get your January campaigns ready to go", "Resolution-themed product ads can start gaining traction from Dec 28 onwards"] },
 
   // ─── Nordic Holidays ───────────────────────────────────────
-  { name: "Midsummer (Midsommar)", date: "06-21", region: "SE", adImpact: "high", category: "food", budgetMultiplier: 1.3, cpcChange: 15, leadTimeDays: 10, tips: ["Major celebration in Nordics", "Outdoor products and food", "Flower/garden items"] },
-  { name: "Lucia / Saint Lucy's Day", date: "12-13", region: "SE", adImpact: "medium", category: "cultural", budgetMultiplier: 1.1, cpcChange: 5, leadTimeDays: 5, tips: ["Candle/light products", "Swedish tradition — target Nordic markets"] },
+  { name: "Midsummer (Midsommar)", date: "06-21", region: "SE", adImpact: "high", category: "food", budgetMultiplier: 1.3, cpcChange: 15, leadTimeDays: 10, tips: ["One of the biggest celebrations in the Nordics — outdoor products and food do really well", "Flowers, garden items, and anything outdoors-related sees a spike", "B2B traffic tends to drop around Midsommar as everyone takes time off"] },
 
-  // ─── European Holidays ─────────────────────────────────────
-  { name: "Bastille Day", date: "07-14", region: "FR", adImpact: "medium", category: "cultural", budgetMultiplier: 1.2, cpcChange: 10, leadTimeDays: 5, tips: ["French market celebrations", "Travel/tourism ads to France"] },
-  { name: "German Unity Day", date: "10-03", region: "DE", adImpact: "low", category: "cultural", budgetMultiplier: 1.0, cpcChange: 0, leadTimeDays: 3, tips: ["Bank holiday — plan for reduced B2B traffic"] },
-  { name: "Koningsdag (King's Day)", date: "04-27", region: "NL", adImpact: "medium", category: "cultural", budgetMultiplier: 1.2, cpcChange: 10, leadTimeDays: 5, tips: ["Orange-themed products", "Outdoor festival in Netherlands"] },
+  // ─── Additional European ───────────────────────────────────
+  { name: "Epiphany / Three Kings", date: "01-06", region: "ES", adImpact: "high", category: "gifts", budgetMultiplier: 1.5, cpcChange: 20, leadTimeDays: 10, tips: ["In Spain this is actually a bigger gift-giving day than Christmas itself", "If you're targeting Spanish audiences, this is one not to miss"] },
 ];
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -149,52 +167,52 @@ const HOLIDAYS: Holiday[] = [
 
 const INDUSTRY_SEASONALITY: Record<string, Record<string, { demand: "high" | "medium" | "low"; tip: string }>> = {
   spring: {
-    "real-estate": { demand: "high", tip: "Peak home-buying season — increase budgets 30-50%" },
-    "landscaping": { demand: "high", tip: "Spring cleanup + new projects = highest demand" },
-    "fitness": { demand: "high", tip: "Post-winter motivation surge, outdoor fitness trending" },
-    "wedding": { demand: "high", tip: "Wedding season begins — engagement ads critical" },
-    "hvac": { demand: "medium", tip: "AC tune-up season starting, preventive maintenance ads" },
-    "cleaning": { demand: "high", tip: "Spring cleaning — your #1 season, max budget" },
-    "solar": { demand: "high", tip: "Longer days = more solar interest, installation bookings" },
-    "automotive": { demand: "medium", tip: "Post-winter service needs, tire changes" },
-    "ecommerce": { demand: "medium", tip: "Easter shopping + spring fashion launches" },
-    "travel": { demand: "high", tip: "Summer vacation planning peaks in spring" },
+    "real-estate": { demand: "high", tip: "This is when house-hunting really kicks off — it's worth bumping your budgets 30-50%" },
+    "landscaping": { demand: "high", tip: "Everyone's looking at their garden after winter — this is your busiest time" },
+    "fitness": { demand: "high", tip: "People are shaking off the winter cobwebs and getting outdoors — ride that wave" },
+    "wedding": { demand: "high", tip: "Wedding season is ramping up fast — engagement and venue ads are essential right now" },
+    "hvac": { demand: "medium", tip: "AC tune-up season is getting going — preventive maintenance messaging works well" },
+    "cleaning": { demand: "high", tip: "Spring cleaning is your golden moment — go as hard as your budget allows" },
+    "solar": { demand: "high", tip: "Longer days mean more people thinking about solar — installation interest spikes" },
+    "automotive": { demand: "medium", tip: "Post-winter service demand picks up — tyre changes, scratch repairs, the usual" },
+    "ecommerce": { demand: "medium", tip: "Easter shopping plus spring fashion launches keep things ticking over nicely" },
+    "travel": { demand: "high", tip: "This is when everyone books their summer holidays — get your ads in front of them early" },
   },
   summer: {
-    "travel": { demand: "high", tip: "Peak travel season — bid aggressively on destination keywords" },
-    "hvac": { demand: "high", tip: "AC breakdowns = urgent leads, emergency keywords critical" },
-    "pest-control": { demand: "high", tip: "Bug season peak — max budget on pest control terms" },
-    "landscaping": { demand: "high", tip: "Maintenance contracts, outdoor living projects" },
-    "pool": { demand: "high", tip: "Pool service demand peaks" },
-    "restaurant": { demand: "high", tip: "Outdoor dining, tourism boost, delivery services" },
-    "moving": { demand: "high", tip: "#1 moving season — June/July peak, families relocating" },
-    "real-estate": { demand: "high", tip: "Peak showings before school starts" },
-    "ecommerce": { demand: "medium", tip: "Back to school ramps up in July/August" },
-    "automotive": { demand: "medium", tip: "Road trip prep, tire/AC service ads" },
+    "travel": { demand: "high", tip: "Peak travel season — bid confidently on destination keywords, the intent is there" },
+    "hvac": { demand: "high", tip: "When the AC breaks in a heatwave, people will pay anything — emergency keywords are gold" },
+    "pest-control": { demand: "high", tip: "Bug season at its worst — your budget should be at its highest" },
+    "landscaping": { demand: "high", tip: "Maintenance contracts and outdoor living projects keep demand really strong" },
+    "pool": { demand: "high", tip: "Pool service demand is at its peak — this is your time to shine" },
+    "restaurant": { demand: "high", tip: "Outdoor dining, tourism, and delivery services all push demand up" },
+    "moving": { demand: "high", tip: "June and July are peak moving months — families want to relocate before school starts" },
+    "real-estate": { demand: "high", tip: "Everyone wants to move before the school year starts — showings are at their busiest" },
+    "ecommerce": { demand: "medium", tip: "Back to school shopping starts earlier than you'd think — July is when it ramps" },
+    "automotive": { demand: "medium", tip: "Road trip prep drives tyre, AC, and service bookings" },
   },
   fall: {
-    "ecommerce": { demand: "high", tip: "Q4 prep critical — Black Friday/Cyber Monday planning" },
-    "automotive": { demand: "high", tip: "New model year launches, winter prep services" },
-    "hvac": { demand: "high", tip: "Furnace tune-ups, heating season prep" },
-    "plumber": { demand: "medium", tip: "Pre-winter pipe checks, water heater services" },
-    "education": { demand: "high", tip: "Back to school, enrollment drives, tutoring demand" },
-    "roofing": { demand: "high", tip: "Pre-winter roof repairs, gutter cleaning" },
-    "insurance": { demand: "high", tip: "Open enrollment season — health insurance ads" },
-    "fashion": { demand: "high", tip: "Fall fashion launches, holiday pre-shopping" },
-    "fitness": { demand: "medium", tip: "Post-summer slump briefly, then New Year prep" },
-    "restaurant": { demand: "medium", tip: "Holiday catering inquiries begin" },
+    "ecommerce": { demand: "high", tip: "Q4 planning is critical — if you're not prepping for Black Friday and Christmas now, you're already late" },
+    "automotive": { demand: "high", tip: "New model year launches and winter-prep services drive strong demand" },
+    "hvac": { demand: "high", tip: "Heating system tune-ups are on everyone's mind before winter hits" },
+    "plumber": { demand: "medium", tip: "Pre-winter pipe checks and water heater servicing pick up" },
+    "education": { demand: "high", tip: "Back to school, enrolment drives, and tutoring demand are all strong" },
+    "roofing": { demand: "high", tip: "Nobody wants to discover a roof leak in January — pre-winter repairs are big business" },
+    "insurance": { demand: "high", tip: "Open enrolment season means health insurance searches spike" },
+    "fashion": { demand: "high", tip: "Autumn collections launch and early holiday shopping begins" },
+    "fitness": { demand: "medium", tip: "Slight post-summer dip, but New Year prep marketing starts working surprisingly early" },
+    "restaurant": { demand: "medium", tip: "Holiday catering enquiries start coming in — get ahead of the competition" },
   },
   winter: {
-    "ecommerce": { demand: "high", tip: "Holiday shopping frenzy — spend peaks Nov-Dec" },
-    "heating": { demand: "high", tip: "Emergency heating repairs = highest CPC willingness" },
-    "plumber": { demand: "high", tip: "Frozen pipes, water heater failures, emergency calls" },
-    "fitness": { demand: "high", tip: "New Year resolution surge — gym memberships peak Jan 1-15" },
-    "tax-prep": { demand: "high", tip: "Tax season approaching — CPA/accounting ads ramp" },
-    "travel": { demand: "medium", tip: "Winter vacation, ski resorts, spring break planning" },
-    "automotive": { demand: "medium", tip: "Winter tires, battery replacements, cold-weather service" },
-    "restaurant": { demand: "high", tip: "Holiday parties, catering, New Year's Eve events" },
-    "jewelry": { demand: "high", tip: "Gift-giving peak — Christmas + Valentine's Day prep" },
-    "fashion": { demand: "high", tip: "Winter clothing, holiday outfits, gift purchases" },
+    "ecommerce": { demand: "high", tip: "The holiday shopping frenzy peaks Nov-Dec — this is where the year's profits are made" },
+    "heating": { demand: "high", tip: "Emergency heating repairs have the highest CPC tolerance of almost any service — people will pay" },
+    "plumber": { demand: "high", tip: "Frozen pipes and water heater failures create urgent demand — emergency keywords convert like crazy" },
+    "fitness": { demand: "high", tip: "New Year's resolution surge — gym membership ads peak in the first two weeks of January" },
+    "tax-prep": { demand: "high", tip: "Tax season is approaching — CPA and accounting firms should be ramping up now" },
+    "travel": { demand: "medium", tip: "Ski holidays, winter sun getaways, and early spring break planning all generate demand" },
+    "automotive": { demand: "medium", tip: "Winter tyres, battery replacements, and cold-weather servicing drive steady business" },
+    "restaurant": { demand: "high", tip: "Holiday parties, catering orders, and New Year's Eve events keep things buzzing" },
+    "jewelry": { demand: "high", tip: "Christmas gifting plus Valentine's Day prep make this your strongest quarter" },
+    "fashion": { demand: "high", tip: "Winter clothing, party outfits, and gift purchases all drive demand" },
   },
 };
 
@@ -576,7 +594,7 @@ export function getUpcomingHolidays(fromDate: Date = new Date(), daysAhead: numb
     const diffDays = Math.ceil((holidayDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
     if (diffDays <= daysAhead && diffDays >= 0) {
-      if (!regions || regions.includes(h.region) || h.region === "GLOBAL") {
+      if (!regions || regions.includes(h.region)) {
         results.push(h);
       }
     }
@@ -598,7 +616,7 @@ export function getActiveHolidays(date: Date = new Date(), regions?: string[]): 
   const today = `${mm}-${dd}`;
 
   return HOLIDAYS.filter(h => {
-    if (!regions || regions.includes(h.region) || h.region === "GLOBAL") {
+    if (!regions || regions.includes(h.region)) {
       if (h.dateEnd) {
         return today >= h.date && today <= h.dateEnd;
       }
@@ -719,36 +737,36 @@ export function getDeviceContext(hour?: number, industry?: string): DeviceContex
     if (b2bIndustries.includes(industry)) {
       adjustments.desktop += 15;
       adjustments.mobile -= 10;
-      tips.push("B2B industry: desktop traffic converts 2-3x better during business hours");
+      tips.push("For B2B, desktop traffic tends to convert 2-3x better during working hours — worth prioritising");
     }
 
     // Local services: mobile dominates (people search on-the-go)
     const localServices = ["plumber", "electrician", "hvac", "pest-control", "cleaning", "locksmith", "towing"];
     if (localServices.includes(industry)) {
       adjustments.mobile += 20;
-      tips.push("Local service: 70%+ of searches are mobile — prioritize click-to-call ads");
-      tips.push("Enable location extensions for mobile users nearby");
+      tips.push("Over 70% of local service searches happen on mobile — click-to-call ads are your best friend");
+      tips.push("Location extensions make a real difference for nearby mobile searchers");
     }
 
     // E-commerce: tablet converts best in evening (couch shopping)
     const ecomIndustries = ["ecommerce", "fashion", "jewelry", "retail"];
     if (ecomIndustries.includes(industry) && h >= 19) {
       adjustments.tablet += 15;
-      tips.push("E-commerce evening: tablet users browse and buy — boost tablet bids after 7 PM");
+      tips.push("Evening tablet browsing is big for e-commerce — people shop from the sofa after dinner");
     }
 
     // Restaurants: mobile peak during lunch/dinner
     if (industry === "restaurant" && (h === 11 || h === 12 || h === 17 || h === 18)) {
       adjustments.mobile += 25;
-      tips.push("Peak dining search hour — maximize mobile bids for nearby searchers");
+      tips.push("This is prime time for 'restaurants near me' searches — make sure your mobile bids are strong");
     }
   }
 
   const reasoning = h >= 9 && h <= 16
-    ? "Business hours: desktop users are at work, higher intent for B2B, research-heavy purchases"
+    ? "During the working day, people are mostly on their desktops — especially for research and B2B purchases"
     : h >= 17 && h <= 22
-    ? "Evening hours: mobile & tablet dominate as people browse from home, couches, commute"
-    : "Off-peak hours: mobile dominates, lower competition = lower CPCs, good for awareness campaigns";
+    ? "In the evenings, people switch to their phones and tablets as they browse from home — it's peak couch-shopping time"
+    : "Late night and early morning traffic is mostly mobile. Competition is lighter, so CPCs tend to be lower — good for awareness campaigns";
 
   return {
     recommendedBidAdjustments: adjustments,
@@ -756,9 +774,9 @@ export function getDeviceContext(hour?: number, industry?: string): DeviceContex
     reasoning,
     tips: [
       ...tips,
-      `Current peak device: ${pattern.peakDevice} (${h}:00 local time)`,
-      `Suggested mobile bid adjustment: ${adjustments.mobile > 0 ? "+" : ""}${adjustments.mobile}%`,
-      `Suggested desktop bid adjustment: ${adjustments.desktop > 0 ? "+" : ""}${adjustments.desktop}%`,
+      `Right now (${h}:00 local), ${pattern.peakDevice} is the dominant device`,
+      `We'd suggest a ${adjustments.mobile > 0 ? "+" : ""}${adjustments.mobile}% mobile bid adjustment`,
+      `Desktop bid adjustment: ${adjustments.desktop > 0 ? "+" : ""}${adjustments.desktop}%`,
     ],
   };
 }
@@ -805,25 +823,25 @@ export function getClimateContext(countryCode: string = "US", date: Date = new D
 
   const recommendations: string[] = [];
   if (climateKey === "hot-summer") {
-    recommendations.push("Promote cooling products, outdoor equipment, and summer fashion");
-    recommendations.push("Schedule ads during evening hours when people plan outdoor activities");
-    recommendations.push("Use summer imagery in display ads — beaches, sunshine, cool drinks");
+    recommendations.push("Summer's here — cooling products, outdoor gear, and swimwear are what people are searching for");
+    recommendations.push("Evening hours tend to work better for ads right now, since that's when people plan their outdoor activities");
+    recommendations.push("Bright, summery imagery in your display ads makes a noticeable difference to engagement");
   } else if (climateKey === "cold-winter") {
-    recommendations.push("Promote warm clothing, indoor entertainment, and comfort products");
-    recommendations.push("Highlight quick delivery — nobody wants to go out in bad weather");
-    recommendations.push("New Year's resolution products start trending in late December");
+    recommendations.push("When it's cold outside, people want comfort — warm clothing, indoor entertainment, and cosy home products");
+    recommendations.push("Fast delivery messaging hits harder in winter — nobody wants to trek to the shops in bad weather");
+    recommendations.push("Keep an eye out for resolution-themed product searches, they start picking up from late December");
   } else if (climateKey === "rainy") {
-    recommendations.push("Emphasize indoor activities and home delivery");
-    recommendations.push("Rainy weather = more online browsing time — increase display ad budgets");
-    recommendations.push("\"Stay cozy\" messaging resonates during rainy seasons");
+    recommendations.push("Rainy weather means more time indoors browsing online — it's a good time to increase your display budgets");
+    recommendations.push("Indoor activities, home delivery, and 'stay cosy' messaging all tend to resonate");
+    recommendations.push("People are more likely to impulse-buy when they're stuck at home — make your offers compelling");
   } else if (climateKey === "spring-mild") {
-    recommendations.push("Spring renewal messaging — new beginnings, fresh starts");
-    recommendations.push("Outdoor activity products see demand surge");
-    recommendations.push("Allergy season: health & wellness products spike");
+    recommendations.push("Spring is all about fresh starts — lean into renewal and 'new beginning' messaging");
+    recommendations.push("Outdoor activity products see a real surge as the weather improves");
+    recommendations.push("Don't forget allergy season — health and wellness searches spike around this time");
   } else {
-    recommendations.push("Transition season — promote seasonal changeover products");
-    recommendations.push("Early holiday prep messaging starts resonating");
-    recommendations.push("Comfort products and indoor activities gain interest");
+    recommendations.push("We're in a transition season — products that help people gear up for what's coming next tend to do well");
+    recommendations.push("Early holiday prep messaging starts landing surprisingly well at this point");
+    recommendations.push("Comfort products and indoor activities are picking up interest");
   }
 
   return {
@@ -843,7 +861,7 @@ export function getFullContext(
   industry?: string,
   date: Date = new Date(),
 ): FullContext {
-  const regions = [countryCode, "GLOBAL"];
+  const regions = REGION_GROUPS[countryCode] || [countryCode, "GLOBAL"];
   const upcoming = getUpcomingHolidays(date, 60, regions);
   const active = getActiveHolidays(date, regions);
   const seasonal = getSeasonalContext(date, countryCode);
@@ -862,42 +880,69 @@ export function getFullContext(
     daysUntilNextMajor = Math.ceil((hDate.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
   }
 
-  // Build action items
+  // Build action items — written in a natural, conversational tone
   const actionItems: string[] = [];
 
   if (active.length > 0) {
     active.forEach(h => {
-      actionItems.push(`🎯 ${h.name} is active — increase budget ${Math.round((h.budgetMultiplier - 1) * 100)}%, expect +${h.cpcChange}% CPCs`);
-      h.tips.forEach(t => actionItems.push(`  → ${t}`));
+      const budgetBump = Math.round((h.budgetMultiplier - 1) * 100);
+      actionItems.push(`${h.name} is happening right now — you'll want to increase your budget by around ${budgetBump}%. Competition drives CPCs up roughly ${h.cpcChange}% during this period.`);
+      if (h.tips.length > 0) {
+        actionItems.push(`  Tip: ${h.tips[0]}`);
+      }
     });
   }
 
   if (nextMajor && daysUntilNextMajor <= nextMajor.leadTimeDays) {
-    actionItems.push(`📅 ${nextMajor.name} in ${daysUntilNextMajor} days — start ramping ads NOW (recommended budget: ${nextMajor.budgetMultiplier}x normal)`);
+    actionItems.push(`${nextMajor.name} is ${daysUntilNextMajor} days away — now's the time to start ramping up your ads. We'd recommend budgeting around ${nextMajor.budgetMultiplier}x your normal spend.`);
   }
 
   if (industry && seasonal.industries[industry]) {
     const ind = seasonal.industries[industry];
-    actionItems.push(`📊 ${industry} demand is ${ind.demand} this ${seasonal.season}: ${ind.tip}`);
+    if (ind.demand === "high") {
+      actionItems.push(`Your industry is in peak season right now. ${ind.tip}`);
+    } else {
+      actionItems.push(`For ${industry.replace(/-/g, " ")} this ${seasonal.season}, demand is ${ind.demand}. ${ind.tip}`);
+    }
   }
 
   if (!geo.isWorkingHours) {
-    actionItems.push(`⏰ Off-peak hours (${geo.localHour}:00 in ${geo.timezone}) — consider ${geo.offPeakDiscount}% bid reduction to save budget`);
+    actionItems.push(`It's ${geo.localHour}:00 in your timezone — outside of peak hours. You could save around ${geo.offPeakDiscount}% by reducing bids during this quieter period.`);
   }
 
-  device.tips.forEach(t => actionItems.push(`📱 ${t}`));
-  climate.recommendations.slice(0, 2).forEach(r => actionItems.push(`🌤️ ${r}`));
+  // Include a couple of device and climate tips — but keep them conversational
+  if (device.tips.length > 0) {
+    actionItems.push(device.tips[0]);
+  }
+  if (climate.recommendations.length > 0) {
+    actionItems.push(climate.recommendations[0]);
+  }
 
-  // AI Summary
-  const aiSummary = [
-    `It's ${seasonal.season} in the ${seasonal.hemisphere} hemisphere (${seasonal.retailSeason}).`,
-    active.length > 0 ? `Active holiday periods: ${active.map(h => h.name).join(", ")}.` : "",
-    nextMajor ? `Next major event: ${nextMajor.name} in ${daysUntilNextMajor} days.` : "",
-    `Current demand trend: ${seasonal.demandTrend}.`,
-    `Peak device right now: ${device.currentPeakDevice}.`,
-    `Climate: ${climate.season}.`,
-    industry && seasonal.industries[industry] ? `Your industry (${industry}) demand is ${seasonal.industries[industry].demand}.` : "",
-  ].filter(Boolean).join(" ");
+  // AI Summary — written like a knowledgeable colleague giving you a quick briefing
+  const seasonNice = seasonal.season.charAt(0).toUpperCase() + seasonal.season.slice(1);
+  const trendDescription: Record<string, string> = {
+    peak: "demand is at its peak",
+    rising: "demand is on the way up",
+    declining: "things are quietening down a bit",
+    low: "it's a steadier period — good for testing and optimising",
+  };
+
+  const summaryParts = [
+    `It's ${seasonNice} and we're in ${seasonal.retailSeason}.`,
+    active.length > 0
+      ? `Right now, ${active.map(h => h.name).join(" and ")} ${active.length === 1 ? "is" : "are"} in full swing — worth paying attention to.`
+      : "",
+    nextMajor && daysUntilNextMajor <= 30
+      ? `${nextMajor.name} is coming up in ${daysUntilNextMajor} days, so it's a good time to start preparing.`
+      : "",
+    `Overall, ${trendDescription[seasonal.demandTrend] || "demand is steady"}.`,
+    `${device.currentPeakDevice.charAt(0).toUpperCase() + device.currentPeakDevice.slice(1)} is the dominant device right now.`,
+    industry && seasonal.industries[industry]
+      ? `For ${industry.replace(/-/g, " ")}, demand is looking ${seasonal.industries[industry].demand} this season.`
+      : "",
+  ];
+
+  const aiSummary = summaryParts.filter(Boolean).join(" ");
 
   return {
     timestamp: date.toISOString(),

@@ -165,8 +165,8 @@ export default function IntelligencePage() {
       <div className="flex items-center justify-center py-24">
         <div className="text-center">
           <Brain className="w-12 h-12 text-primary animate-pulse mx-auto mb-4" />
-          <h2 className="text-lg font-semibold mb-2">Loading Intelligence Engine...</h2>
-          <p className="text-sm text-muted">Analyzing all connected platforms, seasonal context, and market conditions</p>
+          <h2 className="text-lg font-semibold mb-2">Pulling everything together...</h2>
+          <p className="text-sm text-muted">Just crunching the numbers across your platforms, taking a look at what's happening in the market</p>
         </div>
       </div>
     );
@@ -177,7 +177,7 @@ export default function IntelligencePage() {
       <div className="max-w-4xl mx-auto py-12">
         <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
           <AlertTriangle className="w-8 h-8 text-red-500 mx-auto mb-3" />
-          <h2 className="font-semibold text-red-700 mb-2">Intelligence Engine Error</h2>
+          <h2 className="font-semibold text-red-700 mb-2">Something went wrong</h2>
           <p className="text-sm text-red-600 mb-4">{error}</p>
           <button onClick={fetchData} className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700 transition">
             Retry
@@ -202,9 +202,9 @@ export default function IntelligencePage() {
               <Brain className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">Intelligence Command Center</h1>
+              <h1 className="text-2xl font-bold">Intelligence</h1>
               <p className="text-muted text-sm mt-0.5">
-                AI-powered cross-platform insights — holiday, seasonal, device, geo & climate aware
+                Everything you need to know about what's happening across your ad platforms right now
               </p>
             </div>
           </div>
@@ -227,7 +227,7 @@ export default function IntelligencePage() {
             <Sparkles className="w-5 h-5 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="font-semibold mb-1">AI Intelligence Summary</h2>
+            <h2 className="font-semibold mb-1">Here's what's happening</h2>
             <p className="text-sm text-muted leading-relaxed">{data.aiInsights.summary}</p>
             {data.aiInsights.warnings.length > 0 && (
               <div className="mt-3 space-y-1">
@@ -247,10 +247,10 @@ export default function IntelligencePage() {
       <div className="flex items-center gap-1 bg-card border border-border rounded-xl p-1 overflow-x-auto">
         {[
           { key: "overview" as const, label: "Overview", icon: <BarChart3 className="w-4 h-4" /> },
-          { key: "holidays" as const, label: "Holidays & Events", icon: <Gift className="w-4 h-4" /> },
-          { key: "devices" as const, label: "Device Intelligence", icon: <Smartphone className="w-4 h-4" /> },
-          { key: "climate" as const, label: "Climate & Seasonal", icon: <ThermometerSun className="w-4 h-4" /> },
-          { key: "platforms" as const, label: "Platform Status", icon: <Layers className="w-4 h-4" /> },
+          { key: "holidays" as const, label: "Upcoming Events", icon: <Gift className="w-4 h-4" /> },
+          { key: "devices" as const, label: "Devices", icon: <Smartphone className="w-4 h-4" /> },
+          { key: "climate" as const, label: "Seasonal", icon: <ThermometerSun className="w-4 h-4" /> },
+          { key: "platforms" as const, label: "Platforms", icon: <Layers className="w-4 h-4" /> },
         ].map(tab => (
           <button key={tab.key} onClick={() => setActiveTab(tab.key)}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition whitespace-nowrap ${
@@ -280,10 +280,10 @@ function OverviewTab({ data }: { data: IntelligenceData }) {
     <div className="space-y-6">
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard icon={<DollarSign className="w-5 h-5" />} label="Total Ad Spend" value={`$${data.crossPlatform.totalAdSpend.toFixed(2)}`} subtitle="Across all platforms" color="text-primary" />
-        <KPICard icon={<Target className="w-5 h-5" />} label="Total Conversions" value={String(data.crossPlatform.totalConversions)} subtitle="Cross-platform" color="text-green-600" />
-        <KPICard icon={<TrendingUp className="w-5 h-5" />} label="Overall ROAS" value={`${data.crossPlatform.overallROAS.toFixed(1)}x`} subtitle="Revenue / ad spend" color="text-accent" />
-        <KPICard icon={<Wifi className="w-5 h-5" />} label="Connected Platforms" value={`${data.platforms.filter(p => p.connected).length}`} subtitle={`of ${data.platforms.length} available`} color="text-blue-600" />
+        <KPICard icon={<DollarSign className="w-5 h-5" />} label="Ad Spend" value={`$${data.crossPlatform.totalAdSpend.toFixed(2)}`} subtitle="Across all platforms" color="text-primary" />
+        <KPICard icon={<Target className="w-5 h-5" />} label="Conversions" value={String(data.crossPlatform.totalConversions)} subtitle="All platforms combined" color="text-green-600" />
+        <KPICard icon={<TrendingUp className="w-5 h-5" />} label="ROAS" value={`${data.crossPlatform.overallROAS.toFixed(1)}x`} subtitle="Return on ad spend" color="text-accent" />
+        <KPICard icon={<Wifi className="w-5 h-5" />} label="Platforms" value={`${data.platforms.filter(p => p.connected).length}`} subtitle={`of ${data.platforms.length} connected`} color="text-blue-600" />
       </div>
 
       {/* Two column: Action Items + Seasonal Context */}
@@ -292,11 +292,11 @@ function OverviewTab({ data }: { data: IntelligenceData }) {
         <div className="bg-card border border-border rounded-xl p-6">
           <div className="flex items-center gap-2 mb-4">
             <Zap className="w-5 h-5 text-primary" />
-            <h2 className="font-semibold">Priority Action Items</h2>
+            <h2 className="font-semibold">Things worth your attention</h2>
           </div>
           <div className="space-y-3">
             {data.aiInsights.actionItems.length === 0 && (
-              <p className="text-sm text-muted">No urgent actions — your campaigns are running smoothly!</p>
+              <p className="text-sm text-muted">Nothing urgent right now — your campaigns are ticking along nicely.</p>
             )}
             {data.aiInsights.actionItems.slice(0, 6).map((item, i) => (
               <div key={i} className={`border rounded-lg p-3 ${PRIORITY_COLORS[item.priority]}`}>
@@ -318,7 +318,7 @@ function OverviewTab({ data }: { data: IntelligenceData }) {
         <div className="bg-card border border-border rounded-xl p-6">
           <div className="flex items-center gap-2 mb-4">
             {SEASON_ICONS[ctx.seasonal.season] || <Calendar className="w-5 h-5" />}
-            <h2 className="font-semibold">Seasonal Context</h2>
+            <h2 className="font-semibold">What's in season</h2>
           </div>
           <div className="space-y-4">
             <div className="flex items-center justify-between text-sm">
@@ -392,7 +392,7 @@ function OverviewTab({ data }: { data: IntelligenceData }) {
         <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6">
           <div className="flex items-center gap-2 mb-4">
             <Sparkles className="w-5 h-5 text-green-600" />
-            <h2 className="font-semibold text-green-800">Growth Opportunities</h2>
+            <h2 className="font-semibold text-green-800">Opportunities worth exploring</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {data.aiInsights.opportunities.map((opp, i) => (
@@ -410,7 +410,7 @@ function OverviewTab({ data }: { data: IntelligenceData }) {
         <div className="bg-card border border-border rounded-xl p-6">
           <div className="flex items-center gap-2 mb-4">
             <PieChart className="w-5 h-5 text-primary" />
-            <h2 className="font-semibold">Recommended Budget Allocation</h2>
+            <h2 className="font-semibold">Where we'd put the budget</h2>
           </div>
           <div className="space-y-3">
             {data.crossPlatform.budgetAllocation.map((alloc, i) => {
@@ -451,7 +451,7 @@ function HolidaysTab({ data }: { data: IntelligenceData }) {
         <div className="bg-red-50 border border-red-200 rounded-xl p-6">
           <div className="flex items-center gap-2 mb-4">
             <Zap className="w-5 h-5 text-red-600" />
-            <h2 className="font-semibold text-red-800">Active Holiday Periods — Act NOW</h2>
+            <h2 className="font-semibold text-red-800">These are happening right now — don't miss them</h2>
           </div>
           <div className="space-y-4">
             {holidays.active.map((h, i) => (
@@ -465,10 +465,10 @@ function HolidaysTab({ data }: { data: IntelligenceData }) {
       <div className="bg-card border border-border rounded-xl p-6">
         <div className="flex items-center gap-2 mb-4">
           <Calendar className="w-5 h-5 text-primary" />
-          <h2 className="font-semibold">Upcoming Events (Next 60 Days)</h2>
+          <h2 className="font-semibold">Coming up in the next 60 days</h2>
         </div>
         {holidays.upcoming.length === 0 ? (
-          <p className="text-sm text-muted">No major events in the next 60 days — steady-state optimization period.</p>
+          <p className="text-sm text-muted">No big events on the horizon for the next couple of months — a good time to focus on steady-state optimisation.</p>
         ) : (
           <div className="space-y-4">
             {holidays.upcoming.map((h, i) => (
@@ -559,7 +559,7 @@ function DevicesTab({ data }: { data: IntelligenceData }) {
       <div className="bg-card border border-border rounded-xl p-6">
         <div className="flex items-center gap-2 mb-4">
           {deviceIcon(device.currentPeakDevice)}
-          <h2 className="font-semibold">Current Device Intelligence</h2>
+          <h2 className="font-semibold">Device breakdown right now</h2>
           <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
             Right now ({data.context.geo.localHour}:00 local)
           </span>
@@ -591,7 +591,7 @@ function DevicesTab({ data }: { data: IntelligenceData }) {
 
       {/* Device Tips */}
       <div className="bg-card border border-border rounded-xl p-6">
-        <h2 className="font-semibold mb-4">Device Optimization Tips</h2>
+        <h2 className="font-semibold mb-4">Tips for getting more from your device targeting</h2>
         <div className="space-y-2">
           {device.tips.map((tip, i) => (
             <div key={i} className="flex items-start gap-2 text-sm">
@@ -604,8 +604,8 @@ function DevicesTab({ data }: { data: IntelligenceData }) {
 
       {/* Hourly heatmap */}
       <div className="bg-card border border-border rounded-xl p-6">
-        <h2 className="font-semibold mb-4">24-Hour Device Performance Map</h2>
-        <p className="text-sm text-muted mb-4">Shows which device dominates each hour — adjust your bid schedules accordingly</p>
+        <h2 className="font-semibold mb-4">When each device dominates</h2>
+        <p className="text-sm text-muted mb-4">A quick look at which device type leads traffic each hour — handy for setting up bid schedules</p>
         <div className="grid grid-cols-12 gap-1">
           {Array.from({ length: 24 }, (_, h) => {
             const isMorning = h >= 5 && h <= 8;
@@ -650,7 +650,7 @@ function ClimateTab({ data }: { data: IntelligenceData }) {
       <div className="bg-card border border-border rounded-xl p-6">
         <div className="flex items-center gap-2 mb-4">
           {SEASON_ICONS[seasonal.season] || <ThermometerSun className="w-5 h-5" />}
-          <h2 className="font-semibold">Climate & Seasonal Intelligence</h2>
+          <h2 className="font-semibold">What the season means for your ads</h2>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="text-center p-3 bg-muted/20 rounded-lg">
@@ -676,7 +676,7 @@ function ClimateTab({ data }: { data: IntelligenceData }) {
         </div>
 
         {/* Recommendations */}
-        <h3 className="text-sm font-semibold mb-3">Climate-Driven Recommendations</h3>
+        <h3 className="text-sm font-semibold mb-3">What we'd recommend right now</h3>
         <div className="space-y-2">
           {climate.recommendations.map((rec, i) => (
             <div key={i} className="flex items-start gap-2 text-sm">
@@ -689,8 +689,8 @@ function ClimateTab({ data }: { data: IntelligenceData }) {
 
       {/* Weather-sensitive products */}
       <div className="bg-card border border-border rounded-xl p-6">
-        <h2 className="font-semibold mb-4">Trending Product Categories (Weather-Driven)</h2>
-        <p className="text-sm text-muted mb-4">Products that typically see increased demand in the current climate conditions:</p>
+        <h2 className="font-semibold mb-4">Products people are looking for right now</h2>
+        <p className="text-sm text-muted mb-4">These categories typically see a bump in demand given the current weather and season:</p>
         <div className="flex flex-wrap gap-2">
           {climate.weatherSensitiveCategories.map((cat, i) => (
             <span key={i} className="px-3 py-1.5 bg-primary/10 text-primary rounded-full text-sm font-medium">
@@ -733,9 +733,9 @@ function PlatformsTab({ data }: { data: IntelligenceData }) {
   return (
     <div className="space-y-4">
       <div className="bg-card border border-border rounded-xl p-6">
-        <h2 className="font-semibold mb-4">Platform Connection Status</h2>
+        <h2 className="font-semibold mb-4">Your platforms</h2>
         <p className="text-sm text-muted mb-6">
-          Connect more platforms to unlock cross-channel intelligence, budget optimization, and unified reporting.
+          The more platforms you connect, the better we can help you optimise across channels and make smarter budget decisions.
         </p>
         <div className="space-y-3">
           {data.platforms.map((p, i) => {
@@ -779,7 +779,7 @@ function PlatformsTab({ data }: { data: IntelligenceData }) {
       <div className="bg-card border border-border rounded-xl p-6">
         <div className="flex items-center gap-2 mb-4">
           <MapPin className="w-5 h-5 text-primary" />
-          <h2 className="font-semibold">Geo Intelligence</h2>
+          <h2 className="font-semibold">Your location context</h2>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div>
@@ -804,7 +804,7 @@ function PlatformsTab({ data }: { data: IntelligenceData }) {
         {!data.context.geo.isWorkingHours && (
           <div className="mt-4 bg-orange-50 rounded-lg p-3 text-sm text-orange-700">
             <Clock className="w-4 h-4 inline mr-1" />
-            Off-peak hours detected — consider reducing bids by {data.context.geo.offPeakDiscount}% to save budget
+            Off-peak hours right now — you could save around {data.context.geo.offPeakDiscount}% by lowering bids during this quieter window
           </div>
         )}
       </div>

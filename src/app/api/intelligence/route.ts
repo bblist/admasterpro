@@ -174,12 +174,12 @@ function buildCrossPlatformIntel(platforms: PlatformData[], context: FullContext
       current: 0,
       recommended: rec,
       reason: p.platform === "google_ads"
-        ? "High-intent search traffic converts best for most businesses"
+        ? "Search ads catch people when they're actively looking — usually your best-converting channel"
         : p.platform === "meta_ads"
-        ? "Strong for awareness and retargeting with visual creative"
+        ? "Great for brand awareness and retargeting with visual creative"
         : p.platform === "amazon_ads"
-        ? "Bottom-of-funnel shoppers with purchase intent"
-        : "Diversification and testing new channels",
+        ? "Shoppers on Amazon are ready to buy — high purchase intent"
+        : "Worth testing to diversify and find new audiences",
     };
   });
 
@@ -205,12 +205,12 @@ function buildAIInsights(platforms: PlatformData[], context: FullContext, indust
   const opportunities: string[] = [];
   const warnings: string[] = [];
 
-  // Context-based action items
+  // Context-based action items — strip any leftover emoji prefixes
   context.actionItems.forEach((item, i) => {
     actionItems.push({
       priority: i < 2 ? "high" : "medium",
       action: item.replace(/^[🎯📅📊⏰📱🌤️]\s*/, ""),
-      impact: "Context-driven optimization",
+      impact: "Based on current market and seasonal conditions",
       platform: "all",
     });
   });
@@ -220,7 +220,7 @@ function buildAIInsights(platforms: PlatformData[], context: FullContext, indust
     disconnected.forEach(p => {
       const req = PLATFORM_REQUIREMENTS.find(r => r.platform === p.platform);
       if (req) {
-        opportunities.push(`Connect ${req.displayName} (${req.setupTime} setup) to unlock: ${req.features.slice(0, 2).join(", ")}`);
+        opportunities.push(`Connecting ${req.displayName} (takes about ${req.setupTime}) would unlock ${req.features.slice(0, 2).join(" and ")}`);
       }
     });
   }
@@ -230,8 +230,8 @@ function buildAIInsights(platforms: PlatformData[], context: FullContext, indust
     const h = context.holidays.nextMajor;
     actionItems.unshift({
       priority: "critical",
-      action: `${h.name} in ${context.holidays.daysUntilNextMajor} days — increase budget to ${h.budgetMultiplier}x, expect +${h.cpcChange}% CPCs`,
-      impact: `Revenue opportunity: ${h.budgetMultiplier > 1.5 ? "Major" : "Moderate"} seasonal demand spike`,
+      action: `${h.name} is only ${context.holidays.daysUntilNextMajor} days away — time to ramp up your budget to around ${h.budgetMultiplier}x normal. CPCs will likely climb about ${h.cpcChange}%.`,
+      impact: h.budgetMultiplier > 1.5 ? "This is a major seasonal opportunity — don't miss it" : "Moderate seasonal uplift expected",
       platform: "all",
     });
   }
@@ -243,29 +243,36 @@ function buildAIInsights(platforms: PlatformData[], context: FullContext, indust
       actionItems.push({
         priority: "high",
         action: ind.tip,
-        impact: `Your industry ${industry} is in PEAK SEASON — capitalize now`,
+        impact: `Your industry is in peak season — this is the time to capitalise`,
         platform: "all",
       });
     }
   }
 
-  // Warnings
+  // Warnings — helpful rather than alarming
   if (connectedCount === 0) {
-    warnings.push("No ad platforms connected — connect at least Google Ads to start getting AI insights");
+    warnings.push("You haven't connected any ad platforms yet — hook up Google Ads to start getting personalised insights");
   }
   if (connectedCount === 1) {
-    warnings.push("Only 1 platform connected — add more platforms for cross-channel intelligence and budget optimization");
+    warnings.push("You've only got one platform connected — adding more will unlock cross-channel comparisons and smarter budget allocation");
   }
   if (context.seasonal.demandTrend === "peak" && connectedCount < 3) {
-    warnings.push("Peak season detected but limited platforms connected — you may be missing revenue opportunities");
+    warnings.push("It's peak season but you're running on limited platforms — you might be leaving money on the table");
   }
 
-  const summary = [
-    `Intelligence report for ${new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}.`,
-    `${connectedCount} of 7 platforms connected.`,
+  const dateStr = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const summaryParts = [
+    `Here's your snapshot for ${dateStr}.`,
+    connectedCount > 0
+      ? `You've got ${connectedCount} of 7 platforms connected.`
+      : "No platforms connected yet — let's change that.",
     context.aiSummary,
-    actionItems.length > 0 ? `${actionItems.filter(a => a.priority === "critical" || a.priority === "high").length} high-priority actions requiring attention.` : "No urgent actions needed.",
-  ].join(" ");
+    actionItems.length > 0
+      ? `There ${actionItems.filter(a => a.priority === "critical" || a.priority === "high").length === 1 ? "is" : "are"} ${actionItems.filter(a => a.priority === "critical" || a.priority === "high").length} thing${actionItems.filter(a => a.priority === "critical" || a.priority === "high").length === 1 ? "" : "s"} worth looking at soon.`
+      : "Nothing urgent on the radar right now.",
+  ];
+
+  const summary = summaryParts.join(" ");
 
   return { summary, actionItems, opportunities, warnings };
 }
@@ -340,11 +347,11 @@ export async function POST(req: NextRequest) {
         category: h.category,
       })),
       recommendations: [
-        "Start creating holiday-specific ad copy and landing pages NOW",
-        "Build retargeting audiences from current site visitors",
-        "Increase daily budgets gradually — don't spike all at once",
-        "Prepare backup payment methods to avoid campaign pauses",
-        "Set automated rules to increase bids during peak hours",
+        "Start writing your holiday-specific ad copy and landing pages now — leaving it to the last minute always costs more",
+        "Build retargeting audiences from your current site visitors so you've got warm audiences ready",
+        "Increase your daily budgets gradually rather than spiking all at once — Google and Meta both reward consistency",
+        "Make sure you've got backup payment methods set up so campaigns don't accidentally pause",
+        "Set up automated rules to bump bids during the peak hours — you'll thank yourself later",
       ],
     });
   }
@@ -367,10 +374,10 @@ export async function POST(req: NextRequest) {
       currentGeo: context.geo,
       expansion: {
         recommendations: [
-          "Analyze search impression share by location to find underserved areas",
-          "Test ads in neighboring regions with similar demographics",
-          "Use location bid adjustments based on conversion rates by area",
-          "Consider multilingual ads if expanding to non-English markets",
+          "Check your search impression share by location — you might find areas where you're barely showing up",
+          "Try running ads in nearby regions with similar demographics and see how they perform",
+          "Use location bid adjustments based on where you're actually getting conversions",
+          "If you're expanding into non-English markets, translated ads almost always outperform English-only",
         ],
         topMarkets: ["US", "UK", "DE", "FR", "CA", "AU"].filter(c => c !== countryCode).map(c => ({
           country: c,
