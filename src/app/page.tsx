@@ -68,6 +68,7 @@ export default function LandingPage() {
           </Link>
           <div className="hidden md:flex items-center gap-8 text-sm font-normal text-neutral-500">
             <a href="#features" className="hover:text-neutral-900 transition-colors">{t("landing.navFeatures")}</a>
+            <Link href="/features" className="hover:text-neutral-900 transition-colors">All Features</Link>
             <a href="#how-it-works" className="hover:text-neutral-900 transition-colors">{t("landing.navHowItWorks")}</a>
           </div>
           <div className="flex items-center gap-4">
@@ -226,6 +227,11 @@ export default function LandingPage() {
                 <p className="text-sm font-normal text-neutral-500 leading-relaxed">{f.desc}</p>
               </div>
             ))}
+          </div>
+          <div className="text-center mt-10">
+            <Link href="/features" className="inline-flex items-center gap-2 text-sm font-medium text-neutral-600 hover:text-neutral-900 transition-colors">
+              See all 20+ features <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
         </div>
       </section>
