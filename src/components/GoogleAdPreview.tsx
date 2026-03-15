@@ -76,58 +76,70 @@ export default function GoogleAdPreview({ ad, index, onRegenerate, onEdit }: Goo
 
     // Show first 3 headlines and first description as the "preview", expand for all
     const previewHeadlines = ad.headlines.slice(0, 3);
-    const extraHeadlines = ad.headlines.slice(3);
     const displayUrl = ad.displayUrl || ad.businessName?.toLowerCase().replace(/\s+/g, "").slice(0, 20) + ".com" || "yourbusiness.com";
 
     return (
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden my-3">
             {/* Header badge */}
             <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-100">
-                <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 bg-blue-600 rounded flex items-center justify-center">
-                        <span className="text-white text-[8px] font-bold">Ad</span>
-                    </div>
-                    <span className="text-xs font-semibold text-gray-700">Ad Variation {index + 1}</span>
-                </div>
-                <span className="text-[10px] text-gray-400">Google Search Ad Preview</span>
+                <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Google Search Preview • Variation {index + 1}</span>
             </div>
 
-            {/* Google Search Result Format */}
-            <div className="px-4 py-3">
-                {/* Sponsored label + URL line */}
-                <div className="flex items-center gap-1.5 mb-1">
-                    <span className="text-[11px] font-semibold text-gray-800 bg-gray-100 px-1.5 py-0.5 rounded">Sponsored</span>
+            {/* Google Search Result Format — authentic styling */}
+            <div className="px-4 py-3.5" style={{ fontFamily: "arial, sans-serif" }}>
+                {/* Sponsored label */}
+                <div className="mb-1.5">
+                    <span className="text-[12px] font-bold text-[#202124]" style={{ fontFamily: "arial, sans-serif" }}>Sponsored</span>
                 </div>
-                <div className="flex items-center gap-1 mb-1">
-                    <Globe className="w-3.5 h-3.5 text-gray-400" />
-                    <span className="text-xs text-gray-600">{displayUrl}</span>
+
+                {/* Favicon circle + site name + URL + 3-dot menu */}
+                <div className="flex items-center gap-2.5 mb-1">
+                    <div className="w-[28px] h-[28px] rounded-full bg-[#f1f3f4] flex items-center justify-center shrink-0">
+                        <Globe className="w-[14px] h-[14px] text-[#70757a]" />
+                    </div>
+                    <div className="min-w-0">
+                        <div className="text-[14px] text-[#202124] leading-[18px] truncate" style={{ fontFamily: "arial, sans-serif" }}>
+                            {ad.businessName || "Your Business"}
+                        </div>
+                        <div className="text-[12px] text-[#4d5156] leading-[16px] truncate" style={{ fontFamily: "arial, sans-serif" }}>
+                            {displayUrl}
+                        </div>
+                    </div>
+                    <div className="ml-auto shrink-0">
+                        <svg width="16" height="16" viewBox="0 0 16 16" className="text-[#70757a]">
+                            <circle cx="8" cy="3" r="1.2" fill="currentColor" />
+                            <circle cx="8" cy="8" r="1.2" fill="currentColor" />
+                            <circle cx="8" cy="13" r="1.2" fill="currentColor" />
+                        </svg>
+                    </div>
                 </div>
 
                 {/* Headlines as clickable blue title */}
-                <div className="text-[#1a0dab] text-lg font-medium leading-snug mb-1 hover:underline cursor-pointer">
+                <h3
+                    className="text-[20px] leading-[26px] text-[#1a0dab] cursor-pointer mt-0.5 hover:underline"
+                    style={{ fontFamily: "arial, sans-serif", fontWeight: 400 }}
+                >
                     {previewHeadlines.join(" | ")}
-                </div>
+                </h3>
 
-                {/* Description */}
-                <p className="text-sm text-gray-600 leading-relaxed">
-                    {ad.descriptions[0]}
+                {/* Description — concatenate first two like Google */}
+                <p className="text-[14px] leading-[22px] text-[#4d5156] mt-0.5" style={{ fontFamily: "arial, sans-serif" }}>
+                    {ad.descriptions.slice(0, 2).join(" ")}
                 </p>
 
-                {/* Sitelinks if available */}
+                {/* Sitelinks if available — 2x2 grid like Google */}
                 {ad.sitelinks && ad.sitelinks.length > 0 && (
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 mt-3 pt-2.5 border-t border-[#dadce0]">
                         {ad.sitelinks.slice(0, 4).map((link, i) => (
-                            <span key={i} className="text-xs text-[#1a0dab] hover:underline cursor-pointer">{link}</span>
+                            <span key={i} className="text-[14px] text-[#1a0dab] hover:underline cursor-pointer" style={{ fontFamily: "arial, sans-serif" }}>{link}</span>
                         ))}
                     </div>
                 )}
 
                 {/* Callouts */}
                 {ad.callouts && ad.callouts.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mt-2">
-                        {ad.callouts.map((c, i) => (
-                            <span key={i} className="text-[10px] text-gray-500 bg-gray-50 border border-gray-200 px-1.5 py-0.5 rounded">{c}</span>
-                        ))}
+                    <div className="text-[14px] text-[#4d5156] mt-2" style={{ fontFamily: "arial, sans-serif" }}>
+                        {ad.callouts.join(" · ")}
                     </div>
                 )}
             </div>

@@ -370,11 +370,6 @@ export default function ExamplesPage() {
                                 <MessageCircle className="w-3.5 h-3.5" />
                                 Try it now
                             </Link>
-                            <div className="flex items-center gap-1.5 text-xs text-muted px-3 py-2 border border-border rounded-lg">
-                                <Zap className="w-3 h-3 text-emerald-500" /> GPT-4o
-                                <span className="text-border">+</span>
-                                <Sparkles className="w-3 h-3 text-orange-400" /> Claude 4.6
-                            </div>
                         </div>
                     </div>
                 </div>

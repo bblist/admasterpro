@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
     Zap, Loader2, Save, Copy, CheckCircle2, AlertTriangle, XCircle,
     Info, Shield, RefreshCw, Search, Monitor, ShoppingBag, Video,
-    Target, ChevronDown, ChevronUp, Sparkles
+    Target, ChevronDown, ChevronUp, Sparkles, Globe
 } from "lucide-react";
+import React from "react";
 import { authFetch } from "@/lib/auth-client";
 import { useBusiness } from "@/lib/business-context";
 import { useTranslation } from "@/i18n/context";
@@ -75,6 +76,59 @@ export default function AdCopyPage() {
     // UI toggles
     const [showAdvanced, setShowAdvanced] = useState(false);
     const [copiedField, setCopiedField] = useState<string | null>(null);
+
+    // Pre-fill form from business context
+    useEffect(() => {
+        if (!activeBusiness || activeBusiness.id === "default") return;
+        const biz = activeBusiness;
+
+        // Build product/service description from business info
+        const descParts: string[] = [];
+        if (biz.name) descParts.push(biz.name);
+        if (biz.industry) descParts.push(`${biz.industry} business`);
+        if (biz.location) descParts.push(`located in ${biz.location}`);
+        if (biz.website) descParts.push(`(${biz.website})`);
+        if (descParts.length > 0 && !productDesc) {
+            setProductDesc(descParts.join(" — ") + ". ");
+        }
+
+        // Pre-fill target audience from industry
+        if (biz.industry && !targetAudience) {
+            setTargetAudience(`People interested in ${biz.industry.toLowerCase()} services`);
+        }
+
+        // Pre-fill keywords from business name + industry
+        if (!keywords) {
+            const kw: string[] = [];
+            if (biz.name) kw.push(biz.name.toLowerCase());
+            if (biz.industry) kw.push(biz.industry.toLowerCase());
+            if (biz.location) kw.push(`${biz.industry?.toLowerCase() || "services"} ${biz.location.toLowerCase()}`);
+            if (kw.length > 0) setKeywords(kw.join(", "));
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeBusiness?.id]);
+
+    // Pre-fill form fields from business context
+    React.useEffect(() => {
+        if (activeBusiness && activeBusiness.id !== "default") {
+            if (!productDesc) {
+                const parts: string[] = [];
+                if (activeBusiness.name) parts.push(activeBusiness.name);
+                if (activeBusiness.shortDesc) parts.push(activeBusiness.shortDesc);
+                else if (activeBusiness.industry) parts.push(activeBusiness.industry);
+                if (activeBusiness.services?.length) parts.push(`Services: ${activeBusiness.services.join(", ")}`);
+                if (activeBusiness.location) parts.push(`Located in ${activeBusiness.location}`);
+                if (parts.length) setProductDesc(parts.join(". ") + ".");
+            }
+            if (!targetAudience && activeBusiness.targetAudience) {
+                setTargetAudience(activeBusiness.targetAudience);
+            }
+            if (!keywords && activeBusiness.services?.length) {
+                setKeywords(activeBusiness.services.join(", "));
+            }
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeBusiness?.id]);
 
     const generate = async () => {
         if (!productDesc.trim()) { setError("Product/service description is required"); return; }
@@ -186,7 +240,6 @@ export default function AdCopyPage() {
             {/* Header */}
             <div>
                 <h1 className="text-2xl font-bold flex items-center gap-2">
-                    <Sparkles className="w-6 h-6 text-primary" />
                     AI Ad Copy Generator
                     <Tooltip text="Generate ready-to-use Google Ads copy including headlines, descriptions, and keyword suggestions — all checked for policy compliance." position="bottom" />
                 </h1>
@@ -386,19 +439,69 @@ export default function AdCopyPage() {
                                     </button>
                                 </div>
 
-                                {/* Google Ad Preview */}
+                                {/* Google Ad Preview — pixel-perfect Google Search Ad */}
                                 {result.headlines && result.headlines.length > 0 && (
-                                    <div className="bg-white border border-gray-200 rounded-xl p-5">
-                                        <h3 className="text-xs font-semibold text-muted uppercase tracking-wide mb-3">Ad Preview</h3>
-                                        <div className="border border-gray-100 rounded-lg p-4">
-                                            <p className="text-xs text-green-700 mb-0.5">
-                                                Ad · {activeBusiness?.website || "yourwebsite.com"}
-                                            </p>
-                                            <p className="text-lg text-blue-800 font-medium leading-snug">
+                                    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+                                        <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Google Search Preview</span>
+                                        </div>
+                                        <div className="px-5 py-4" style={{ fontFamily: "arial, sans-serif" }}>
+                                            {/* Sponsored label — exactly like Google */}
+                                            <div className="mb-1.5">
+                                                <span className="text-[12px] font-bold text-[#202124]" style={{ fontFamily: "arial, sans-serif" }}>Sponsored</span>
+                                            </div>
+                                            {/* Favicon circle + site name + URL + 3-dot menu */}
+                                            <div className="flex items-center gap-2.5 mb-1">
+                                                <div className="w-[28px] h-[28px] rounded-full bg-[#f1f3f4] flex items-center justify-center shrink-0">
+                                                    <Globe className="w-[14px] h-[14px] text-[#70757a]" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <div className="text-[14px] text-[#202124] leading-[18px] truncate" style={{ fontFamily: "arial, sans-serif" }}>
+                                                        {activeBusiness?.name || "Your Business"}
+                                                    </div>
+                                                    <div className="text-[12px] text-[#4d5156] leading-[16px] truncate" style={{ fontFamily: "arial, sans-serif" }}>
+                                                        {activeBusiness?.website || "yourwebsite.com"}
+                                                    </div>
+                                                </div>
+                                                <div className="ml-auto shrink-0">
+                                                    <svg width="16" height="16" viewBox="0 0 16 16" className="text-[#70757a]">
+                                                        <circle cx="8" cy="3" r="1.2" fill="currentColor" />
+                                                        <circle cx="8" cy="8" r="1.2" fill="currentColor" />
+                                                        <circle cx="8" cy="13" r="1.2" fill="currentColor" />
+                                                    </svg>
+                                                </div>
+                                            </div>
+                                            {/* Headline — Google blue link */}
+                                            <h3
+                                                className="text-[20px] leading-[26px] text-[#1a0dab] cursor-pointer mt-0.5 hover:underline"
+                                                style={{ fontFamily: "arial, sans-serif", fontWeight: 400 }}
+                                            >
                                                 {result.headlines.slice(0, 3).join(" | ")}
-                                            </p>
-                                            {result.descriptions?.[0] && (
-                                                <p className="text-sm text-gray-600 mt-1">{result.descriptions[0]}</p>
+                                            </h3>
+                                            {/* Descriptions — concatenated like Google shows them */}
+                                            {result.descriptions && result.descriptions.length > 0 && (
+                                                <p className="text-[14px] leading-[22px] text-[#4d5156] mt-0.5" style={{ fontFamily: "arial, sans-serif" }}>
+                                                    {result.descriptions.slice(0, 2).join(" ")}
+                                                </p>
+                                            )}
+                                            {/* Sitelinks grid — like Google's 2x2 layout */}
+                                            {result.sitelinks && result.sitelinks.length > 0 && (
+                                                <div className="grid grid-cols-2 gap-x-6 gap-y-2 mt-3 pt-2.5 border-t border-[#dadce0]">
+                                                    {result.sitelinks.slice(0, 4).map((sl, i) => (
+                                                        <div key={i}>
+                                                            <span className="text-[14px] text-[#1a0dab] hover:underline cursor-pointer leading-[20px]" style={{ fontFamily: "arial, sans-serif" }}>{sl.title}</span>
+                                                            {sl.description && (
+                                                                <div className="text-[12px] text-[#4d5156] leading-[16px]" style={{ fontFamily: "arial, sans-serif" }}>{sl.description}</div>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            {/* Callouts — inline with middot separator */}
+                                            {result.callouts && result.callouts.length > 0 && (
+                                                <div className="text-[14px] text-[#4d5156] mt-2" style={{ fontFamily: "arial, sans-serif" }}>
+                                                    {result.callouts.join(" · ")}
+                                                </div>
                                             )}
                                         </div>
                                     </div>

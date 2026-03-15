@@ -132,6 +132,11 @@ type Intent =
     | "help"
     | "off_topic"
     | "switch_account"
+    | "batch_create_ads"
+    | "check_underperforming"
+    | "shopify_products"
+    | "keyword_research"
+    | "budget_advice"
     | "unknown";
 
 interface IntentMatch {
@@ -247,6 +252,55 @@ const matchIntent = (text: string): IntentMatch => {
         // See if they named a specific business
         const nameMatch = t.match(/(?:switch to|go to|open|check on)\s+(?:my\s+)?(.+?)(?:\s+account|\s+business|\s+ads?)?\s*$/i);
         return { intent: "switch_account", params: { target: nameMatch ? nameMatch[1].trim() : "" } };
+    }
+
+    // ─── NEW: Natural language batch commands ───────────────────────
+
+    // Create N ads (e.g., "create 10 ads for me today", "make 5 ads for my plumbing business")
+    if (/\b(create|write|make|generate|give me|i need)\b.*\b(\d+)\s*(ads?|campaigns?|drafts?|copies)\b/i.test(t) ||
+        /\b(\d+)\s*(ads?|campaigns?|drafts?)\b.*\b(for|about|today|now)\b/i.test(t)) {
+        const countMatch = t.match(/(\d+)/);
+        const count = countMatch ? parseInt(countMatch[1]) : 5;
+        const forMatch = t.match(/(?:for|about)\s+(?:my\s+)?(.+?)(?:\s+today|\s+now|\s*$)/i);
+        return { intent: "batch_create_ads", params: { count: String(count), topic: forMatch ? forMatch[1] : "" } };
+    }
+
+    // Check underperforming ads
+    if (/\b(which|what|show|find|see)\b.*\b(ads?|campaigns?|keywords?)\b.*\b(not|under|poor|bad|worst|failing|losing|low)\b.*\b(perform|work|convert|delivering)/i.test(t) ||
+        /\b(underperform|poorly|not working|not converting|wasting|losing money)\b/i.test(t) ||
+        /\bwhich\s+ads?\s+(are|aren.t)\s+(not\s+)?performing\b/i.test(t) ||
+        /\bads?\s+not\s+performing\b/i.test(t)) {
+        return { intent: "check_underperforming", params: {} };
+    }
+
+    // Updated report / ad health check
+    if (/\b(check|give|get|see|show)\b.*\b(updated|current|latest|new)\b.*\b(report|update|status|health|data)\b/i.test(t) ||
+        /\bgive me\b.*\b(updated|new)\b.*\breport\b/i.test(t) ||
+        /\bcheck\s+on\s+(?:my\s+)?(?:existing\s+)?ads?\b.*\b(report|update)\b/i.test(t) ||
+        /\bhow\s+are\s+my\s+ads?\s+doing\b/i.test(t)) {
+        return { intent: "show_stats", params: {} };
+    }
+
+    // Shopify products / store
+    if (/\b(shopify|store|products?|catalog|inventory)\b.*\b(sync|import|connect|show|list|manage)\b/i.test(t) ||
+        /\b(sync|import|connect|show|list)\b.*\b(shopify|store|products?|catalog)\b/i.test(t) ||
+        /\bcreate\s+ads?\s+for\s+my\s+(products?|shopify|store)\b/i.test(t)) {
+        return { intent: "shopify_products", params: {} };
+    }
+
+    // Keyword research (AI-driven)
+    if (/\b(research|discover|find|explore|suggest)\b.*\b(keyword|search term)\b/i.test(t) ||
+        /\bkeyword\s+research\b/i.test(t) ||
+        /\bwhat\s+(?:should|keywords?)\b.*\btarget\b/i.test(t) ||
+        /\bfind\s+(?:new\s+)?keywords?\b/i.test(t)) {
+        return { intent: "keyword_research", params: {} };
+    }
+
+    // Budget recommendations
+    if (/\b(how much|what)\b.*\b(spend|budget|invest|allocate)\b/i.test(t) ||
+        /\b(increase|decrease|change|adjust|optimize)\b.*\bbudget\b/i.test(t) ||
+        /\b(budget|spending)\s+(recommendation|suggestion|advice|optimal)\b/i.test(t)) {
+        return { intent: "budget_advice", params: {} };
     }
 
     // Help
@@ -410,30 +464,21 @@ const getInitialMessages = (
     // A user who has only done an audit has some KB content but isn't truly set up
     const isSetup = biz.setupComplete && kbStatus === "has-content";
 
-    // ── SETUP NOT COMPLETE: Guide user through getting more business info ──
+    // ── SETUP NOT COMPLETE: Offer helpful guidance ──
     if (!isSetup && !intent) {
         if (kbStatus === "has-content") {
-            // They have SOME data (e.g. from an audit crawl) but setup isn't complete
-            greetingContent += `I'm your personal Google Ads manager. I see we've already scanned your website — great start! To give you the best results, I'd love to learn a bit more about **${name}**.\n\n`;
-            greetingContent += `**What kind of business do you run?** Tell me about your main services, your ideal customers, and what makes you different from competitors. The more I know, the better I can target your ads.\n\n`;
-            greetingContent += `You can also connect your Google Ads account if you have one — I'll pull in your existing campaigns and show you exactly what's working.`;
+            greetingContent += `I'm your personal Google Ads manager. I see we've already scanned your website — great start! 🎉\n\n`;
+            greetingContent += `I'm ready to help you create ads, research keywords, and analyze competitors for **${name}**. What would you like to start with?`;
         } else {
-            greetingContent += `I'm your personal Google Ads manager. Before I can work my magic, I need to learn about your business. Let's get set up — it only takes a couple of minutes.\n\n`;
-            greetingContent += `**Just paste your website URL** right here in the chat and I'll scan it to learn about your business. Or tell me about what you do — your services, customers, and goals.\n\n`;
-            greetingContent += `If you already have a Google Ads account, you can connect it in **[Settings](/dashboard/settings)** so I can pull in your existing campaigns.`;
+            greetingContent += `I'm your personal Google Ads manager for **${name}**. I'm here to help you create professional ads, find winning keywords, and outsmart your competitors.\n\n`;
+            greetingContent += `What would you like to work on?`;
         }
 
-        const actions: { label: string; type: "primary" | "secondary" | "danger" }[] = kbStatus === "has-content"
-            ? [
-                { label: "📝 Tell you about my business", type: "primary" },
-                { label: "🔗 Connect Google Ads", type: "secondary" },
-                { label: "What can you do for me?", type: "secondary" },
-            ]
-            : [
-                { label: "🌐 Enter my website URL", type: "primary" },
-                { label: "📝 Paste or type my business info", type: "secondary" },
-                { label: "🔗 Connect Google Ads", type: "secondary" },
-            ];
+        const actions: { label: string; type: "primary" | "secondary" | "danger" }[] = [
+            { label: "Create ad copy for my business", type: "primary" },
+            { label: "Research keywords for my industry", type: "secondary" },
+            { label: "What can you do for me?", type: "secondary" },
+        ];
 
         messages.push({
             id: 2,
@@ -457,8 +502,7 @@ const getInitialMessages = (
     // KB awareness
     if (kbStatus === "empty") {
         greetingContent += `⚠️ **Quick heads up** — your Knowledge Base is empty right now, so I'm working with limited info about **${name}**. `;
-        greetingContent += `The more I know about your business, the better I can target your ads.\n\n`;
-        greetingContent += `You can paste your website URL or business details right here in the chat, or go to **[Knowledge Base](/dashboard/knowledge-base)** to upload files.\n\n`;
+        greetingContent += `Head to your **[Knowledge Base](/dashboard/knowledge-base)** to add your website and Brand Profile for better results.\n\n`;
 
         if (!intent) {
             greetingContent += `What would you like to start with?`;
@@ -492,11 +536,10 @@ const getInitialMessages = (
             { label: "Performance Max vs Standard Shopping", type: "secondary" },
         ];
     } else if (!isSetup) {
-        // Setup not complete but has intent — show intent actions + setup nudge
         actions = [
-            { label: "📝 Tell you about my business", type: "primary" },
-            { label: "🌐 Enter my website URL", type: "secondary" },
-            { label: "🔗 Connect Google Ads", type: "secondary" },
+            { label: "Create ad copy for my business", type: "primary" },
+            { label: "Research keywords for my industry", type: "secondary" },
+            { label: "What can you do for me?", type: "secondary" },
         ];
     } else {
         actions = [
@@ -1222,6 +1265,53 @@ function ChatPageInner() {
             return actions.slice(0, 4);
         }
 
+        // ── After batch ad creation → review and manage
+        if (intent === "batch_create_ads" || (content.includes("variation") && content.includes("headline"))) {
+            const actions: { label: string; type: "primary" | "secondary" | "danger" }[] = [];
+            if (!clicked.has("Save all as drafts")) actions.push({ label: "Save all as drafts", type: "primary" });
+            if (!clicked.has("Review in Ad Drafts")) actions.push({ label: "Review in Ad Drafts", type: "secondary" });
+            if (!clicked.has("Create more variations")) actions.push({ label: "Create more variations", type: "secondary" });
+            if (!clicked.has("Check policy compliance")) actions.push({ label: "Check policy compliance", type: "secondary" });
+            return actions.slice(0, 4);
+        }
+
+        // ── After underperforming analysis → fix actions
+        if (intent === "check_underperforming") {
+            const actions: { label: string; type: "primary" | "secondary" | "danger" }[] = [];
+            if (!clicked.has("Pause underperformers now")) actions.push({ label: "Pause underperformers now", type: "danger" });
+            if (!clicked.has("Create better replacements")) actions.push({ label: "Create better replacements", type: "primary" });
+            if (!clicked.has("Adjust budgets")) actions.push({ label: "Adjust budgets", type: "secondary" });
+            if (!clicked.has("Check quality scores")) actions.push({ label: "Check quality scores", type: "secondary" });
+            return actions.slice(0, 4);
+        }
+
+        // ── After Shopify product discussion → product ad actions
+        if (intent === "shopify_products" || content.includes("shopify") || content.includes("product catalog")) {
+            const actions: { label: string; type: "primary" | "secondary" | "danger" }[] = [];
+            if (!clicked.has("Create Shopping ads for top products")) actions.push({ label: "Create Shopping ads for top products", type: "primary" });
+            if (!clicked.has("Open Shopify page")) actions.push({ label: "Open Shopify page", type: "secondary" });
+            if (!clicked.has("Create PMax campaign")) actions.push({ label: "Create PMax campaign", type: "secondary" });
+            return actions.slice(0, 4);
+        }
+
+        // ── After keyword research → action on keywords
+        if (intent === "keyword_research" || (content.includes("keyword") && content.includes("search volume"))) {
+            const actions: { label: string; type: "primary" | "secondary" | "danger" }[] = [];
+            if (!clicked.has("Open AI Keyword Research")) actions.push({ label: "Open AI Keyword Research", type: "primary" });
+            if (!clicked.has("Create ads with these keywords")) actions.push({ label: "Create ads with these keywords", type: "secondary" });
+            if (!clicked.has("Show me negative keywords")) actions.push({ label: "Show me negative keywords", type: "secondary" });
+            return actions.slice(0, 4);
+        }
+
+        // ── After budget advice → budget actions
+        if (intent === "budget_advice" || content.includes("budget") && content.includes("recommend")) {
+            const actions: { label: string; type: "primary" | "secondary" | "danger" }[] = [];
+            if (!clicked.has("Apply these budget changes")) actions.push({ label: "Apply these budget changes", type: "primary" });
+            if (!clicked.has("Open Budget Optimizer")) actions.push({ label: "Open Budget Optimizer", type: "secondary" });
+            if (!clicked.has("Show ROI projections")) actions.push({ label: "Show ROI projections", type: "secondary" });
+            return actions.slice(0, 4);
+        }
+
         // ── After audit → natural next steps
         if (content.includes("audit") || content.includes("score") && content.includes("recommend")) {
             const actions: { label: string; type: "primary" | "secondary" | "danger" }[] = [];
@@ -1234,16 +1324,15 @@ function ChatPageInner() {
         // ── Default fallback — smart defaults based on setup state
         const isSetupDone = activeBusiness.setupComplete;
         if (!isSetupDone) {
-            // Still in setup — nudge toward providing more business info
             return [
-                { label: "📝 Tell you about my business", type: "primary" },
-                { label: "🌐 Enter my website URL", type: "secondary" },
+                { label: "Create new ads", type: "primary" },
+                { label: "Research keywords", type: "secondary" },
                 { label: "What can you do for me?", type: "secondary" },
             ];
         }
         if (!hasKb) {
             return [
-                { label: "📚 Add to Knowledge Base", type: "primary" },
+                { label: "Create new ads", type: "primary" },
                 { label: "Check my competitors", type: "secondary" },
                 { label: "Run a website audit", type: "secondary" },
             ];
@@ -1261,47 +1350,7 @@ function ChatPageInner() {
         if (!text.trim() || isTyping) return;
 
         // ── Handle onboarding / setup actions ──────────────────────
-        if (text === "🔗 Connect Google Ads") {
-            // Show instruction then redirect to settings
-            const aiMsg: Message = {
-                id: Date.now() + 1,
-                role: "ai",
-                model: "gpt-4o-mini",
-                content: "Great choice! I'm taking you to the Settings page where you can connect your Google Ads account. Once connected, I'll automatically pull in your campaigns, keywords, and performance data so I can start optimizing.\n\nRedirecting now…",
-                timestamp: timeNow(),
-            };
-            setMessages((prev) => [...prev, { id: Date.now(), role: "user", content: text, timestamp: timeNow() }, aiMsg]);
-            setTimeout(() => router.push("/dashboard/settings"), 1500);
-            return;
-        }
-        if (text === "🌐 Enter my website URL") {
-            const aiMsg: Message = {
-                id: Date.now() + 1,
-                role: "ai",
-                model: "gpt-4o-mini",
-                content: "Perfect! Just paste or type your website URL below (e.g. `yoursite.com`) and I'll scan it to learn about your business — your services, products, pricing, and more.\n\nThis usually takes about 30 seconds.",
-                timestamp: timeNow(),
-            };
-            setMessages((prev) => [...prev, { id: Date.now(), role: "user", content: text, timestamp: timeNow() }, aiMsg]);
-            return;
-        }
-        if (text === "📝 Paste or type my business info" || text === "📝 Tell you about my business") {
-            const aiMsg: Message = {
-                id: Date.now() + 1,
-                role: "ai",
-                model: "gpt-4o-mini",
-                content: "Sure thing! Just type or paste any of the following and I'll save it to your Knowledge Base:\n\n" +
-                    "• **Your services and products** — what you offer\n" +
-                    "• **Pricing info** — so I can highlight value in ads\n" +
-                    "• **Target audience** — who you want to reach\n" +
-                    "• **Unique selling points** — what makes you different\n" +
-                    "• **Location / service area** — for geo-targeting\n\n" +
-                    "Just start typing — I'll handle the rest!",
-                timestamp: timeNow(),
-            };
-            setMessages((prev) => [...prev, { id: Date.now(), role: "user", content: text, timestamp: timeNow() }, aiMsg]);
-            return;
-        }
+        // Navigation handling removed — no more onboarding buttons in chat
 
         // ── Detect URL input → auto-crawl and save to KB ──────────
         const urlPattern = /^(https?:\/\/)?([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}(\/\S*)?$/i;
@@ -1354,8 +1403,8 @@ function ChatPageInner() {
                             content: `⚠️ I couldn't scan that website — ${err.error || "the site may be blocking automated requests"}.\n\nYou can:\n• Double-check the URL and try again\n• Paste your business info directly in the chat instead\n• Or go to **[Knowledge Base](/dashboard/knowledge-base)** to upload files`,
                             timestamp: timeNow(),
                             actions: [
-                                { label: "📝 Paste or type my business info", type: "primary" },
-                                { label: "🔗 Connect Google Ads", type: "secondary" },
+                                { label: "Try a different URL", type: "primary" },
+                                { label: "Create ad copy for my business", type: "secondary" },
                             ],
                         };
                         setMessages((prev) => [...prev, failMsg]);
@@ -1370,7 +1419,7 @@ function ChatPageInner() {
                         content: "⚠️ Something went wrong while scanning. Please try again or paste your business info directly.",
                         timestamp: timeNow(),
                         actions: [
-                            { label: "📝 Paste or type my business info", type: "primary" },
+                            { label: "Try again", type: "primary" },
                         ],
                     };
                     setMessages((prev) => [...prev, errMsg]);
@@ -1416,7 +1465,7 @@ function ChatPageInner() {
                             actions: [
                                 { label: "Create ad copy for my business", type: "primary" },
                                 { label: "Find the best keywords", type: "secondary" },
-                                { label: "🌐 Enter my website URL", type: "secondary" },
+                                { label: "Analyze my competitors", type: "secondary" },
                             ],
                         };
                         setMessages((prev) => [...prev, doneMsg]);
@@ -1653,6 +1702,11 @@ function ChatPageInner() {
                 change_text: "edit ad text",
                 move_image: "reposition images",
                 add_image: "add images",
+                batch_create_ads: "create multiple ads",
+                check_underperforming: "check underperforming ads",
+                shopify_products: "manage Shopify products",
+                keyword_research: "research keywords",
+                budget_advice: "optimize budget",
             };
             const actionLabel = actionMap[intent.intent] || "work on that";
 
@@ -1679,6 +1733,25 @@ function ChatPageInner() {
                 enrichedText = `${text}\n\n[SYSTEM NOTE: This user has NOT completed setup yet - their Knowledge Base is empty and they haven't connected Google Ads. Answer their question helpfully but briefly, then encourage them to either: (1) paste their website URL so you can scan it, (2) paste/type their business info, or (3) connect their Google Ads account in Settings. Keep it natural, not pushy.]`;
             }
 
+            // Enrich based on detected intent for better AI responses
+            if (intent.intent === "batch_create_ads") {
+                const count = intent.params.count || "5";
+                const topic = intent.params.topic || activeBusiness.name;
+                enrichedText = `Create ${count} different ad variations for ${topic}. For each ad variation provide: 3 headlines (max 30 chars each), 2 descriptions (max 90 chars each), and 5 keywords. Make each variation different in tone and angle — some urgent, some benefit-focused, some question-based. Format them clearly numbered 1 through ${count}.`;
+            }
+            if (intent.intent === "check_underperforming") {
+                enrichedText = `${text}\n\n[SYSTEM NOTE: The user wants to find underperforming ads. Analyze their account data, identify ads/keywords with high spend but low conversions, poor CTR, or low quality scores. Give specific, actionable recommendations with numbers. Prioritize by impact — what to pause first, what to optimize.]`;
+            }
+            if (intent.intent === "shopify_products") {
+                enrichedText = `${text}\n\n[SYSTEM NOTE: The user is asking about their Shopify store and products. Guide them to connect Shopify via the Shopify page in the sidebar if not connected, or help them create product ads from their synced catalog. Be specific about Google Shopping and Performance Max campaigns for e-commerce.]`;
+            }
+            if (intent.intent === "keyword_research") {
+                enrichedText = `${text}\n\n[SYSTEM NOTE: The user wants keyword research. Help them discover new keyword opportunities. Suggest seed keywords based on their business, estimate search volumes, recommend match types, and identify negative keywords. Be specific and actionable. Mention the dedicated AI Keyword Research tool in the sidebar for deeper analysis.]`;
+            }
+            if (intent.intent === "budget_advice") {
+                enrichedText = `${text}\n\n[SYSTEM NOTE: The user is asking about budget optimization. Give specific budget recommendations based on their industry, competition level, and goals. Include estimated CPCs, recommended daily budgets for different campaign types, and how to allocate between search vs. display vs. shopping. Be concrete with numbers.]`;
+            }
+
             callAI(enrichedText, messages).then((aiResult) => {
                 const aiContent = aiResult?.content || "Hmm, something went sideways. Give it another shot?";
 
@@ -1686,18 +1759,7 @@ function ChatPageInner() {
                 // Analyze the AI response + user intent to offer relevant follow-ups
                 let smartActions = getSmartActions(text, aiContent, intent.intent, kbContext);
 
-                // During setup, always append setup nudge buttons if not already present
-                if (!activeBusiness.setupComplete && !kbContext) {
-                    const hasSetupAction = smartActions.some(a =>
-                        a.label.includes("website URL") || a.label.includes("Connect Google") || a.label.includes("business info")
-                    );
-                    if (!hasSetupAction) {
-                        smartActions = [
-                            ...smartActions.slice(0, 2),
-                            { label: "🌐 Enter my website URL", type: "secondary" as const },
-                        ];
-                    }
-                }
+                // Smart actions are always contextual to the conversation
 
                 const aiResponse: Message = {
                     id: Date.now() + 2,
@@ -1875,16 +1937,22 @@ function ChatPageInner() {
     const renderAdPreview = (ad: AdPreview, index: number) => {
         if (ad.type === "text") {
             return (
-                <div key={index} className="bg-white border border-blue-200 rounded-lg p-3 mt-2 shadow-sm">
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                        <FileText className="w-3 h-3 text-blue-600" />
-                        <span className="text-[10px] font-medium text-blue-600 uppercase tracking-wide">Text Ad</span>
+                <div key={index} className="bg-white border border-gray-200 rounded-lg overflow-hidden mt-2 shadow-sm">
+                    <div className="px-3 py-3" style={{ fontFamily: "arial, sans-serif" }}>
+                        <div className="mb-1">
+                            <span className="text-[11px] font-bold text-[#202124]" style={{ fontFamily: "arial, sans-serif" }}>Sponsored</span>
+                        </div>
+                        <div className="flex items-center gap-2 mb-0.5">
+                            <div className="w-[22px] h-[22px] rounded-full bg-[#f1f3f4] flex items-center justify-center shrink-0">
+                                <Globe className="w-[11px] h-[11px] text-[#70757a]" />
+                            </div>
+                            <span className="text-[12px] text-[#4d5156] truncate" style={{ fontFamily: "arial, sans-serif" }}>{ad.displayUrl}</span>
+                        </div>
+                        <div className="text-[16px] leading-[20px] text-[#1a0dab] hover:underline cursor-pointer" style={{ fontFamily: "arial, sans-serif" }}>
+                            {ad.headline1} | {ad.headline2}
+                        </div>
+                        <div className="text-[13px] leading-[20px] text-[#4d5156] mt-0.5" style={{ fontFamily: "arial, sans-serif" }}>{ad.description}</div>
                     </div>
-                    <div className="text-sm text-blue-700 font-medium leading-tight">
-                        {ad.headline1} | {ad.headline2}
-                    </div>
-                    <div className="text-[11px] text-emerald-600 mt-0.5">{ad.displayUrl}</div>
-                    <div className="text-xs text-gray-600 mt-1 leading-relaxed">{ad.description}</div>
                 </div>
             );
         }
@@ -2357,8 +2425,8 @@ function ChatPageInner() {
                     </button>
                 </div>
 
-                {/* Quick actions — only show when setup is complete, since the AI already shows contextual buttons in messages */}
-                {activeBusiness.setupComplete && (
+                {/* Quick actions bar */}
+                {
                 <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
                     {quickActionKeys
                         .filter((a) => !a.needsAds || kbContext)
@@ -2375,7 +2443,7 @@ function ChatPageInner() {
                         ))}
                     <span className="text-[10px] text-muted ml-auto hidden sm:inline whitespace-nowrap">{t("chat.micHint")}</span>
                 </div>
-                )}
+                }
             </div>
         </div>
     );

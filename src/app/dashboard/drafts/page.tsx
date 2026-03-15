@@ -10,6 +10,7 @@ import Link from "next/link";
 import { authFetch } from "@/lib/auth-client";
 import { useBusiness } from "@/lib/business-context";
 import { useTranslation } from "@/i18n/context";
+import AdApprovalDrawer, { AdDraftForApproval } from "@/components/AdApprovalDrawer";
 
 interface Draft {
     id: string;
@@ -58,6 +59,7 @@ export default function DraftsPage() {
     const [showModal, setShowModal] = useState(false);
     const [editingDraft, setEditingDraft] = useState<Draft | null>(null);
     const [previewDraft, setPreviewDraft] = useState<Draft | null>(null);
+    const [approvalDraft, setApprovalDraft] = useState<Draft | null>(null);
     const [deleting, setDeleting] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const [typeFilter, setTypeFilter] = useState<string>("all");
@@ -197,6 +199,16 @@ export default function DraftsPage() {
         } catch {
             setError("Failed to update status");
         }
+    };
+
+    const handleApprove = async (id: string) => {
+        await updateStatus(id, "ready");
+        setApprovalDraft(null);
+    };
+
+    const handleDeny = async (id: string) => {
+        await updateStatus(id, "paused");
+        setApprovalDraft(null);
     };
 
     const filtered = drafts.filter(d => {
@@ -371,11 +383,12 @@ export default function DraftsPage() {
 
                                     <div className="flex items-center gap-1 shrink-0">
                                         <button
-                                            onClick={() => setPreviewDraft(previewDraft?.id === draft.id ? null : draft)}
-                                            className="p-2 hover:bg-muted/20 rounded-lg transition"
-                                            title="Preview"
+                                            onClick={() => setApprovalDraft(draft)}
+                                            className="inline-flex items-center gap-1.5 bg-primary/10 hover:bg-primary/20 text-primary px-3 py-1.5 rounded-lg text-xs font-medium transition"
+                                            title="Review & Approve"
                                         >
-                                            <Eye className="w-4 h-4 text-muted" />
+                                            <Eye className="w-3.5 h-3.5" />
+                                            Review
                                         </button>
                                         <button
                                             onClick={() => openEditModal(draft)}
@@ -501,6 +514,20 @@ export default function DraftsPage() {
             )}
 
             {/* Create/Edit Modal */}
+            {/* Ad Approval Drawer */}
+            <AdApprovalDrawer
+                draft={approvalDraft as AdDraftForApproval | null}
+                open={!!approvalDraft}
+                onClose={() => setApprovalDraft(null)}
+                onApprove={handleApprove}
+                onDeny={handleDeny}
+                onEdit={(d) => {
+                    setApprovalDraft(null);
+                    const found = drafts.find(dr => dr.id === d.id);
+                    if (found) openEditModal(found);
+                }}
+            />
+
             {showModal && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowModal(false)}>
                     <div

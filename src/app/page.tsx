@@ -46,24 +46,6 @@ const testimonials = [
   { name: "Sarah K.", biz: "Bloom Dental, Austin", initial: "S", text: "I don't know anything about ads. This thing just tells me what to do in plain English and handles the rest. My calls are up 40%." },
 ];
 
-const pricingPlans = [
-  {
-    name: "Free", price: "$0", period: "forever", popular: false,
-    features: ["Free Google Ads audit", "10 AI messages/month", "1 campaign draft", "3 Knowledge Base uploads"],
-    cta: "Start Free", href: "/onboarding", accent: false,
-  },
-  {
-    name: "Starter", price: "$49", period: "/month", popular: true,
-    features: ["Everything in Free", "200 AI messages/month", "Full keyword research", "AI ad copy generation", "Auto-Pilot mode"],
-    cta: "Start 7-Day Trial", href: "/pricing", accent: true,
-  },
-  {
-    name: "Pro", price: "$149", period: "/month", popular: false,
-    features: ["Everything in Starter", "Unlimited AI messages", "Unlimited campaign drafts", "10 Google Ads accounts"],
-    cta: "Start 7-Day Trial", href: "/pricing", accent: false,
-  },
-];
-
 export default function LandingPage() {
   const { t } = useTranslation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -87,7 +69,6 @@ export default function LandingPage() {
           <div className="hidden md:flex items-center gap-8 text-sm font-normal text-neutral-500">
             <a href="#features" className="hover:text-neutral-900 transition-colors">{t("landing.navFeatures")}</a>
             <a href="#how-it-works" className="hover:text-neutral-900 transition-colors">{t("landing.navHowItWorks")}</a>
-            <Link href="/pricing" className="hover:text-neutral-900 transition-colors">{t("common.pricing")}</Link>
           </div>
           <div className="flex items-center gap-4">
             <LanguageSwitcher compact />
@@ -114,8 +95,6 @@ export default function LandingPage() {
           <div className="md:hidden border-t border-neutral-100 px-6 py-3 space-y-2 bg-white">
             <a href="#features" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-neutral-500 hover:text-neutral-900 py-1">{t("landing.navFeatures")}</a>
             <a href="#how-it-works" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-neutral-500 hover:text-neutral-900 py-1">{t("landing.navHowItWorks")}</a>
-            <Link href="/pricing" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-neutral-500 hover:text-neutral-900 py-1">{t("common.pricing")}</Link>
-            <Link href="/audit" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-neutral-500 hover:text-neutral-900 py-1">{t("common.freeAudit")}</Link>
             <Link href="/faq" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-neutral-500 hover:text-neutral-900 py-1">{t("common.faq")}</Link>
           </div>
         )}
@@ -298,51 +277,31 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Pricing Section */}
+      {/* Free Access Section */}
       <section id="pricing" className="py-24 px-6 border-t border-neutral-100">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-semibold tracking-tight mb-4">{t("landing.pricingTitle")}</h2>
-            <p className="text-base font-normal text-neutral-500">{t("landing.pricingSubtitle")}</p>
+        <div className="max-w-3xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 border border-emerald-200 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-medium mb-6">
+            <Sparkles className="w-3.5 h-3.5" />
+            100% Free — No Credit Card Required
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-            {pricingPlans.map((plan, i) => (
-              <div key={i} className={`rounded-2xl p-8 bg-white relative ${plan.popular ? "border border-indigo-600 shadow-xl shadow-indigo-100/50 md:scale-105 z-10" : "border border-neutral-200"}`}>
-                {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-[10px] font-medium tracking-widest uppercase px-3 py-1 rounded-full">
-                    {t("landing.mostPopular")}
-                  </div>
-                )}
-                <h3 className={`font-medium text-sm tracking-tight mb-2 ${plan.popular ? "text-indigo-600" : ""}`}>{plan.name}</h3>
-                <div className="mb-8 flex items-baseline gap-1">
-                  <span className="text-4xl font-semibold tracking-tighter text-neutral-900">{plan.price}</span>
-                  <span className="text-xs text-neutral-500 font-medium">{plan.period}</span>
-                </div>
-                <ul className="space-y-4 mb-8">
-                  {plan.features.map((feat, j) => (
-                    <li key={j} className="flex items-start gap-2 text-xs font-normal text-neutral-600">
-                      <Check className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${plan.accent ? "text-indigo-600" : "text-neutral-400"}`} />
-                      {feat}
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href={plan.href}
-                  className={`block text-center py-2.5 rounded-lg font-medium text-xs transition-colors ${plan.accent
-                    ? "bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
-                    : "border border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50 text-neutral-900"
-                    }`}
-                >
-                  {plan.cta}
-                </Link>
+          <h2 className="text-3xl font-semibold tracking-tight mb-4">Everything you need, completely free</h2>
+          <p className="text-base font-normal text-neutral-500 mb-8 max-w-xl mx-auto">
+            We&apos;re building the best AI ad management tool and want your feedback. All features are unlocked — AI ad creation, competitor analysis, keyword research, and more.
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+            {["Unlimited AI Messages", "All Ad Formats", "Competitor Analysis", "Keyword Research", "Budget Optimization", "Campaign Drafts", "Google Ads Integration", "Shopify Integration"].map((feat) => (
+              <div key={feat} className="flex items-center gap-2 text-xs text-neutral-600 bg-neutral-50 border border-neutral-100 rounded-lg px-3 py-2">
+                <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                {feat}
               </div>
             ))}
           </div>
-          <div className="text-center mt-12">
-            <Link href="/pricing" className="text-xs text-neutral-500 hover:text-indigo-600 font-medium transition-colors inline-flex items-center gap-1">
-              {t("landing.viewComparison")} <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
+          <Link
+            href="/onboarding"
+            className="inline-flex items-center gap-2 bg-neutral-900 hover:bg-neutral-800 text-white px-8 py-3.5 rounded-xl text-sm font-medium transition-colors shadow-lg shadow-neutral-900/10"
+          >
+            Get Started Free <ArrowRight className="w-4 h-4" />
+          </Link>
         </div>
       </section>
 
@@ -374,7 +333,7 @@ export default function LandingPage() {
             <div>
               <h4 className="font-medium text-xs tracking-tight mb-4 text-neutral-900">{t("common.product")}</h4>
               <div className="flex flex-col gap-3 text-xs font-normal text-neutral-500">
-                <Link href="/pricing" className="hover:text-neutral-900 transition-colors w-fit">{t("common.pricing")}</Link>
+                <Link href="/onboarding" className="hover:text-neutral-900 transition-colors w-fit">Get Started</Link>
                 <Link href="/audit" className="hover:text-neutral-900 transition-colors w-fit">{t("common.freeAudit")}</Link>
                 <Link href="/faq" className="hover:text-neutral-900 transition-colors w-fit">{t("common.faq")}</Link>
                 <Link href="/login" className="hover:text-neutral-900 transition-colors w-fit">{t("common.logIn")}</Link>

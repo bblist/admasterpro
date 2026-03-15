@@ -161,8 +161,16 @@ model Business {
   googleAdsId     String?   // Google Ads Customer ID
   kbStatus        String    @default("empty") // "empty" | "training" | "trained"
 
+  // Shopify integration
+  shopifyDomain       String?   // e.g. "mystore.myshopify.com"
+  shopifyAccessToken  String?   // Encrypted Shopify access token
+  shopifyConnected    Boolean   @default(false)
+
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+
+  shopifyProducts ShopifyProduct[]
+  aiInsights      AiInsight[]
 
   @@index([userId])
 }
@@ -250,5 +258,67 @@ model AuditReport {
 
   @@index([userId])
   @@index([email])
+}
+
+// ─── Shopify Products (synced from Shopify API) ─────────────────────────────
+
+model ShopifyProduct {
+  id              String    @id @default(cuid())
+  businessId      String
+  business        Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  shopifyId       String    // Shopify product ID
+  title           String
+  description     String?   @db.Text
+  productType     String?
+  vendor          String?
+  status          String    @default("active") // "active" | "draft" | "archived"
+  tags            String?   // comma-separated
+  imageUrl        String?
+  handle          String?
+
+  // Pricing
+  price           Float?
+  compareAtPrice  Float?
+  currency        String    @default("USD")
+
+  // Inventory
+  inventoryQty    Int       @default(0)
+  sku             String?
+
+  // Performance (synced from Shopify analytics)
+  totalSales      Float     @default(0)
+  totalOrders     Int       @default(0)
+
+  syncedAt        DateTime  @default(now())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([businessId, shopifyId])
+  @@index([businessId])
+}
+
+// ─── AI Insights (proactive recommendations) ────────────────────────────────
+
+model AiInsight {
+  id              String    @id @default(cuid())
+  businessId      String
+  business        Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  type            String    // "opportunity" | "warning" | "performance" | "competitor" | "budget"
+  priority        String    @default("medium") // "critical" | "high" | "medium" | "low"
+  title           String
+  description     String    @db.Text
+  actionLabel     String?   // CTA text like "Fix Now" or "Review Ads"
+  actionType      String?   // "pause_keyword" | "increase_budget" | "create_ad" | etc.
+  actionData      String?   @db.Text // JSON with action-specific data
+  dismissed       Boolean   @default(false)
+  resolved        Boolean   @default(false)
+
+  createdAt       DateTime  @default(now())
+  expiresAt       DateTime?
+
+  @@index([businessId])
+  @@index([businessId, dismissed])
 }
 

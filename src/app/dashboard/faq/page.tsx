@@ -52,15 +52,15 @@ const categories: FAQCategory[] = [
         items: [
             {
                 q: "What can the AI assistant do?",
-                a: "Your AI assistant can:\n\n• Create text and display ads from a simple command\n• Find and fix wasted ad spend (money leaks)\n• Monitor and analyze competitor strategies\n• Show real-time performance stats and call tracking\n• Pause bad keywords automatically\n• Manage images and layouts for display ads\n• Generate ad variations using GPT-4o and Claude 4.6\n• Push approved ads live to Google\n\nJust speak or type naturally — visit the AI Examples page for the full list of commands."
+                a: "Your AI assistant can:\n\n• Create text and display ads from a simple command\n• Find and fix wasted ad spend (money leaks)\n• Monitor and analyze competitor strategies\n• Show real-time performance stats and call tracking\n• Pause bad keywords automatically\n• Manage images and layouts for display ads\n• Generate multiple ad variations automatically\n• Push approved ads live to Google\n\nVisit the AI Examples page for the full list of commands."
             },
             {
                 q: "Can I use voice commands?",
                 a: "Yes! Click the microphone button in the AI chat and speak naturally. Say things like 'Create 3 ads for my summer sale' or 'Where am I wasting money?' The AI uses speech recognition to understand your command and executes it immediately. Works on Chrome, Edge, and Safari."
             },
             {
-                q: "Which AI models are used?",
-                a: "AdMaster Pro uses two AI models:\n\n• **GPT-4o** (Primary) — OpenAI's latest model for ad creation, analysis, and conversation\n• **Claude 4.6** (Fallback) — Anthropic's model for diverse ad copy and competitor analysis\n\nThe system automatically picks the best model for each task, and you can see which model generated each response via the colored badge."
+                q: "How does the AI work?",
+                a: "AdMaster Pro uses advanced AI models to generate ad copy, analyze performance, and provide strategic recommendations. The system automatically selects the best model for each task to ensure high-quality, relevant results tailored to your business."
             },
             {
                 q: "Will the AI run ads without my approval?",

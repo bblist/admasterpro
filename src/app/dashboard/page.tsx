@@ -4,13 +4,14 @@ import { useState, useEffect } from "react";
 import {
     BarChart3, MessageSquare, Zap, Target, DollarSign, MousePointer,
     Eye, TrendingUp, ArrowRight, Settings, Plus, Phone, Key,
-    BookOpen, Loader2
+    BookOpen, Loader2, Sparkles, ShoppingBag, Search, Brain
 } from "lucide-react";
 import Link from "next/link";
 import { authFetch } from "@/lib/auth-client";
 import { useBusiness } from "@/lib/business-context";
 import { useTranslation } from "@/i18n/context";
 import Tooltip from "@/components/Tooltip";
+import AiInsightsPanel from "@/components/AiInsightsPanel";
 
 interface DashboardStats {
     subscription: {
@@ -232,6 +233,22 @@ export default function DashboardPage() {
                         <h3 className="font-semibold text-sm">{t("dashboard.aiAssistant")}</h3>
                         <p className="text-xs text-muted mt-1">{t("dashboard.aiAssistantDesc")}</p>
                     </Link>
+                    <Link href="/dashboard/ad-copy"
+                        className="bg-card border border-border rounded-xl p-5 hover:border-primary hover:shadow-md transition group">
+                        <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center mb-3 group-hover:bg-purple-100 transition">
+                            <Sparkles className="w-5 h-5 text-purple-600" />
+                        </div>
+                        <h3 className="font-semibold text-sm">AI Ad Generator</h3>
+                        <p className="text-xs text-muted mt-1">Create high-converting ads instantly</p>
+                    </Link>
+                    <Link href="/dashboard/keyword-research"
+                        className="bg-card border border-border rounded-xl p-5 hover:border-primary hover:shadow-md transition group">
+                        <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center mb-3 group-hover:bg-amber-100 transition">
+                            <Search className="w-5 h-5 text-amber-600" />
+                        </div>
+                        <h3 className="font-semibold text-sm">Keyword Research</h3>
+                        <p className="text-xs text-muted mt-1">AI-powered keyword discovery</p>
+                    </Link>
                     <Link href="/dashboard/campaigns"
                         className="bg-card border border-border rounded-xl p-5 hover:border-primary hover:shadow-md transition group">
                         <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center mb-3 group-hover:bg-green-100 transition">
@@ -240,24 +257,11 @@ export default function DashboardPage() {
                         <h3 className="font-semibold text-sm">{t("dashboard.campaigns")}</h3>
                         <p className="text-xs text-muted mt-1">{t("dashboard.campaignsDesc")}</p>
                     </Link>
-                    <Link href="/dashboard/analytics"
-                        className="bg-card border border-border rounded-xl p-5 hover:border-primary hover:shadow-md transition group">
-                        <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center mb-3 group-hover:bg-blue-100 transition">
-                            <BarChart3 className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <h3 className="font-semibold text-sm">{t("dashboard.analytics")}</h3>
-                        <p className="text-xs text-muted mt-1">{t("dashboard.analyticsDesc")}</p>
-                    </Link>
-                    <Link href="/dashboard/keywords"
-                        className="bg-card border border-border rounded-xl p-5 hover:border-primary hover:shadow-md transition group">
-                        <div className="w-10 h-10 bg-yellow-50 rounded-lg flex items-center justify-center mb-3 group-hover:bg-yellow-100 transition">
-                            <Key className="w-5 h-5 text-yellow-600" />
-                        </div>
-                        <h3 className="font-semibold text-sm">{t("dashboard.keywords")}</h3>
-                        <p className="text-xs text-muted mt-1">{t("dashboard.keywordsDesc")}</p>
-                    </Link>
                 </div>
             </div>
+
+            {/* AI Insights Panel */}
+            <AiInsightsPanel businessId={activeBusiness?.id} />
 
             {/* Getting Started Guide - show for users without ads connected */}
             {!stats?.adsConnected && (
@@ -302,7 +306,27 @@ export default function DashboardPage() {
             )}
 
             {/* More tools row */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <Link href="/dashboard/shopping"
+                    className="bg-card border border-border rounded-xl p-4 hover:border-primary transition flex items-center gap-3">
+                    <div className="w-10 h-10 bg-orange-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <ShoppingBag className="w-5 h-5 text-orange-600" />
+                    </div>
+                    <div>
+                        <h3 className="font-semibold text-sm">Shopping Ads</h3>
+                        <p className="text-xs text-muted">Google Shopping & PMax</p>
+                    </div>
+                </Link>
+                <Link href="/dashboard/drafts"
+                    className="bg-card border border-border rounded-xl p-4 hover:border-primary transition flex items-center gap-3">
+                    <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <TrendingUp className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <div>
+                        <h3 className="font-semibold text-sm">{t("dashboard.adDrafts")}</h3>
+                        <p className="text-xs text-muted">{t("dashboard.adDraftsDesc")}</p>
+                    </div>
+                </Link>
                 <Link href="/dashboard/calls"
                     className="bg-card border border-border rounded-xl p-4 hover:border-primary transition flex items-center gap-3">
                     <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -311,16 +335,6 @@ export default function DashboardPage() {
                     <div>
                         <h3 className="font-semibold text-sm">{t("dashboard.callTracking")}</h3>
                         <p className="text-xs text-muted">{t("dashboard.callTrackingDesc")}</p>
-                    </div>
-                </Link>
-                <Link href="/dashboard/drafts"
-                    className="bg-card border border-border rounded-xl p-4 hover:border-primary transition flex items-center gap-3">
-                    <div className="w-10 h-10 bg-orange-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <TrendingUp className="w-5 h-5 text-orange-600" />
-                    </div>
-                    <div>
-                        <h3 className="font-semibold text-sm">{t("dashboard.adDrafts")}</h3>
-                        <p className="text-xs text-muted">{t("dashboard.adDraftsDesc")}</p>
                     </div>
                 </Link>
                 <Link href="/audit"

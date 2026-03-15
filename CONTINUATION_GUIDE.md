@@ -1,6 +1,6 @@
 # AdMaster Pro — Continuation Guide
 
-> **Last Updated:** February 27, 2026  
+> **Last Updated:** March 1, 2026  
 > **Purpose:** Resume development exactly where we left off. Share this file with the AI assistant and say "Read CONTINUATION_GUIDE.md and continue with the open issues starting from Issue 1."
 
 ---
@@ -155,15 +155,16 @@ admasterpro/
 │   ├── globals.css             # Tailwind directives + CSS variables + animations
 │   ├── page.tsx                # Landing page (hero, features, pricing, testimonials)
 │   ├── login/page.tsx          # Login page (Google OAuth + email — UI only)
-│   ├── onboarding/page.tsx     # 4-step onboarding flow (UI only)
+│   ├── onboarding/page.tsx     # 5-step onboarding: Account → Website → Scan → Google Ads → Upload
 │   ├── dashboard/
 │   │   ├── layout.tsx          # User sidebar layout (blue theme)
 │   │   ├── page.tsx            # Main dashboard (stats, money leaks, winners)
-│   │   ├── chat/page.tsx       # AI chat interface (UI only)
+│   │   ├── chat/page.tsx       # AI chat interface (directs to KB for setup)
 │   │   ├── campaigns/page.tsx  # Campaign management table
 │   │   ├── keywords/page.tsx   # Keywords with filters/search
 │   │   ├── drafts/page.tsx     # Ad draft review interface
-│   │   └── settings/page.tsx   # Auto-pilot, notifications, safety settings
+│   │   ├── billing/page.tsx    # Dedicated billing & subscription management
+│   │   └── settings/page.tsx   # Account, notifications, integrations (no billing)
 │   └── admin/
 │       ├── layout.tsx          # Admin sidebar layout (dark/red theme)
 │       ├── page.tsx            # Admin overview (stats, alerts, revenue chart)
@@ -173,8 +174,8 @@ admasterpro/
 ├── deploy/
 │   ├── setup-server.sh         # Server provisioning script
 │   └── lightsail-key.pem       # SSH key (gitignored)
-├── SYSTEM_PROMPT.md            # Complete AI system prompt (12 sections)
-├── WHATS_LEFT.md               # Full development roadmap
+├── CONTINUATION_GUIDE.md       # This file — developer handoff guide
+├── PROJECT_STATUS.md           # Detailed project status & phase history
 ├── package.json
 ├── tailwind.config.ts
 ├── next.config.mjs
@@ -195,7 +196,9 @@ admasterpro/
 | Campaigns | http://localhost:3000/dashboard/campaigns | https://admasterai.nobleblocks.com/dashboard/campaigns | ✅ Demo data |
 | Keywords | http://localhost:3000/dashboard/keywords | https://admasterai.nobleblocks.com/dashboard/keywords | ✅ Demo data |
 | Drafts | http://localhost:3000/dashboard/drafts | https://admasterai.nobleblocks.com/dashboard/drafts | ✅ Demo data |
-| Settings | http://localhost:3000/dashboard/settings | https://admasterai.nobleblocks.com/dashboard/settings | ✅ UI only |
+| Settings | http://localhost:3000/dashboard/settings | https://admasterai.nobleblocks.com/dashboard/settings | ✅ Account & integrations |
+| Billing | http://localhost:3000/dashboard/billing | https://admasterai.nobleblocks.com/dashboard/billing | ✅ Plans, usage, top-ups |
+| Knowledge Base | http://localhost:3000/dashboard/knowledge-base | https://admasterai.nobleblocks.com/dashboard/knowledge-base | ✅ Brand assets & uploads |
 | Admin | http://localhost:3000/admin | https://admasterai.nobleblocks.com/admin | ✅ Demo data |
 | Admin Users | http://localhost:3000/admin/users | https://admasterai.nobleblocks.com/admin/users | ✅ Demo data |
 | Admin Revenue | http://localhost:3000/admin/revenue | https://admasterai.nobleblocks.com/admin/revenue | ✅ Demo data |
@@ -232,7 +235,97 @@ htop                        # Interactive process monitor
 
 ---
 
-## 12. What's Left to Build (Summary)
+## 12. UX & Flow Changes (March 2026)
+
+Major UX overhaul to streamline the new-user experience and separate concerns.
+
+### 12a. AI Chat — No Longer Asks for Business Info
+
+**Before:** When a user had no Knowledge Base content, the chat would prompt them to type/paste their business details, website URL, or connect Google Ads — all inside the chat interface.
+
+**After:** The chat now directs users to the Knowledge Base page instead. The initial welcome message says "Head to your Knowledge Base to add your website and brand info." Action buttons changed:
+- ~~"📝 Tell you about my business"~~ → **"📚 Go to Knowledge Base"** (redirects to `/dashboard/knowledge-base`)
+- ~~"🌐 Enter my website URL"~~ → removed
+- ~~"🔗 Connect Google Ads"~~ → removed
+- Added **"What can you do for me?"** as a general info button
+
+**File:** `src/app/dashboard/chat/page.tsx`
+
+### 12b. Auto-Fill Brand Profile from Crawled Website
+
+**New feature:** After the website crawl completes during onboarding (Step 3), the system automatically extracts a structured brand profile using GPT-4o-mini and saves it to the Knowledge Base as a `brand_profile` item.
+
+**Extracted fields:** industry, targetAudience, brandVoice, toneExamples, uniqueSellingPoints, competitors, avoidTopics, guardrails.
+
+**New API endpoint:** `POST /api/knowledge-base/auto-fill`
+- Accepts: `businessName`, `industry`, `crawledContent`
+- Uses OpenAI GPT-4o-mini to extract structured brand data
+- Truncates content to 6000 chars
+- Returns JSON brand profile
+
+**Files:**
+- `src/app/api/knowledge-base/auto-fill/route.ts` (NEW)
+- `src/app/onboarding/page.tsx` (calls auto-fill after crawl completes)
+
+### 12c. Google Ads Connection Moved to Onboarding
+
+**Before:** Users were asked to connect Google Ads from the chat interface or settings page after onboarding.
+
+**After:** Step 4 of onboarding is now "Google Ads" (was "About You"). It presents:
+- OAuth connect button (redirects to `/api/auth/callback`)
+- "Skip for now" option
+- Connected status indicator with green checkmark
+
+The old Step 4 was a free-text textarea asking "Anything else we should know?" — this has been removed.
+
+**Onboarding steps are now:** Account → Your Website → Scan → Google Ads → Upload
+
+**File:** `src/app/onboarding/page.tsx`
+
+### 12d. Settings Separated from Billing
+
+**Before:** Settings page contained Plan & Billing section (plan display, upgrade buttons, top-up purchases, Stripe portal link) alongside account settings.
+
+**After:** Billing extracted to its own page at `/dashboard/billing`. Settings page now has a compact card linking to billing.
+
+**Billing page** (`src/app/dashboard/billing/page.tsx` — NEW) contains:
+- Current plan display (Free/Starter/Pro) with colored badge
+- Usage meter (messages used / limit)
+- Upgrade buttons for each plan tier
+- Top-up purchase options ($30 / $50 / $100)
+- "Manage Billing" link to Stripe portal
+- Back link to settings
+
+**Settings page** (`src/app/dashboard/settings/page.tsx`) changes:
+- Removed entire billing section
+- Google Ads integration section rewritten: shows connected/disconnected status, "Disconnect" button only (no connect button — that's in onboarding now), unconnected state links to onboarding
+
+**Dashboard layout** (`src/app/dashboard/layout.tsx`) changes:
+- Added `CreditCard` icon nav item for Billing before Settings
+- Added `nav.billing` i18n key to all 12 language files
+
+### 12e. New User Redirect: Knowledge Base Instead of Chat
+
+**Before:** After onboarding, users were redirected to `/dashboard/chat`. Non-setup users in the dashboard were also redirected to chat.
+
+**After:** Both redirects now go to `/dashboard/knowledge-base`:
+- Onboarding `handleFinish()` → `/dashboard/knowledge-base`
+- Dashboard layout non-setup redirect → `/dashboard/knowledge-base`
+
+**Rationale:** Users should populate their Knowledge Base first so the AI has context before they start chatting.
+
+### 12f. i18n Updates
+
+All 12 language files updated with `nav.billing` translations:
+- en: "Billing", es: "Facturación", fr: "Facturation", de: "Abrechnung"
+- pt: "Faturamento", it: "Fatturazione", nl/da/no/sv: "Facturering"
+- fi: "Laskutus", pl: "Rozliczenia"
+
+Also added `nav.faq: "FAQ"` to en.ts.
+
+---
+
+## 13. What's Left to Build (Summary)
 
 See `WHATS_LEFT.md` for the full detailed roadmap. Quick summary:
 
@@ -262,7 +355,7 @@ See `WHATS_LEFT.md` for the full detailed roadmap. Quick summary:
 
 ---
 
-## 13. HTTPS Issue — Other Subdomains
+## 14. HTTPS Issue — Other Subdomains
 
 The "not secure" warnings on other `nobleblocks.com` subdomains are **NOT** related to AdMaster Pro. Each subdomain runs on different infrastructure:
 
@@ -283,7 +376,7 @@ To fix HTTPS on the ELB-based subdomains:
 
 ---
 
-## 14. Troubleshooting
+## 15. Troubleshooting
 
 ### Server unresponsive / SSH timeout
 The 512MB instance gets overwhelmed during builds. Wait 5-10 minutes and retry. If it persists:
