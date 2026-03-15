@@ -166,7 +166,7 @@ export default function IntelligencePage() {
         <div className="text-center">
           <Brain className="w-12 h-12 text-primary animate-pulse mx-auto mb-4" />
           <h2 className="text-lg font-semibold mb-2">Pulling everything together...</h2>
-          <p className="text-sm text-muted">Just crunching the numbers across your platforms, taking a look at what's happening in the market</p>
+          <p className="text-sm text-muted">Just crunching the numbers across your platforms, taking a look at what&apos;s happening in the market</p>
         </div>
       </div>
     );
@@ -204,7 +204,7 @@ export default function IntelligencePage() {
             <div>
               <h1 className="text-2xl font-bold">Intelligence</h1>
               <p className="text-muted text-sm mt-0.5">
-                Everything you need to know about what's happening across your ad platforms right now
+                Everything you need to know about what&apos;s happening across your ad platforms right now
               </p>
             </div>
           </div>
@@ -227,7 +227,7 @@ export default function IntelligencePage() {
             <Sparkles className="w-5 h-5 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="font-semibold mb-1">Here's what's happening</h2>
+            <h2 className="font-semibold mb-1">Here&apos;s what&apos;s happening</h2>
             <p className="text-sm text-muted leading-relaxed">{data.aiInsights.summary}</p>
             {data.aiInsights.warnings.length > 0 && (
               <div className="mt-3 space-y-1">
@@ -318,7 +318,7 @@ function OverviewTab({ data }: { data: IntelligenceData }) {
         <div className="bg-card border border-border rounded-xl p-6">
           <div className="flex items-center gap-2 mb-4">
             {SEASON_ICONS[ctx.seasonal.season] || <Calendar className="w-5 h-5" />}
-            <h2 className="font-semibold">What's in season</h2>
+            <h2 className="font-semibold">What&apos;s in season</h2>
           </div>
           <div className="space-y-4">
             <div className="flex items-center justify-between text-sm">
@@ -410,7 +410,7 @@ function OverviewTab({ data }: { data: IntelligenceData }) {
         <div className="bg-card border border-border rounded-xl p-6">
           <div className="flex items-center gap-2 mb-4">
             <PieChart className="w-5 h-5 text-primary" />
-            <h2 className="font-semibold">Where we'd put the budget</h2>
+            <h2 className="font-semibold">Where we&apos;d put the budget</h2>
           </div>
           <div className="space-y-3">
             {data.crossPlatform.budgetAllocation.map((alloc, i) => {
@@ -451,7 +451,7 @@ function HolidaysTab({ data }: { data: IntelligenceData }) {
         <div className="bg-red-50 border border-red-200 rounded-xl p-6">
           <div className="flex items-center gap-2 mb-4">
             <Zap className="w-5 h-5 text-red-600" />
-            <h2 className="font-semibold text-red-800">These are happening right now — don't miss them</h2>
+            <h2 className="font-semibold text-red-800">These are happening right now — don&apos;t miss them</h2>
           </div>
           <div className="space-y-4">
             {holidays.active.map((h, i) => (
@@ -676,7 +676,7 @@ function ClimateTab({ data }: { data: IntelligenceData }) {
         </div>
 
         {/* Recommendations */}
-        <h3 className="text-sm font-semibold mb-3">What we'd recommend right now</h3>
+        <h3 className="text-sm font-semibold mb-3">What we&apos;d recommend right now</h3>
         <div className="space-y-2">
           {climate.recommendations.map((rec, i) => (
             <div key={i} className="flex items-start gap-2 text-sm">
