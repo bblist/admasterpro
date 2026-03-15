@@ -266,6 +266,8 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
     ]);
     const [notifOpen, setNotifOpen] = useState(false);
     const notifRef = useRef<HTMLDivElement>(null);
+    const [profileOpen, setProfileOpen] = useState(false);
+    const profileRef = useRef<HTMLDivElement>(null);
 
     // User session and plan state
     const [userPlan, setUserPlan] = useState<string>("free");
@@ -293,6 +295,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const handler = (e: MouseEvent) => {
             if (notifRef.current && !notifRef.current.contains(e.target as Node)) setNotifOpen(false);
+            if (profileRef.current && !profileRef.current.contains(e.target as Node)) setProfileOpen(false);
         };
         document.addEventListener("mousedown", handler);
         return () => document.removeEventListener("mousedown", handler);
@@ -545,11 +548,81 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                                 </div>
                             )}
                         </div>
-                        <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white text-sm font-medium overflow-hidden">
-                            {userPicture ? (
-                                <Image src={userPicture} alt="User profile" width={32} height={32} unoptimized className="w-full h-full object-cover" />
-                            ) : (
-                                userName ? userName.charAt(0).toUpperCase() : "U"
+                        <div ref={profileRef} className="relative">
+                            <button
+                                onClick={() => setProfileOpen(!profileOpen)}
+                                className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white text-sm font-medium overflow-hidden hover:ring-2 hover:ring-primary/30 transition"
+                            >
+                                {userPicture ? (
+                                    <Image src={userPicture} alt="User profile" width={32} height={32} unoptimized className="w-full h-full object-cover" />
+                                ) : (
+                                    userName ? userName.charAt(0).toUpperCase() : "U"
+                                )}
+                            </button>
+
+                            {profileOpen && (
+                                <div className="absolute right-0 top-full mt-2 w-64 bg-card border border-border rounded-xl shadow-2xl z-50 overflow-hidden">
+                                    {/* User Info */}
+                                    <div className="px-4 py-3 border-b border-border">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white text-sm font-medium overflow-hidden shrink-0">
+                                                {userPicture ? (
+                                                    <Image src={userPicture} alt="User profile" width={40} height={40} unoptimized className="w-full h-full object-cover" />
+                                                ) : (
+                                                    userName ? userName.charAt(0).toUpperCase() : "U"
+                                                )}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-semibold truncate">{userName || "User"}</p>
+                                                <p className="text-xs text-muted capitalize">{userPlan} plan</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Menu Items */}
+                                    <div className="py-1">
+                                        <Link
+                                            href="/dashboard/settings"
+                                            onClick={() => setProfileOpen(false)}
+                                            className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-foreground hover:bg-border/30 transition"
+                                        >
+                                            <Settings className="w-4 h-4 text-muted" />
+                                            {t("nav.settings")}
+                                        </Link>
+                                        <Link
+                                            href="/dashboard/billing"
+                                            onClick={() => setProfileOpen(false)}
+                                            className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-foreground hover:bg-border/30 transition"
+                                        >
+                                            <CreditCard className="w-4 h-4 text-muted" />
+                                            {t("nav.billing")}
+                                        </Link>
+                                        <Link
+                                            href="/dashboard/knowledge-base"
+                                            onClick={() => setProfileOpen(false)}
+                                            className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-foreground hover:bg-border/30 transition"
+                                        >
+                                            <BookOpen className="w-4 h-4 text-muted" />
+                                            {t("nav.knowledgeBase")}
+                                        </Link>
+                                    </div>
+
+                                    {/* Sign Out */}
+                                    <div className="border-t border-border py-1">
+                                        <button
+                                            onClick={async () => {
+                                                setProfileOpen(false);
+                                                clearAuth();
+                                                await fetch("/api/auth/signout", { method: "POST" });
+                                                window.location.href = "/login";
+                                            }}
+                                            className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-danger hover:bg-danger/5 transition w-full"
+                                        >
+                                            <LogOut className="w-4 h-4" />
+                                            {t("common.signOut")}
+                                        </button>
+                                    </div>
+                                </div>
                             )}
                         </div>
                     </div>
