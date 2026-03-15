@@ -69,6 +69,7 @@ const da: Messages = {
     "nav.login": "Log ind",
     "nav.startFree": "Start gratis",
     "nav.dashboard": "Dashboard",
+    "nav.intelligence": "Intelligens",
     "nav.aiAssistant": "AI-Assistent",
     "nav.campaigns": "Kampagner",
     "nav.keywords": "Søgeord",

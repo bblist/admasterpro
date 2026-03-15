@@ -81,6 +81,7 @@ const notificationIcons: Record<NotificationType, { bg: string; text: string; ic
 
 const mainNavItems = [
     { href: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard, tip: "Overview of your account, plan usage, and quick actions", requiresSetup: true },
+    { href: "/dashboard/intelligence", labelKey: "nav.intelligence", icon: Brain, tip: "AI-powered cross-platform intelligence — holiday, seasonal, device, geo & climate aware", requiresSetup: false },
     { href: "/dashboard/chat", labelKey: "nav.aiAssistant", icon: MessageCircle, tip: "Chat with AI to create ads, analyze performance, and find budget leaks", requiresSetup: false },
     { href: "/dashboard/campaigns", labelKey: "nav.campaigns", icon: FileText, tip: "View and manage your live Google Ads campaigns", requiresSetup: true },
     { href: "/dashboard/keywords", labelKey: "nav.keywords", icon: Search, tip: "Discover keyword opportunities and manage negative keywords", requiresSetup: true },

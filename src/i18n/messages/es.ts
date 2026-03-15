@@ -69,6 +69,7 @@ const es: Messages = {
     "nav.login": "Iniciar sesión",
     "nav.startFree": "Empezar gratis",
     "nav.dashboard": "Panel",
+    "nav.intelligence": "Inteligencia",
     "nav.aiAssistant": "Asistente IA",
     "nav.campaigns": "Campañas",
     "nav.keywords": "Palabras clave",

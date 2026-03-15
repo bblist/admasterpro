@@ -69,6 +69,7 @@ const fi: Messages = {
     "nav.login": "Kirjaudu",
     "nav.startFree": "Aloita ilmaiseksi",
     "nav.dashboard": "Ohjauspaneeli",
+    "nav.intelligence": "Älykkyys",
     "nav.aiAssistant": "AI-Avustaja",
     "nav.campaigns": "Kampanjat",
     "nav.keywords": "Avainsanat",

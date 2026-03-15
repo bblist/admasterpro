@@ -17,6 +17,10 @@ import {
   CheckCircle,
   Globe,
   Unlink,
+  Wifi,
+  WifiOff,
+  ExternalLink,
+  AlertCircle,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -364,6 +368,9 @@ export default function SettingsPage() {
       {/* Connected Account */}
       <ConnectedAccountSection />
 
+      {/* ─── Integrations Hub ───────────────────────────────────────── */}
+      <IntegrationsHubSection />
+
       {/* Save */}
       <div className="flex justify-end pb-6">
         <button
@@ -504,6 +511,111 @@ function ConnectedAccountSection() {
             </div>
           )}
         </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Integrations Hub Section ───────────────────────────────────────────
+
+const INTEGRATION_PLATFORMS = [
+  { key: "google_ads", icon: "🔍", name: "Google Ads", desc: "Search, Display, Shopping campaigns", setupLink: "/onboarding", color: "bg-blue-50 border-blue-200" },
+  { key: "google_analytics", icon: "📊", name: "Google Analytics 4", desc: "Traffic, conversions, audience data", setupLink: "/onboarding", color: "bg-orange-50 border-orange-200" },
+  { key: "meta_ads", icon: "📘", name: "Facebook & Instagram Ads", desc: "Social advertising & retargeting", setupLink: "/onboarding", color: "bg-indigo-50 border-indigo-200" },
+  { key: "amazon_ads", icon: "📦", name: "Amazon Advertising", desc: "Sponsored Products, Brands & Display", setupLink: "/onboarding", color: "bg-yellow-50 border-yellow-200" },
+  { key: "shopify", icon: "🛒", name: "Shopify", desc: "Products, orders, revenue tracking", setupLink: "/onboarding", color: "bg-green-50 border-green-200" },
+  { key: "google_merchant", icon: "🏪", name: "Google Merchant Center", desc: "Shopping feeds & product listings", setupLink: "/onboarding", color: "bg-red-50 border-red-200" },
+  { key: "tiktok_ads", icon: "🎵", name: "TikTok Ads", desc: "Video ad campaigns & performance", setupLink: "/onboarding", color: "bg-pink-50 border-pink-200" },
+];
+
+function IntegrationsHubSection() {
+  const { t } = useTranslation();
+  const [platforms, setPlatforms] = useState<Array<{ platform: string; connected: boolean; status: string }>>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    authFetch("/api/intelligence?country=US")
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.platforms) {
+          setPlatforms(data.platforms);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const getStatus = (key: string) => {
+    const p = platforms.find(pl => pl.platform === key);
+    return p?.connected ? "connected" : "not_connected";
+  };
+
+  const connectedCount = platforms.filter(p => p.connected).length;
+
+  return (
+    <div className="bg-card border border-border rounded-xl p-6">
+      <div className="flex items-start gap-3 mb-6">
+        <div className="w-10 h-10 bg-primary-light rounded-lg flex items-center justify-center shrink-0">
+          <Globe className="w-5 h-5 text-primary" />
+        </div>
+        <div>
+          <h2 className="font-semibold">Platform Integrations</h2>
+          <p className="text-sm text-muted mt-1">
+            Manage your connected ad platforms. More connections = smarter AI insights.
+          </p>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center gap-2 text-sm text-muted py-4">
+          <Loader2 className="w-4 h-4 animate-spin" /> Loading integrations...
+        </div>
+      ) : (
+        <>
+          <div className="flex items-center gap-2 mb-4 text-sm">
+            <Wifi className="w-4 h-4 text-green-500" />
+            <span className="font-medium">{connectedCount}</span>
+            <span className="text-muted">of {INTEGRATION_PLATFORMS.length} platforms connected</span>
+          </div>
+
+          <div className="space-y-2">
+            {INTEGRATION_PLATFORMS.map(p => {
+              const status = getStatus(p.key);
+              return (
+                <div key={p.key} className={`flex items-center justify-between p-3 rounded-xl border ${status === "connected" ? p.color : "bg-gray-50 border-gray-200"} transition`}>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl">{p.icon}</span>
+                    <div>
+                      <p className="text-sm font-medium">{p.name}</p>
+                      <p className="text-xs text-muted">{p.desc}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {status === "connected" ? (
+                      <span className="flex items-center gap-1 text-xs text-green-600 font-medium">
+                        <CheckCircle className="w-3.5 h-3.5" /> Connected
+                      </span>
+                    ) : (
+                      <Link href={p.setupLink} className="flex items-center gap-1 text-xs text-primary font-medium hover:underline">
+                        Connect <ExternalLink className="w-3 h-3" />
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {connectedCount < 3 && (
+            <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+              <p className="text-xs text-amber-700">
+                Connect 3+ platforms to unlock cross-channel intelligence, budget optimization, and unified reporting in the{" "}
+                <Link href="/dashboard/intelligence" className="underline font-medium">Intelligence Command Center</Link>.
+              </p>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

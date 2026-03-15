@@ -69,6 +69,7 @@ const sv: Messages = {
     "nav.login": "Logga in",
     "nav.startFree": "Starta gratis",
     "nav.dashboard": "Instrumentpanel",
+    "nav.intelligence": "Intelligens",
     "nav.aiAssistant": "AI-Assistent",
     "nav.campaigns": "Kampanjer",
     "nav.keywords": "Sökord",

@@ -75,6 +75,7 @@ const en = {
     "nav.login": "Log In",
     "nav.startFree": "Start Free",
     "nav.dashboard": "Dashboard",
+    "nav.intelligence": "Intelligence",
     "nav.aiAssistant": "AI Assistant",
     "nav.campaigns": "Campaigns",
     "nav.keywords": "Keywords",

@@ -69,6 +69,7 @@ const no: Messages = {
     "nav.login": "Logg inn",
     "nav.startFree": "Start gratis",
     "nav.dashboard": "Kontrollpanel",
+    "nav.intelligence": "Intelligens",
     "nav.aiAssistant": "AI-Assistent",
     "nav.campaigns": "Kampanjer",
     "nav.keywords": "Søkeord",

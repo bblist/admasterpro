@@ -69,6 +69,7 @@ const fr: Messages = {
     "nav.login": "Connexion",
     "nav.startFree": "Commencer gratuitement",
     "nav.dashboard": "Tableau de bord",
+    "nav.intelligence": "Intelligence",
     "nav.aiAssistant": "Assistant IA",
     "nav.campaigns": "Campagnes",
     "nav.keywords": "Mots-clés",
