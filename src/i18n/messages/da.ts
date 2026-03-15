@@ -102,6 +102,8 @@ const da: Messages = {
     "nav.siteScorer": "Sidescorer",
     "nav.smartAlerts": "Smarte alarmer",
     "nav.weeklyDigest": "Ugentlig oversigt",
+    "nav.strategyAdvisor": "Strategirådgiver",
+    "nav.localPresence": "Lokal Tilstedeværelse",
     "footer.product": "Produkt",
     "footer.company": "Virksomhed",
     "footer.legal": "Juridisk",

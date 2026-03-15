@@ -42,6 +42,8 @@ import {
     FlaskConical,
     Mail,
     ChevronRight,
+    Target,
+    MapPin,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { BusinessProvider, useBusiness } from "@/lib/business-context";
@@ -92,6 +94,8 @@ const mainNavItems = [
     { href: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard, tip: "Overview of your account, plan usage, and quick actions", requiresSetup: true },
     { href: "/dashboard/intelligence", labelKey: "nav.intelligence", icon: Brain, tip: "AI-powered cross-platform intelligence — holiday, seasonal, device, geo & climate aware", requiresSetup: false },
     { href: "/dashboard/chat", labelKey: "nav.aiAssistant", icon: MessageCircle, tip: "Chat with AI to create ads, analyze performance, and find budget leaks", requiresSetup: false },
+    { href: "/dashboard/strategy", labelKey: "nav.strategyAdvisor", icon: Target, tip: "AI-recommended ad channels, budget splits, and PMax assessment for your business type", requiresSetup: false },
+    { href: "/dashboard/local-presence", labelKey: "nav.localPresence", icon: MapPin, tip: "Local SEO checklist — Maps, GBP, reviews, citations, and NAP consistency", requiresSetup: false },
 
     // ── Campaigns & Ads ──
     { href: "/dashboard/campaigns", labelKey: "nav.campaigns", icon: FileText, tip: "View and manage your live Google Ads campaigns", requiresSetup: true, group: "Campaigns" },

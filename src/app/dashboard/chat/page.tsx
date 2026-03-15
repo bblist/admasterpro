@@ -147,6 +147,8 @@ type Intent =
     | "competitor_ads"
     | "ab_tests"
     | "weekly_digest"
+    | "ad_strategy"
+    | "local_presence"
     | "unknown";
 
 interface IntentMatch {
@@ -401,6 +403,26 @@ const matchIntent = (text: string): IntentMatch => {
         return { intent: "weekly_digest", params: {} };
     }
 
+    // Ad strategy / channel recommendations
+    if (/\b(strategy|channel|budget\s+split|which\s+ads?|what.*ads?\s+should|ad\s+type|campaign\s+type)\b/i.test(t) ||
+        /\b(performance\s+max|pmax|p-max)\b/i.test(t) ||
+        /\bwhat\s+(type|kind)\s+of\s+(ads?|campaign)\b/i.test(t) ||
+        /\bshould\s+i\s+(use|run|try)\s+(search|display|video|shopping|pmax)\b/i.test(t) ||
+        /\brecommend.*(channel|ads?|campaign)\b/i.test(t) ||
+        /\b(search\s+ads?|display\s+ads?|video\s+ads?|shopping\s+ads?)\s+vs\b/i.test(t)) {
+        return { intent: "ad_strategy", params: {} };
+    }
+
+    // Local presence / Maps / GBP / Reviews
+    if (/\b(local\s+(seo|presence|search|ranking|visibility))\b/i.test(t) ||
+        /\b(google\s+(maps|business\s+profile|my\s+business)|gbp|gmb)\b/i.test(t) ||
+        /\b(reviews?|star\s+rating)\b.*\b(get|improve|increase|manage|respond|strategy)\b/i.test(t) ||
+        /\b(get|improve|increase|manage|respond|strategy)\b.*\b(reviews?|star\s+rating)\b/i.test(t) ||
+        /\b(maps\s+ranking|rank\s+on\s+maps|appear\s+on\s+maps)\b/i.test(t) ||
+        /\b(nap\s+consistency|citations?|local\s+directories?)\b/i.test(t)) {
+        return { intent: "local_presence", params: {} };
+    }
+
     // Help
     if (/\b(help|what can you|how do i|capabilities|what do you do)\b/i.test(t)) {
         return { intent: "help", params: {} };
@@ -420,7 +442,7 @@ const quickActionKeys = [
 
 // ─── Intent Deep-Link Map ───────────────────────────────────────────────────
 
-type ChatIntent = "keywords" | "campaigns" | "shopping" | "ads" | "audit" | "budget" | "competitors" | null;
+type ChatIntent = "keywords" | "campaigns" | "shopping" | "ads" | "audit" | "budget" | "competitors" | "ad_strategy" | "local_presence" | null;
 
 const INTENT_PROMPTS: Record<string, { autoMessage: string; greeting: string }> = {
     keywords: {
@@ -450,6 +472,14 @@ const INTENT_PROMPTS: Record<string, { autoMessage: string; greeting: string }> 
     competitors: {
         autoMessage: "Analyze my competitors. Who's bidding on similar keywords? What positioning are they using? How can I outperform them?",
         greeting: "🕵️ **Competitor Analysis Mode** — Let me scope out what your competition is doing.",
+    },
+    ad_strategy: {
+        autoMessage: "What ad channels and campaign types should I use for my business? Give me a recommended budget split, Performance Max assessment, and channels to avoid.",
+        greeting: "🎯 **Strategy Mode** — Let me analyze your business and recommend the optimal ad channels and budget allocation.",
+    },
+    local_presence: {
+        autoMessage: "How important is local SEO for my business? Help me with Google Maps ranking, Google Business Profile optimization, and getting more reviews.",
+        greeting: "📍 **Local Presence Mode** — Let me assess your local search needs and give you a game plan.",
     },
 };
 
@@ -1488,6 +1518,20 @@ function ChatPageInner() {
                 { label: "Set up smart alerts too", type: "secondary" },
             ];
         }
+        if (intent === "ad_strategy") {
+            return [
+                { label: "Open Strategy Advisor", type: "primary" },
+                { label: "Which channels should I use?", type: "secondary" },
+                { label: "Is Performance Max right for me?", type: "secondary" },
+            ];
+        }
+        if (intent === "local_presence") {
+            return [
+                { label: "Open Local Presence Checker", type: "primary" },
+                { label: "How do I rank on Maps?", type: "secondary" },
+                { label: "Help me get more reviews", type: "secondary" },
+            ];
+        }
 
         // ── Default fallback — smart defaults based on setup state
         const isSetupDone = activeBusiness.setupComplete;
@@ -1667,6 +1711,26 @@ function ChatPageInner() {
         }
         if (text === "Run a website audit") {
             router.push("/audit");
+            return;
+        }
+        // Navigation shortcuts for feature pages
+        const NAV_MAP: Record<string, string> = {
+            "Open Strategy Advisor": "/dashboard/strategy",
+            "Open Local Presence Checker": "/dashboard/local-presence",
+            "Open Wasted Spend": "/dashboard/wasted-spend",
+            "Open Negative Keywords": "/dashboard/negative-keywords",
+            "Open Budget Pacing": "/dashboard/budget-pacing",
+            "Open Ad Scheduling": "/dashboard/ad-scheduling",
+            "Open Site Scorer": "/dashboard/site-scorer",
+            "Open Profit Tracker": "/dashboard/profit-tracker",
+            "Open Smart Alerts": "/dashboard/alerts",
+            "Open Competitor Ads": "/dashboard/competitor-ads",
+            "Open A/B Tests": "/dashboard/ab-tests",
+            "Open Weekly Digest": "/dashboard/weekly-digest",
+            "Open Budget Optimizer": "/dashboard/budget",
+        };
+        if (NAV_MAP[text]) {
+            router.push(NAV_MAP[text]);
             return;
         }
 
@@ -1885,6 +1949,8 @@ function ChatPageInner() {
                 competitor_ads: "view competitor ads",
                 ab_tests: "manage A/B tests",
                 weekly_digest: "set up weekly digest",
+                ad_strategy: "get strategy recommendations",
+                local_presence: "check local presence",
             };
             const actionLabel = actionMap[intent.intent] || "work on that";
 
@@ -1960,6 +2026,12 @@ function ChatPageInner() {
             }
             if (intent.intent === "weekly_digest") {
                 enrichedText = `${text}\n\n[SYSTEM NOTE: The user wants a weekly email digest. Explain the Weekly Digest — a beautiful email summary sent weekly with top wins, things to watch, key metrics, and looking-ahead tips. They can choose day/time and preview what they'll receive. Direct them to "Weekly Digest" in the sidebar.]`;
+            }
+            if (intent.intent === "ad_strategy") {
+                enrichedText = `${text}\n\n[SYSTEM NOTE: The user is asking about ad strategy or channel recommendations. You have strategy intelligence injected in the context above — USE IT to recommend specific channels with budget percentages. Mention Performance Max assessment, channels to avoid, and split test ideas. Reference the Strategy Advisor page in the sidebar for visual budget splits. Be specific to their business type — don't give generic advice.]`;
+            }
+            if (intent.intent === "local_presence") {
+                enrichedText = `${text}\n\n[SYSTEM NOTE: The user is asking about local SEO, Google Maps, reviews, or Google Business Profile. Use the strategy context to assess how important local presence is for their business type. Give specific, actionable local SEO advice: GBP optimization, review strategy, NAP consistency, Maps ranking factors. Direct them to "Local Presence" in the sidebar for a full checklist.]`;
             }
 
             callAI(enrichedText, messages).then((aiResult) => {

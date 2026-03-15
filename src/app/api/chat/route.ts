@@ -13,6 +13,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { chatLimiter, checkRateLimit } from "@/lib/rate-limit";
 import { getSessionDual } from "@/lib/session";
 import { checkCSRF } from "@/lib/csrf";
+import { getInferredStrategySummaryForAI, type BusinessSignals } from "@/lib/ad-strategy";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
@@ -541,12 +542,39 @@ When users ask about these features, guide them to the right page in the sidebar
 - **Competitor Ads** — Track what competitors run on Google, Facebook, Shopping. Headlines, display URLs, keywords, positions. In sidebar: "Competitor Ads"
 - **A/B Test Tracker** — Create variant A vs B tests, track clicks/conversions/CTR, auto-declare winners at 95% statistical confidence. In sidebar: "A/B Tests"
 - **Weekly Email Digest** — Beautiful weekly email summary with wins, concerns, metrics, and seasonal tips. In sidebar: "Weekly Digest"
+- **Strategy Advisor** — AI-inferred ad channel recommendations, budget splits, and Performance Max assessment based on the user's actual business type (not just what they selected). In sidebar: "Strategy Advisor"
+- **Local Presence Checker** — Local SEO checklist: Google Business Profile, Maps optimization, review strategy, citations, and NAP consistency. In sidebar: "Local Presence"
 
 When relevant, proactively suggest these tools. For example:
 - If someone asks about wasting money → mention Wasted Spend Detector and Negative Keyword Miner
 - If they ask about scheduling → mention Ad Scheduling Optimizer
 - If they ask about profitability → mention Profit Tracker
 - If they mention competitors → mention both Competitors research AND Competitor Ads screenshots
+- If they ask which ads to run / which channels → mention Strategy Advisor
+- If they ask about local SEO / Maps / reviews / GBP → mention Local Presence Checker
+- If they ask about Performance Max → give specific PMax advice for their business type (see strategy context)
+
+═══════════════════════════════════════════════════════════════════
+AD STRATEGY INTELLIGENCE (CRITICAL — USE THIS IN EVERY RESPONSE)
+═══════════════════════════════════════════════════════════════════
+
+A strategy intelligence summary will be injected into the client context. It contains:
+- The INFERRED business type (cross-referencing name, services, KB content, website, Shopify, location — NOT just the industry dropdown)
+- Recommended ad channels with budget splits
+- Local presence assessment (Maps, Reviews, GBP importance)
+- Performance Max recommendation for this business type
+- Channels to AVOID for this business type
+- Split test ideas
+
+USE THIS INTELLIGENCE when:
+1. Recommending which ad types to create (text search vs visual/shopping vs video)
+2. Suggesting campaign structures and budget allocation
+3. Advising on local presence (Maps, GBP, reviews)
+4. Recommending Performance Max or advising against it
+5. Suggesting what kinds of ads to write (call-only for plumbers, shopping for e-commerce, etc.)
+
+IMPORTANT: The dropdown industry may be WRONG. Trust the inferred strategy signals more than the dropdown alone.
+For example: if someone selected "Retail" but their KB shows they're a local boutique with a physical store, treat them as a fashion/boutique with HIGH local importance — not a generic online retailer.
 
 FORMAT:
 - Use markdown: **bold**, bullet points, numbered lists
@@ -855,6 +883,41 @@ export async function POST(req: NextRequest) {
             } catch (kbErr) {
                 console.warn("[Chat] KB fetch error:", kbErr);
             }
+        }
+
+        // ─── Call AI Model ──────────────────────────────────────────────────
+        // ─── Strategy Intelligence (Multi-Signal Inference) ─────────────
+        // Infer the true business type from all available signals,
+        // not just the industry dropdown — then inject into AI context.
+        try {
+            const strategySignals: BusinessSignals = {
+                industryDropdown: body.businessIndustry || undefined,
+                businessName: body.businessName || undefined,
+                services: body.businessServices || undefined,
+                kbContent: body.context || undefined,
+                websiteUrl: body.businessWebsite || undefined,
+                location: body.businessLocation || undefined,
+            };
+
+            // Fetch Shopify connection status from DB if we have a businessId
+            if (userId && body.businessId) {
+                try {
+                    const { prisma: stratDb } = await import("@/lib/db");
+                    const bizData = await stratDb.business.findFirst({
+                        where: { id: body.businessId, userId },
+                        select: { shopifyConnected: true, shopifyDomain: true },
+                    });
+                    if (bizData) {
+                        strategySignals.shopifyConnected = bizData.shopifyConnected || false;
+                        strategySignals.shopifyDomain = bizData.shopifyDomain || undefined;
+                    }
+                } catch { /* non-critical — continue without shopify signal */ }
+            }
+
+            const strategySummary = getInferredStrategySummaryForAI(strategySignals);
+            body.context = (body.context || "") + "\n\n" + strategySummary;
+        } catch (stratErr) {
+            console.warn("[Chat] Strategy inference error (non-critical):", stratErr);
         }
 
         // ─── Call AI Model ──────────────────────────────────────────────────

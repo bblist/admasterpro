@@ -102,6 +102,8 @@ const sv: Messages = {
     "nav.siteScorer": "Sidbetyg",
     "nav.smartAlerts": "Smarta varningar",
     "nav.weeklyDigest": "Veckosammanfattning",
+    "nav.strategyAdvisor": "Strategirådgivare",
+    "nav.localPresence": "Lokal Närvaro",
     "footer.product": "Produkt",
     "footer.company": "Företag",
     "footer.legal": "Juridiskt",

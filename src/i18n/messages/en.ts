@@ -110,6 +110,8 @@ const en = {
     "nav.siteScorer": "Site Scorer",
     "nav.smartAlerts": "Smart Alerts",
     "nav.weeklyDigest": "Weekly Digest",
+    "nav.strategyAdvisor": "Strategy Advisor",
+    "nav.localPresence": "Local Presence",
 
     // ─── Footer ─────────────────────────────────────────────────────────
     "footer.product": "Product",

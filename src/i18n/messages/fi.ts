@@ -102,6 +102,8 @@ const fi: Messages = {
     "nav.siteScorer": "Sivupisteytys",
     "nav.smartAlerts": "Älykkäät hälytykset",
     "nav.weeklyDigest": "Viikkoraportti",
+    "nav.strategyAdvisor": "Strategianeuvoja",
+    "nav.localPresence": "Paikallinen Näkyvyys",
     "footer.product": "Tuote",
     "footer.company": "Yritys",
     "footer.legal": "Lakiasiat",

@@ -30,6 +30,8 @@ import {
   CheckCircle,
   Mic,
   FileText,
+  Target,
+  MapPin,
 } from "lucide-react";
 import { useTranslation } from "@/i18n/context";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
@@ -96,6 +98,35 @@ const CATEGORIES: Category[] = [
           "Bid adjustments based on performance",
           "Safe guardrails — never overspends",
           "Full activity log so you see everything it did",
+        ],
+      },
+      {
+        icon: Target,
+        name: "Strategy Advisor",
+        headline: "Know exactly which ad types are right for YOUR business",
+        description:
+          "Our multi-signal inference engine analyzes your business name, services, website, KB content, Shopify connection, and location — not just a dropdown — to determine the optimal ad channels, budget splits, and Performance Max assessment for your specific business type.",
+        highlights: [
+          "11+ industry profiles with channel recommendations",
+          "Multi-signal inference (not just dropdown selection)",
+          "Budget split % for each channel",
+          "Performance Max suitability assessment",
+          "Channels to AVOID for your business type",
+          "Split test ideas tailored to your industry",
+        ],
+      },
+      {
+        icon: MapPin,
+        name: "Local Presence Checker",
+        headline: "Dominate your local area with Maps, reviews, and GBP",
+        description:
+          "For businesses where local matters (dentists, restaurants, plumbers, gyms), we give you a complete local SEO checklist — Google Business Profile optimization, Maps ranking tips, review strategies, NAP consistency, and citation management.",
+        highlights: [
+          "Auto-detects if local presence matters for your business",
+          "21-item interactive checklist with progress tracking",
+          "Google Maps, GBP, Reviews, Citations, Website signals",
+          "Priority-based (critical → high → medium)",
+          "Persisted progress per business",
         ],
       },
     ],

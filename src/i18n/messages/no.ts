@@ -102,6 +102,8 @@ const no: Messages = {
     "nav.siteScorer": "Sidescorer",
     "nav.smartAlerts": "Smarte varsler",
     "nav.weeklyDigest": "Ukentlig oversikt",
+    "nav.strategyAdvisor": "Strategirådgiver",
+    "nav.localPresence": "Lokal Tilstedeværelse",
     "footer.product": "Produkt",
     "footer.company": "Selskap",
     "footer.legal": "Juridisk",

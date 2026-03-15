@@ -102,6 +102,8 @@ const fr: Messages = {
     "nav.siteScorer": "Score du site",
     "nav.smartAlerts": "Alertes intelligentes",
     "nav.weeklyDigest": "Résumé hebdomadaire",
+    "nav.strategyAdvisor": "Conseiller Stratégie",
+    "nav.localPresence": "Présence Locale",
     "footer.product": "Produit",
     "footer.company": "Entreprise",
     "footer.legal": "Juridique",

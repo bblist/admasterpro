@@ -102,6 +102,8 @@ const es: Messages = {
     "nav.siteScorer": "Puntuación del sitio",
     "nav.smartAlerts": "Alertas inteligentes",
     "nav.weeklyDigest": "Resumen semanal",
+    "nav.strategyAdvisor": "Asesor de Estrategia",
+    "nav.localPresence": "Presencia Local",
     "footer.product": "Producto",
     "footer.company": "Empresa",
     "footer.legal": "Legal",

@@ -102,6 +102,8 @@ const nl: Messages = {
     "nav.siteScorer": "Sitescore",
     "nav.smartAlerts": "Slimme meldingen",
     "nav.weeklyDigest": "Wekelijks overzicht",
+    "nav.strategyAdvisor": "Strategieadviseur",
+    "nav.localPresence": "Lokale Aanwezigheid",
     "footer.product": "Product",
     "footer.company": "Bedrijf",
     "footer.legal": "Juridisch",
