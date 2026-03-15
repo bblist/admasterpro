@@ -10,6 +10,7 @@ import Link from "next/link";
 import { authFetch } from "@/lib/auth-client";
 import { useBusiness } from "@/lib/business-context";
 import { useTranslation } from "@/i18n/context";
+import SetupChecklist from "@/components/SetupChecklist";
 
 interface Campaign {
     id: string;
@@ -122,6 +123,12 @@ export default function ShoppingPage() {
                     </button>
                 </div>
             </div>
+
+            <SetupChecklist
+                prereqs={["google_ads", "business_info"]}
+                pageContext="Connect your Google Ads account so the AI can manage your Shopping campaigns, product listings, and feed optimization"
+                mode="blocking"
+            />
 
             {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm flex items-center gap-2">

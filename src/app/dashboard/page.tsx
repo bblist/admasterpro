@@ -12,6 +12,7 @@ import { useBusiness } from "@/lib/business-context";
 import { useTranslation } from "@/i18n/context";
 import Tooltip from "@/components/Tooltip";
 import AiInsightsPanel from "@/components/AiInsightsPanel";
+import SetupChecklist from "@/components/SetupChecklist";
 
 interface DashboardStats {
     subscription: {
@@ -113,6 +114,11 @@ export default function DashboardPage() {
                     {t("dashboard.welcome")}
                 </p>
             </div>
+
+            <SetupChecklist
+                prereqs={["business_info", "google_ads", "knowledge_base"]}
+                pageContext="Complete your setup to unlock AI-powered campaign management, budget optimization, and performance analytics"
+            />
 
             {/* Plan & Usage Row */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

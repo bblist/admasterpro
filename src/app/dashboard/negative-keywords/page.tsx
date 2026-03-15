@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Search, Ban, Shield, Download, CheckCircle, Plus, ChevronDown, ChevronUp, Filter } from "lucide-react";
 import { useBusiness } from "@/lib/business-context";
+import SetupChecklist from "@/components/SetupChecklist";
 
 interface NegativeKeyword {
   id: string;
@@ -71,6 +72,12 @@ export default function NegativeKeywordsPage() {
           We scan your search terms daily to find keywords wasting your budget. Add them as negatives in one click.
         </p>
       </div>
+
+      <SetupChecklist
+          prereqs={["google_ads"]}
+          pageContext="Connect your Google Ads account so the Negative Keyword Miner can scan your search terms and find keywords wasting your budget"
+          mode="blocking"
+      />
 
       {/* Summary */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

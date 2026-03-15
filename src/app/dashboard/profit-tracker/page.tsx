@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { PoundSterling, TrendingUp, TrendingDown, ShoppingBag, ArrowUpDown, ChevronDown, ChevronUp } from "lucide-react";
 import { useBusiness } from "@/lib/business-context";
+import SetupChecklist from "@/components/SetupChecklist";
 
 interface Product {
   id: string;
@@ -72,6 +73,11 @@ export default function ProfitTrackerPage() {
           See the true profitability of each product or service after ad spend and costs. Not just revenue — real profit.
         </p>
       </div>
+
+      <SetupChecklist
+          prereqs={["google_ads", "business_info"]}
+          pageContext="Connect your Google Ads account and add business info so the Profit Tracker can calculate true profitability per product"
+      />
 
       {/* Summary */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

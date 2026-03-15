@@ -10,6 +10,7 @@ import {
 import { authFetch } from "@/lib/auth-client";
 import { useBusiness } from "@/lib/business-context";
 import Link from "next/link";
+import SetupChecklist from "@/components/SetupChecklist";
 
 interface KeywordResult {
     keyword: string;
@@ -307,6 +308,11 @@ export default function KeywordResearchPage() {
                     <ArrowRight className="w-3 h-3" />
                 </Link>
             </div>
+
+            <SetupChecklist
+                prereqs={["business_info", "knowledge_base"]}
+                pageContext="Add your business info and knowledge base content so the AI can discover keywords tailored to your products, services, and audience"
+            />
 
             {/* Research Form */}
             <div className="bg-card border border-border rounded-2xl p-6 space-y-5">

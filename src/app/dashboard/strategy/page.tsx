@@ -18,6 +18,7 @@ import {
     type AdChannel,
     type LocalImportance,
 } from "@/lib/ad-strategy";
+import SetupChecklist from "@/components/SetupChecklist";
 
 // ─── Channel Icon Map ──────────────────────────────────────────────────────
 
@@ -156,6 +157,11 @@ export default function StrategyAdvisorPage() {
                     Re-analyze
                 </button>
             </div>
+
+            <SetupChecklist
+                prereqs={["business_info", "knowledge_base"]}
+                pageContext="Add your business info and knowledge base content so the AI Strategy Advisor can recommend the best ad channels and budget allocation"
+            />
 
             {/* ── Business Type Inference Card ── */}
             <div className="bg-white rounded-xl border p-6 space-y-4">

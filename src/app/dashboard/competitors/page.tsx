@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { authFetch } from "@/lib/auth-client";
 import { useBusiness } from "@/lib/business-context";
+import SetupChecklist from "@/components/SetupChecklist";
 
 interface AuctionInsight {
     domain: string;
@@ -111,6 +112,11 @@ export default function CompetitorResearchPage() {
                 </h1>
                 <p className="text-muted text-sm mt-1">Analyze your competitors&apos; ad strategies and find opportunities to outperform them</p>
             </div>
+
+            <SetupChecklist
+                prereqs={["google_ads", "business_info"]}
+                pageContext="Connect Google Ads and add business info so the AI can identify your real auction competitors and analyze their strategies"
+            />
 
             {error && (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-sm text-yellow-700 flex items-center gap-2">

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { authFetch } from "@/lib/auth-client";
 import { useBusiness } from "@/lib/business-context";
+import SetupChecklist from "@/components/SetupChecklist";
 
 interface QualityScoreData {
     avgScore: number;
@@ -163,6 +164,12 @@ export default function AdAnalysisPage() {
                     </button>
                 </div>
             </div>
+
+            <SetupChecklist
+                prereqs={["google_ads", "business_info"]}
+                pageContext="Connect your Google Ads account so the AI can analyze your actual ads, quality scores, and performance data"
+                mode="blocking"
+            />
 
             {/* AI Analysis Results */}
             {aiAnalysis && (

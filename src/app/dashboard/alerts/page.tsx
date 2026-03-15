@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Bell, Mail, MessageSquare, Plus, Trash2, ToggleLeft, ToggleRight, Zap, AlertTriangle, TrendingUp, TrendingDown, DollarSign, Target } from "lucide-react";
 import { useBusiness } from "@/lib/business-context";
+import SetupChecklist from "@/components/SetupChecklist";
 
 interface Alert {
   id: string;
@@ -79,6 +80,11 @@ export default function AlertsPage() {
           Get notified by email or WhatsApp when something important happens, so you never miss a beat.
         </p>
       </div>
+
+      <SetupChecklist
+          prereqs={["google_ads", "business_info"]}
+          pageContext="Connect your Google Ads account so Smart Alerts can monitor your campaigns and notify you about important changes"
+      />
 
       {/* Delivery Channels */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

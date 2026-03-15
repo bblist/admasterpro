@@ -12,6 +12,7 @@ import { authFetch } from "@/lib/auth-client";
 import { useBusiness } from "@/lib/business-context";
 import { useTranslation } from "@/i18n/context";
 import Tooltip from "@/components/Tooltip";
+import SetupChecklist from "@/components/SetupChecklist";
 
 interface GeneratedAd {
     headlines?: string[];
@@ -252,6 +253,11 @@ export default function AdCopyPage() {
                     Generate Google Ads-compliant ad copy with AI — headlines, descriptions, keywords, and extensions
                 </p>
             </div>
+
+            <SetupChecklist
+                prereqs={["business_info", "knowledge_base"]}
+                pageContext="Add your business info and knowledge base content so the AI can generate highly relevant, on-brand ad copy"
+            />
 
             {/* Mode toggle */}
             <div className="flex gap-2 bg-card border border-border rounded-xl p-1">

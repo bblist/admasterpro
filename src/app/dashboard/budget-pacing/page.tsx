@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { DollarSign, TrendingUp, TrendingDown, AlertTriangle, Calendar, Target, Gauge, ArrowRight } from "lucide-react";
 import { useBusiness } from "@/lib/business-context";
+import SetupChecklist from "@/components/SetupChecklist";
 
 export default function BudgetPacingPage() {
   const { activeBusiness } = useBusiness();
@@ -53,6 +54,11 @@ export default function BudgetPacingPage() {
           Track your daily spend against your monthly budget to avoid running out early or underspending.
         </p>
       </div>
+
+      <SetupChecklist
+          prereqs={["google_ads", "business_info"]}
+          pageContext="Connect your Google Ads account so Budget Pacing can track your real daily spend against your monthly budget"
+      />
 
       {/* Main Pacing Card */}
       <div className={`rounded-2xl p-6 border ${isPacing ? "bg-green-50 border-green-200" : overspend > 0 ? "bg-red-50 border-red-200" : "bg-amber-50 border-amber-200"}`}>

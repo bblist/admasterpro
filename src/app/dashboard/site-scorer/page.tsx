@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Globe, Search, Gauge, Smartphone, Monitor, Zap, AlertTriangle, CheckCircle, ChevronDown, ChevronUp, ExternalLink, RefreshCw } from "lucide-react";
 import { useBusiness } from "@/lib/business-context";
+import SetupChecklist from "@/components/SetupChecklist";
 
 interface PageScore {
   id: string;
@@ -126,6 +127,11 @@ export default function SiteScorerPage() {
           Score every page on your site — not just landing pages. Product pages, homepage, checkout, blog — anything your ads point to.
         </p>
       </div>
+
+      <SetupChecklist
+          prereqs={["business_info"]}
+          pageContext="Add your business info including your website URL so the Site Scorer can analyze your landing pages"
+      />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

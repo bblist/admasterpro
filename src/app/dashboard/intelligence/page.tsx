@@ -14,6 +14,7 @@ import { authFetch } from "@/lib/auth-client";
 import { useBusiness } from "@/lib/business-context";
 import { useTranslation } from "@/i18n/context";
 import UITooltip from "@/components/Tooltip";
+import SetupChecklist from "@/components/SetupChecklist";
 
 /* ═══ Types ═══════════════════════════════════════════════════════════════ */
 
@@ -219,7 +220,10 @@ export default function IntelligencePage() {
           </button>
         </div>
       </div>
-
+      <SetupChecklist
+          prereqs={["google_ads", "business_info"]}
+          pageContext="Connect your ad platforms and add business info to unlock cross-channel intelligence, seasonal insights, and AI-powered recommendations"
+      />
       {/* ─── AI Summary Banner ──────────────────────────────────────── */}
       <div className="bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5 border border-primary/20 rounded-2xl p-6">
         <div className="flex items-start gap-4">

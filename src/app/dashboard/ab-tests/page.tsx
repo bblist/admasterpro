@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { FlaskConical, TrendingUp, CheckCircle, Clock, Pause, Play, Trash2, Plus, BarChart3, ArrowRight } from "lucide-react";
 import { useBusiness } from "@/lib/business-context";
+import SetupChecklist from "@/components/SetupChecklist";
 
 interface ABTest {
   id: string;
@@ -82,6 +83,11 @@ export default function ABTestsPage() {
           Test different ad headlines, descriptions, and CTAs. We track statistical significance and auto-declare winners.
         </p>
       </div>
+
+      <SetupChecklist
+          prereqs={["google_ads", "business_info"]}
+          pageContext="Connect your Google Ads account so the AI can track A/B test performance and declare statistical winners"
+      />
 
       {/* Summary */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

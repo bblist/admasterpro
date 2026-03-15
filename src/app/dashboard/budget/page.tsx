@@ -10,6 +10,7 @@ import { authFetch } from "@/lib/auth-client";
 import { useBusiness } from "@/lib/business-context";
 import { useTranslation } from "@/i18n/context";
 import Tooltip from "@/components/Tooltip";
+import SetupChecklist from "@/components/SetupChecklist";
 
 interface Recommendation {
     campaignId?: string;
@@ -109,6 +110,11 @@ export default function BudgetOptimizerPage() {
                     )}
                 </button>
             </div>
+
+            <SetupChecklist
+                prereqs={["google_ads", "business_info"]}
+                pageContext="Connect your Google Ads account and add business info so the AI can analyze your actual campaign data and recommend optimal budgets"
+            />
 
             {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm flex items-center gap-2">

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Mail, Calendar, TrendingUp, TrendingDown, DollarSign, Target, Clock, Settings, CheckCircle, Send } from "lucide-react";
 import { useBusiness } from "@/lib/business-context";
+import SetupChecklist from "@/components/SetupChecklist";
 
 export default function WeeklyDigestPage() {
   const { activeBusiness } = useBusiness();
@@ -47,6 +48,11 @@ export default function WeeklyDigestPage() {
           Get a weekly summary of wins, concerns, and key metrics delivered to your inbox. No need to log in.
         </p>
       </div>
+
+      <SetupChecklist
+          prereqs={["google_ads", "business_info"]}
+          pageContext="Connect your Google Ads account so the Weekly Digest can summarize your campaign performance, wins, and concerns"
+      />
 
       {/* Settings */}
       <div className="bg-card border border-border rounded-xl p-5">

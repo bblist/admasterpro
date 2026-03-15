@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Clock, Sun, Moon, TrendingUp, Zap, Globe, MapPin } from "lucide-react";
 import { useBusiness } from "@/lib/business-context";
+import SetupChecklist from "@/components/SetupChecklist";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -71,6 +72,12 @@ export default function AdSchedulingPage() {
           See when your ads convert best and schedule them to run during peak hours.
         </p>
       </div>
+
+      <SetupChecklist
+          prereqs={["google_ads"]}
+          pageContext="Connect your Google Ads account so the Ad Scheduling Optimizer can analyze when your ads convert best"
+          mode="blocking"
+      />
 
       {/* Timezone Awareness */}
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Eye, Search, ExternalLink, Calendar, RefreshCw, Filter, Globe, Facebook, ShoppingCart } from "lucide-react";
 import { useBusiness } from "@/lib/business-context";
+import SetupChecklist from "@/components/SetupChecklist";
 
 interface CompetitorAd {
   id: string;
@@ -124,6 +125,11 @@ export default function CompetitorAdsPage() {
           See what your competitors are running on Google and Facebook. Learn from their ads and find gaps to exploit.
         </p>
       </div>
+
+      <SetupChecklist
+          prereqs={["google_ads", "business_info"]}
+          pageContext="Connect your Google Ads account and add business info so we can track what your competitors are running"
+      />
 
       {/* Summary */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

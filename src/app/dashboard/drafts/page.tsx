@@ -11,6 +11,7 @@ import { authFetch } from "@/lib/auth-client";
 import { useBusiness } from "@/lib/business-context";
 import { useTranslation } from "@/i18n/context";
 import AdApprovalDrawer, { AdDraftForApproval } from "@/components/AdApprovalDrawer";
+import SetupChecklist from "@/components/SetupChecklist";
 
 interface Draft {
     id: string;
@@ -254,6 +255,11 @@ export default function DraftsPage() {
                     </button>
                 </div>
             </div>
+
+            <SetupChecklist
+                prereqs={["business_info", "knowledge_base"]}
+                pageContext="Add your business info and knowledge base content so the AI can create on-brand ad drafts tailored to your products and audience"
+            />
 
             {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 flex items-center gap-2">

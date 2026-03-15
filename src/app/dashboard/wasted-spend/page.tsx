@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { DollarSign, AlertTriangle, TrendingDown, Ban, CheckCircle, RefreshCw, Search, Loader2, ArrowRight, Zap } from "lucide-react";
 import { authFetch } from "@/lib/auth-client";
 import { useBusiness } from "@/lib/business-context";
+import SetupChecklist from "@/components/SetupChecklist";
 
 interface WastedTerm {
   id: string;
@@ -84,6 +85,12 @@ export default function WastedSpendPage() {
           Search terms that are costing you money without converting. Block them to stop the bleeding.
         </p>
       </div>
+
+      <SetupChecklist
+          prereqs={["google_ads"]}
+          pageContext="Connect your Google Ads account so the Wasted Spend Detector can find search terms costing you money without converting"
+          mode="blocking"
+      />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

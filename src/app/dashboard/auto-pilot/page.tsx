@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { authFetch } from "@/lib/auth-client";
 import { useBusiness } from "@/lib/business-context";
+import SetupChecklist from "@/components/SetupChecklist";
 
 interface Rule {
     id: string; name: string; description: string; trigger: string;
@@ -138,6 +139,12 @@ export default function AutoPilotPage() {
                     </button>
                 </div>
             </div>
+
+            <SetupChecklist
+                prereqs={["google_ads", "business_info"]}
+                pageContext="Connect your Google Ads account so Auto-Pilot can manage your campaigns, pause underperformers, and optimize bids automatically"
+                mode="blocking"
+            />
 
             {/* Mode Banner */}
             <div className={`rounded-xl p-4 border ${
