@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import {
     Zap, Loader2, Save, Copy, CheckCircle2, AlertTriangle, XCircle,
     Info, Shield, RefreshCw, Search, Monitor, ShoppingBag, Video,
-    Target, ChevronDown, ChevronUp, Sparkles, Globe
+    Target, ChevronDown, ChevronUp, Sparkles, Globe, Phone, Smartphone,
+    Layers, Megaphone
 } from "lucide-react";
 import React from "react";
 import { authFetch } from "@/lib/auth-client";
@@ -34,11 +35,15 @@ interface PolicyResult {
 }
 
 const CAMPAIGN_TYPES = [
-    { value: "search", label: "Search Ads (RSA)", icon: Search, desc: "Text ads on Google Search" },
-    { value: "display", label: "Display Ads (RDA)", icon: Monitor, desc: "Visual ads on Display Network" },
+    { value: "search", label: "Search Ads", icon: Search, desc: "Text ads on Google Search" },
+    { value: "rsa", label: "RSA (Responsive)", icon: Layers, desc: "Up to 15 headlines, AI picks combos" },
     { value: "shopping", label: "Shopping Ads", icon: ShoppingBag, desc: "Product listings with images" },
+    { value: "display", label: "Display Ads", icon: Monitor, desc: "Visual ads on Display Network" },
     { value: "pmax", label: "Performance Max", icon: Zap, desc: "AI-driven across all channels" },
     { value: "video", label: "Video Ads", icon: Video, desc: "YouTube video campaigns" },
+    { value: "app", label: "App Ads", icon: Smartphone, desc: "App install / engagement" },
+    { value: "demand_gen", label: "Demand Gen", icon: Megaphone, desc: "Discover, Gmail, YouTube feeds" },
+    { value: "call_only", label: "Call-Only Ads", icon: Phone, desc: "Mobile click-to-call" },
 ];
 
 const TONES = [

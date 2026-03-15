@@ -28,6 +28,12 @@ import {
     DollarSign,
     CreditCard,
     Store,
+    Facebook,
+    ShoppingCart,
+    TrendingUp,
+    Bot,
+    Crosshair,
+    Eye,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { BusinessProvider, useBusiness } from "@/lib/business-context";
@@ -86,6 +92,15 @@ const mainNavItems = [
     { href: "/dashboard/budget", labelKey: "nav.budgetOptimizer", icon: DollarSign, tip: "AI recommendations to optimize your ad spend and bids", requiresSetup: true },
     { href: "/dashboard/shopping", labelKey: "nav.shoppingAds", icon: ShoppingBag, shoppingOnly: true, tip: "Manage product listing and shopping ads", requiresSetup: true },
     { href: "/dashboard/shopify", labelKey: "nav.shopify", icon: Store, tip: "Connect and manage your Shopify store products", requiresSetup: false },
+    { href: "/dashboard/ad-analysis", labelKey: "nav.adAnalysis", icon: Eye, tip: "Deep analysis of your existing ads with AI grading", requiresSetup: true },
+    { href: "/dashboard/competitors", labelKey: "nav.competitors", icon: Crosshair, tip: "Research competitors and find gaps in their strategy", requiresSetup: true },
+    { href: "/dashboard/shopify-analytics", labelKey: "nav.shopifyAnalytics", icon: ShoppingBag, tip: "Revenue, ROAS, and e-commerce analytics from Shopify", requiresSetup: true },
+    { href: "/dashboard/meta-ads", labelKey: "nav.metaAds", icon: Facebook, tip: "Facebook & Instagram ad management", requiresSetup: false },
+    { href: "/dashboard/amazon-ads", labelKey: "nav.amazonAds", icon: ShoppingCart, tip: "Amazon Sponsored Products, Brands & Display", requiresSetup: false },
+    { href: "/dashboard/merchant-center", labelKey: "nav.merchantCenter", icon: Store, tip: "Google Shopping product feed optimization", requiresSetup: false },
+    { href: "/dashboard/google-trends", labelKey: "nav.googleTrends", icon: TrendingUp, tip: "Market trends, seasonal predictions, rising keywords", requiresSetup: false },
+    { href: "/dashboard/etsy-intelligence", labelKey: "nav.etsyIntelligence", icon: Store, tip: "Etsy marketplace research & listing optimization", requiresSetup: false },
+    { href: "/dashboard/auto-pilot", labelKey: "nav.autoPilot", icon: Bot, tip: "AI-powered autonomous ad management", requiresSetup: true },
     { href: "/dashboard/knowledge-base", labelKey: "nav.knowledgeBase", icon: BookOpen, tip: "Upload brand assets and info to train the AI on your business", requiresSetup: false },
     { href: "/dashboard/demo/examples", labelKey: "nav.aiExamples", icon: Lightbulb, tip: "See example prompts and what the AI can do for you", requiresSetup: true },
     { href: "/dashboard/faq", labelKey: "nav.faq", icon: HelpCircle, tip: "Frequently asked questions about features and billing", requiresSetup: false },

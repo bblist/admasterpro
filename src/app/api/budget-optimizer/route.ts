@@ -23,6 +23,8 @@ For each campaign, consider:
 - CTR and quality signals
 - Budget utilization and impression share
 - ROAS/ROI for campaigns with conversion value
+- Diminishing returns detection (spending more but getting fewer marginal conversions)
+- Portfolio-level optimization across campaigns
 
 You MUST respond with ONLY a valid JSON object (no markdown, no code fences):
 {
@@ -44,7 +46,24 @@ You MUST respond with ONLY a valid JSON object (no markdown, no code fences):
   ],
   "quickWins": ["Action 1", "Action 2", ...],
   "warnings": ["Warning 1", ...],
-  "summary": "2-3 sentence overall assessment"
+  "summary": "2-3 sentence overall assessment",
+  "diminishingReturns": [
+    {
+      "campaign": "Campaign name",
+      "currentSpend": number,
+      "optimalSpend": number,
+      "wastedSpend": number,
+      "explanation": "Why returns are diminishing"
+    }
+  ],
+  "scenarioModeling": {
+    "conservative": { "budget": number, "expectedConversions": number, "expectedCPA": number, "risk": "low" },
+    "moderate": { "budget": number, "expectedConversions": number, "expectedCPA": number, "risk": "medium" },
+    "aggressive": { "budget": number, "expectedConversions": number, "expectedCPA": number, "risk": "high" }
+  },
+  "portfolioAllocation": [
+    { "campaign": "name", "currentPct": number, "suggestedPct": number, "reason": "Why" }
+  ]
 }`;
 
 async function callAI(systemPrompt: string, userMessage: string) {

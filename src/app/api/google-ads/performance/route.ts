@@ -19,6 +19,10 @@ import {
     getAccountSummary,
     getSearchTerms,
     getCallDetails,
+    getDevicePerformance,
+    getGeoPerformance,
+    getHourPerformance,
+    getDayOfWeekPerformance,
     isGoogleAdsConfigured,
 } from "@/lib/google-ads";
 
@@ -90,6 +94,22 @@ export async function GET(req: NextRequest) {
             }
             case "calls": {
                 const data = await getCallDetails(user.refreshToken, customerId, dateRange);
+                return NextResponse.json({ data, connected: true });
+            }
+            case "device": {
+                const data = await getDevicePerformance(user.refreshToken, customerId, dateRange);
+                return NextResponse.json({ data, connected: true });
+            }
+            case "geo": {
+                const data = await getGeoPerformance(user.refreshToken, customerId, dateRange);
+                return NextResponse.json({ data, connected: true });
+            }
+            case "hourly": {
+                const data = await getHourPerformance(user.refreshToken, customerId, dateRange);
+                return NextResponse.json({ data, connected: true });
+            }
+            case "day-of-week": {
+                const data = await getDayOfWeekPerformance(user.refreshToken, customerId, dateRange);
                 return NextResponse.json({ data, connected: true });
             }
             default:

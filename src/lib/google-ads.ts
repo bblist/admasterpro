@@ -1038,3 +1038,212 @@ export async function addKeywords(
 export function isGoogleAdsConfigured(): boolean {
     return !!(GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET && DEVELOPER_TOKEN);
 }
+
+// ─── Device Performance ─────────────────────────────────────────────────────
+
+export interface DevicePerformance {
+    device: string;
+    impressions: number;
+    clicks: number;
+    cost: number;
+    conversions: number;
+    ctr: number;
+}
+
+export async function getDevicePerformance(
+    refreshToken: string,
+    customerId: string,
+    dateRange: string = "LAST_30_DAYS"
+): Promise<DevicePerformance[]> {
+    const safeDateRange = sanitizeDateRange(dateRange);
+    const query = `
+        SELECT
+            segments.device,
+            metrics.impressions,
+            metrics.clicks,
+            metrics.cost_micros,
+            metrics.conversions,
+            metrics.ctr
+        FROM campaign
+        WHERE segments.date DURING ${safeDateRange}
+            AND campaign.status = 'ENABLED'
+    `;
+    const rows = await queryGoogleAds(refreshToken, customerId, query);
+    const deviceMap = new Map<string, DevicePerformance>();
+    for (const row of rows) {
+        const seg = row.segments as Record<string, unknown>;
+        const m = row.metrics as Record<string, unknown>;
+        const device = formatDevice(String(seg?.device || "OTHER"));
+        const existing = deviceMap.get(device) || { device, impressions: 0, clicks: 0, cost: 0, conversions: 0, ctr: 0 };
+        existing.impressions += Number(m?.impressions || 0);
+        existing.clicks += Number(m?.clicks || 0);
+        existing.cost += microsToCurrency(m?.costMicros);
+        existing.conversions += Number(m?.conversions || 0);
+        deviceMap.set(device, existing);
+    }
+    return Array.from(deviceMap.values()).map(d => ({
+        ...d,
+        ctr: d.impressions > 0 ? d.clicks / d.impressions : 0,
+    }));
+}
+
+function formatDevice(d: string): string {
+    const map: Record<string, string> = {
+        MOBILE: "Mobile", DESKTOP: "Desktop", TABLET: "Tablet",
+        CONNECTED_TV: "Connected TV", OTHER: "Other",
+    };
+    return map[d] || d;
+}
+
+// ─── Geographic Performance ─────────────────────────────────────────────────
+
+export interface GeoPerformance {
+    country: string;
+    region: string;
+    impressions: number;
+    clicks: number;
+    cost: number;
+    conversions: number;
+    ctr: number;
+}
+
+export async function getGeoPerformance(
+    refreshToken: string,
+    customerId: string,
+    dateRange: string = "LAST_30_DAYS"
+): Promise<GeoPerformance[]> {
+    const safeDateRange = sanitizeDateRange(dateRange);
+    const query = `
+        SELECT
+            geographic_view.country_criterion_id,
+            geographic_view.location_type,
+            campaign_criterion.location.geo_target_constant,
+            metrics.impressions,
+            metrics.clicks,
+            metrics.cost_micros,
+            metrics.conversions,
+            metrics.ctr
+        FROM geographic_view
+        WHERE segments.date DURING ${safeDateRange}
+        ORDER BY metrics.cost_micros DESC
+        LIMIT 50
+    `;
+    try {
+        const rows = await queryGoogleAds(refreshToken, customerId, query);
+        return rows.map(row => {
+            const geo = row.geographicView as Record<string, unknown>;
+            const m = row.metrics as Record<string, unknown>;
+            return {
+                country: String(geo?.countryCriterionId || "Unknown"),
+                region: String(geo?.locationType || "Unknown"),
+                impressions: Number(m?.impressions || 0),
+                clicks: Number(m?.clicks || 0),
+                cost: microsToCurrency(m?.costMicros),
+                conversions: Number(m?.conversions || 0),
+                ctr: Number(m?.ctr || 0),
+            };
+        });
+    } catch { return []; }
+}
+
+// ─── Hour-of-Day Performance ────────────────────────────────────────────────
+
+export interface HourPerformance {
+    hour: number;
+    impressions: number;
+    clicks: number;
+    cost: number;
+    conversions: number;
+    ctr: number;
+}
+
+export async function getHourPerformance(
+    refreshToken: string,
+    customerId: string,
+    dateRange: string = "LAST_30_DAYS"
+): Promise<HourPerformance[]> {
+    const safeDateRange = sanitizeDateRange(dateRange);
+    const query = `
+        SELECT
+            segments.hour,
+            metrics.impressions,
+            metrics.clicks,
+            metrics.cost_micros,
+            metrics.conversions,
+            metrics.ctr
+        FROM campaign
+        WHERE segments.date DURING ${safeDateRange}
+            AND campaign.status = 'ENABLED'
+    `;
+    try {
+        const rows = await queryGoogleAds(refreshToken, customerId, query);
+        const hourMap = new Map<number, HourPerformance>();
+        for (const row of rows) {
+            const seg = row.segments as Record<string, unknown>;
+            const m = row.metrics as Record<string, unknown>;
+            const hour = Number(seg?.hour || 0);
+            const existing = hourMap.get(hour) || { hour, impressions: 0, clicks: 0, cost: 0, conversions: 0, ctr: 0 };
+            existing.impressions += Number(m?.impressions || 0);
+            existing.clicks += Number(m?.clicks || 0);
+            existing.cost += microsToCurrency(m?.costMicros);
+            existing.conversions += Number(m?.conversions || 0);
+            hourMap.set(hour, existing);
+        }
+        return Array.from(hourMap.values())
+            .map(h => ({ ...h, ctr: h.impressions > 0 ? h.clicks / h.impressions : 0 }))
+            .sort((a, b) => a.hour - b.hour);
+    } catch { return []; }
+}
+
+// ─── Day-of-Week Performance ────────────────────────────────────────────────
+
+export interface DayOfWeekPerformance {
+    dayOfWeek: string;
+    impressions: number;
+    clicks: number;
+    cost: number;
+    conversions: number;
+    ctr: number;
+}
+
+export async function getDayOfWeekPerformance(
+    refreshToken: string,
+    customerId: string,
+    dateRange: string = "LAST_30_DAYS"
+): Promise<DayOfWeekPerformance[]> {
+    const safeDateRange = sanitizeDateRange(dateRange);
+    const query = `
+        SELECT
+            segments.day_of_week,
+            metrics.impressions,
+            metrics.clicks,
+            metrics.cost_micros,
+            metrics.conversions,
+            metrics.ctr
+        FROM campaign
+        WHERE segments.date DURING ${safeDateRange}
+            AND campaign.status = 'ENABLED'
+    `;
+    try {
+        const rows = await queryGoogleAds(refreshToken, customerId, query);
+        const dayMap = new Map<string, DayOfWeekPerformance>();
+        for (const row of rows) {
+            const seg = row.segments as Record<string, unknown>;
+            const m = row.metrics as Record<string, unknown>;
+            const day = String(seg?.dayOfWeek || "UNKNOWN");
+            const existing = dayMap.get(day) || { dayOfWeek: day, impressions: 0, clicks: 0, cost: 0, conversions: 0, ctr: 0 };
+            existing.impressions += Number(m?.impressions || 0);
+            existing.clicks += Number(m?.clicks || 0);
+            existing.cost += microsToCurrency(m?.costMicros);
+            existing.conversions += Number(m?.conversions || 0);
+            dayMap.set(day, existing);
+        }
+        const dayOrder = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"];
+        return dayOrder
+            .filter(d => dayMap.has(d))
+            .map(d => {
+                const data = dayMap.get(d)!;
+                return { ...data, dayOfWeek: d.charAt(0) + d.slice(1).toLowerCase(), ctr: data.impressions > 0 ? data.clicks / data.impressions : 0 };
+            });
+    } catch { return []; }
+}
