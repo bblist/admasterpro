@@ -1215,7 +1215,7 @@ Respond in JSON format:
                     )}
 
                     {/* ═══════════════════════════════════════════════
-                       STEP 7 — Connect Your World (Multi-Platform Hub)
+                       STEP 7 — Quick Questions (Seamless Platform Detection)
                        ═══════════════════════════════════════════════ */}
                     {step === 7 && (
                         <StepTransition stepKey="step-7">
@@ -1225,33 +1225,30 @@ Respond in JSON format:
                                         <Globe className="w-10 h-10 text-white" />
                                     </div>
                                     <h1 className="text-2xl font-bold mb-2">
-                                        Connect Your World
+                                        A couple of quick questions
                                     </h1>
                                     <p className="text-muted">
-                                        Connect your ad platforms to unlock AI-powered cross-platform intelligence. Skip any you don&apos;t use.
+                                        This helps us tailor your experience. Just tap what applies — you can always change this later.
                                     </p>
                                 </div>
 
-                                <div className="space-y-3 max-w-lg mx-auto">
-                                    {/* ─── Shopify Card ─── */}
-                                    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                                        <button onClick={() => setExpandedPlatform(expandedPlatform === "shopify" ? null : "shopify")} className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition">
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-2xl">🛒</span>
-                                                <div className="text-left">
-                                                    <p className="text-sm font-semibold">Shopify</p>
-                                                    <p className="text-xs text-muted">~2 min setup</p>
-                                                </div>
-                                            </div>
-                                            {platformStatuses.shopify === "connected" ? (
-                                                <CheckCircle className="w-5 h-5 text-emerald-500" />
-                                            ) : (
-                                                <ChevronRight className={`w-4 h-4 text-muted transition-transform ${expandedPlatform === "shopify" ? "rotate-90" : ""}`} />
-                                            )}
-                                        </button>
+                                <div className="space-y-4 max-w-lg mx-auto">
+                                    {/* ─── Shopify Question ─── */}
+                                    <div className="bg-white border border-gray-200 rounded-xl p-4">
+                                        <p className="text-sm font-semibold mb-3">Do you have a Shopify store?</p>
+                                        <div className="flex gap-2 mb-3">
+                                            <button onClick={() => setExpandedPlatform("shopify")}
+                                                className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition border ${expandedPlatform === "shopify" || platformStatuses.shopify === "connected" ? "border-green-500 bg-green-50 text-green-700" : "border-gray-200 hover:border-gray-300"}`}>
+                                                Yes
+                                            </button>
+                                            <button onClick={() => { setExpandedPlatform(prev => prev === "shopify" ? null : prev); setPlatformStatuses(prev => ({ ...prev, shopify: "skipped" })); }}
+                                                className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition border ${platformStatuses.shopify === "skipped" ? "border-gray-400 bg-gray-50 text-gray-600" : "border-gray-200 hover:border-gray-300"}`}>
+                                                No
+                                            </button>
+                                        </div>
                                         {expandedPlatform === "shopify" && platformStatuses.shopify !== "connected" && (
-                                            <div className="px-4 pb-4 border-t border-gray-100">
-                                                <p className="text-xs text-muted my-3">Enter your Shopify store URL to connect your product catalog, orders, and revenue data.</p>
+                                            <div className="pt-2 border-t border-gray-100">
+                                                <p className="text-xs text-muted mb-2">Just pop in your store URL and we&apos;ll handle the rest.</p>
                                                 <div className="relative mb-3">
                                                     <ShoppingBag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                                                     <input type="text" value={shopifyUrl} onChange={(e) => setShopifyUrl(e.target.value)}
@@ -1264,217 +1261,88 @@ Respond in JSON format:
                                                 </button>
                                             </div>
                                         )}
-                                    </div>
-
-                                    {/* ─── Facebook / Meta Ads Card ─── */}
-                                    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                                        <button onClick={() => setExpandedPlatform(expandedPlatform === "meta_ads" ? null : "meta_ads")} className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition">
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-2xl">📘</span>
-                                                <div className="text-left">
-                                                    <p className="text-sm font-semibold">Facebook & Instagram Ads</p>
-                                                    <p className="text-xs text-muted">~5 min setup</p>
-                                                </div>
-                                            </div>
-                                            {platformStatuses.meta_ads === "connected" ? (
-                                                <CheckCircle className="w-5 h-5 text-emerald-500" />
-                                            ) : (
-                                                <ChevronRight className={`w-4 h-4 text-muted transition-transform ${expandedPlatform === "meta_ads" ? "rotate-90" : ""}`} />
-                                            )}
-                                        </button>
-                                        {expandedPlatform === "meta_ads" && platformStatuses.meta_ads !== "connected" && (
-                                            <div className="px-4 pb-4 border-t border-gray-100">
-                                                <div className="my-3 space-y-2">
-                                                    <p className="text-xs font-semibold text-gray-700">What you&apos;ll need:</p>
-                                                    <div className="text-xs text-muted space-y-1">
-                                                        <div className="flex items-start gap-2"><Info className="w-3 h-3 mt-0.5 shrink-0 text-blue-500" /> A Facebook Business Manager account</div>
-                                                        <div className="flex items-start gap-2"><Info className="w-3 h-3 mt-0.5 shrink-0 text-blue-500" /> An active Ad Account in Business Manager</div>
-                                                        <div className="flex items-start gap-2"><Info className="w-3 h-3 mt-0.5 shrink-0 text-blue-500" /> Admin or Advertiser role on the Ad Account</div>
-                                                    </div>
-                                                    <p className="text-xs font-semibold text-gray-700 mt-2">How to get your Business Manager ID:</p>
-                                                    <div className="bg-blue-50 rounded-lg p-2.5 text-xs text-blue-800">
-                                                        Go to <a href="https://business.facebook.com" target="_blank" rel="noopener" className="underline font-medium">business.facebook.com</a> → Business Settings → Business Info → Copy your Business ID
-                                                    </div>
-                                                </div>
-                                                <input type="text" value={metaBusinessId} onChange={(e) => setMetaBusinessId(e.target.value)}
-                                                    placeholder="Business Manager ID (optional — for faster setup)"
-                                                    className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition mb-3" />
-                                                <button onClick={() => handlePlatformConnect("meta_ads")} disabled={platformStatuses.meta_ads === "connecting"}
-                                                    className="w-full bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50 flex items-center justify-center gap-2">
-                                                    {platformStatuses.meta_ads === "connecting" ? <><Loader2 className="w-4 h-4 animate-spin" /> Connecting...</> : <>Connect Facebook Ads</>}
-                                                </button>
-                                                <div className="flex items-center gap-1 justify-center text-[10px] text-muted mt-2">
-                                                    <Shield className="w-2.5 h-2.5" /> Read-only access — we never post or modify your ads
-                                                </div>
+                                        {platformStatuses.shopify === "connected" && (
+                                            <div className="flex items-center gap-2 text-sm text-emerald-600 font-medium">
+                                                <CheckCircle className="w-4 h-4" /> Shopify connected
                                             </div>
                                         )}
                                     </div>
 
-                                    {/* ─── Amazon Ads Card ─── */}
-                                    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                                        <button onClick={() => setExpandedPlatform(expandedPlatform === "amazon_ads" ? null : "amazon_ads")} className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition">
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-2xl">📦</span>
-                                                <div className="text-left">
-                                                    <p className="text-sm font-semibold">Amazon Advertising</p>
-                                                    <p className="text-xs text-muted">~5 min setup</p>
-                                                </div>
-                                            </div>
-                                            {platformStatuses.amazon_ads === "connected" ? (
-                                                <CheckCircle className="w-5 h-5 text-emerald-500" />
-                                            ) : (
-                                                <ChevronRight className={`w-4 h-4 text-muted transition-transform ${expandedPlatform === "amazon_ads" ? "rotate-90" : ""}`} />
-                                            )}
-                                        </button>
+                                    {/* ─── Amazon Question ─── */}
+                                    <div className="bg-white border border-gray-200 rounded-xl p-4">
+                                        <p className="text-sm font-semibold mb-3">Do you sell on Amazon?</p>
+                                        <div className="flex gap-2 mb-3">
+                                            <button onClick={() => setExpandedPlatform("amazon_ads")}
+                                                className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition border ${expandedPlatform === "amazon_ads" || platformStatuses.amazon_ads === "connected" ? "border-orange-500 bg-orange-50 text-orange-700" : "border-gray-200 hover:border-gray-300"}`}>
+                                                Yes
+                                            </button>
+                                            <button onClick={() => { setExpandedPlatform(prev => prev === "amazon_ads" ? null : prev); setPlatformStatuses(prev => ({ ...prev, amazon_ads: "skipped" })); }}
+                                                className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition border ${platformStatuses.amazon_ads === "skipped" ? "border-gray-400 bg-gray-50 text-gray-600" : "border-gray-200 hover:border-gray-300"}`}>
+                                                No
+                                            </button>
+                                        </div>
                                         {expandedPlatform === "amazon_ads" && platformStatuses.amazon_ads !== "connected" && (
-                                            <div className="px-4 pb-4 border-t border-gray-100">
-                                                <div className="my-3 space-y-2">
-                                                    <p className="text-xs font-semibold text-gray-700">What you&apos;ll need:</p>
-                                                    <div className="text-xs text-muted space-y-1">
-                                                        <div className="flex items-start gap-2"><Info className="w-3 h-3 mt-0.5 shrink-0 text-orange-500" /> Amazon Seller Central or Vendor Central account</div>
-                                                        <div className="flex items-start gap-2"><Info className="w-3 h-3 mt-0.5 shrink-0 text-orange-500" /> At least 1 product listed on Amazon</div>
-                                                        <div className="flex items-start gap-2"><Info className="w-3 h-3 mt-0.5 shrink-0 text-orange-500" /> Amazon Advertising console access</div>
-                                                    </div>
-                                                    <p className="text-xs font-semibold text-gray-700 mt-2">Setup guide:</p>
-                                                    <div className="bg-orange-50 rounded-lg p-2.5 text-xs text-orange-800 space-y-1">
-                                                        <p>1. Go to <a href="https://advertising.amazon.com" target="_blank" rel="noopener" className="underline font-medium">advertising.amazon.com</a></p>
-                                                        <p>2. Sign in with your Seller Central credentials</p>
-                                                        <p>3. Accept terms if it&apos;s your first time</p>
-                                                        <p>4. Click &quot;Connect Amazon&quot; below</p>
-                                                    </div>
-                                                </div>
-                                                <div className="mb-3">
-                                                    <label className="text-xs text-gray-600 mb-1 block">Marketplace:</label>
-                                                    <select value={amazonMarketplace} onChange={(e) => setAmazonMarketplace(e.target.value)}
-                                                        className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-orange-500 transition">
-                                                        <option value="US">🇺🇸 United States (.com)</option>
-                                                        <option value="UK">🇬🇧 United Kingdom (.co.uk)</option>
-                                                        <option value="DE">🇩🇪 Germany (.de)</option>
-                                                        <option value="FR">🇫🇷 France (.fr)</option>
-                                                        <option value="IT">🇮🇹 Italy (.it)</option>
-                                                        <option value="ES">🇪🇸 Spain (.es)</option>
-                                                        <option value="JP">🇯🇵 Japan (.co.jp)</option>
-                                                        <option value="CA">🇨🇦 Canada (.ca)</option>
-                                                        <option value="AU">🇦🇺 Australia (.com.au)</option>
-                                                        <option value="IN">🇮🇳 India (.in)</option>
-                                                        <option value="MX">🇲🇽 Mexico (.com.mx)</option>
-                                                        <option value="BR">🇧🇷 Brazil (.com.br)</option>
-                                                    </select>
-                                                </div>
+                                            <div className="pt-2 border-t border-gray-100">
+                                                <p className="text-xs text-muted mb-2">Select your marketplace and we&apos;ll connect your Amazon advertising.</p>
+                                                <select value={amazonMarketplace} onChange={(e) => setAmazonMarketplace(e.target.value)}
+                                                    className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-orange-500 transition mb-3">
+                                                    <option value="US">🇺🇸 United States (.com)</option>
+                                                    <option value="UK">🇬🇧 United Kingdom (.co.uk)</option>
+                                                    <option value="DE">🇩🇪 Germany (.de)</option>
+                                                    <option value="CA">🇨🇦 Canada (.ca)</option>
+                                                    <option value="AU">🇦🇺 Australia (.com.au)</option>
+                                                    <option value="FR">🇫🇷 France (.fr)</option>
+                                                    <option value="IT">🇮🇹 Italy (.it)</option>
+                                                    <option value="ES">🇪🇸 Spain (.es)</option>
+                                                </select>
                                                 <button onClick={() => handlePlatformConnect("amazon_ads")} disabled={platformStatuses.amazon_ads === "connecting"}
                                                     className="w-full bg-orange-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-orange-700 transition disabled:opacity-50 flex items-center justify-center gap-2">
-                                                    {platformStatuses.amazon_ads === "connecting" ? <><Loader2 className="w-4 h-4 animate-spin" /> Connecting...</> : <>Connect Amazon Ads</>}
+                                                    {platformStatuses.amazon_ads === "connecting" ? <><Loader2 className="w-4 h-4 animate-spin" /> Connecting...</> : <>Connect Amazon</>}
                                                 </button>
-                                                <p className="text-center text-[10px] text-muted mt-2">Don&apos;t sell on Amazon? No problem — skip this step.</p>
+                                            </div>
+                                        )}
+                                        {platformStatuses.amazon_ads === "connected" && (
+                                            <div className="flex items-center gap-2 text-sm text-emerald-600 font-medium">
+                                                <CheckCircle className="w-4 h-4" /> Amazon connected
                                             </div>
                                         )}
                                     </div>
 
-                                    {/* ─── Google Merchant Center Card ─── */}
-                                    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                                        <button onClick={() => setExpandedPlatform(expandedPlatform === "google_merchant" ? null : "google_merchant")} className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition">
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-2xl">🏪</span>
-                                                <div className="text-left">
-                                                    <p className="text-sm font-semibold">Google Merchant Center</p>
-                                                    <p className="text-xs text-muted">~3 min setup</p>
-                                                </div>
-                                            </div>
-                                            {platformStatuses.google_merchant === "connected" ? (
-                                                <CheckCircle className="w-5 h-5 text-emerald-500" />
-                                            ) : (
-                                                <ChevronRight className={`w-4 h-4 text-muted transition-transform ${expandedPlatform === "google_merchant" ? "rotate-90" : ""}`} />
-                                            )}
-                                        </button>
-                                        {expandedPlatform === "google_merchant" && platformStatuses.google_merchant !== "connected" && (
-                                            <div className="px-4 pb-4 border-t border-gray-100">
-                                                <div className="my-3 text-xs text-muted space-y-1">
-                                                    <p>If you connected Google Ads above, we can auto-detect your Merchant Center. Otherwise:</p>
-                                                    <div className="bg-gray-50 rounded-lg p-2.5 space-y-1">
-                                                        <p>1. Go to <a href="https://merchants.google.com" target="_blank" rel="noopener" className="underline font-medium text-gray-700">merchants.google.com</a></p>
-                                                        <p>2. Upload your product feed (or use Shopify auto-sync)</p>
-                                                        <p>3. Link to your Google Ads account</p>
-                                                    </div>
-                                                </div>
-                                                <button onClick={() => handlePlatformConnect("google_merchant")} disabled={platformStatuses.google_merchant === "connecting"}
-                                                    className="w-full bg-red-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-red-700 transition disabled:opacity-50 flex items-center justify-center gap-2">
-                                                    {platformStatuses.google_merchant === "connecting" ? <><Loader2 className="w-4 h-4 animate-spin" /> Connecting...</> : <>Connect Merchant Center</>}
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* ─── Google Analytics Card ─── */}
-                                    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                                        <button onClick={() => setExpandedPlatform(expandedPlatform === "google_analytics" ? null : "google_analytics")} className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition">
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-2xl">📊</span>
-                                                <div className="text-left">
-                                                    <p className="text-sm font-semibold">Google Analytics 4</p>
-                                                    <p className="text-xs text-muted">~2 min setup</p>
-                                                </div>
-                                            </div>
-                                            {platformStatuses.google_analytics === "connected" ? (
-                                                <CheckCircle className="w-5 h-5 text-emerald-500" />
-                                            ) : (
-                                                <ChevronRight className={`w-4 h-4 text-muted transition-transform ${expandedPlatform === "google_analytics" ? "rotate-90" : ""}`} />
-                                            )}
-                                        </button>
-                                        {expandedPlatform === "google_analytics" && platformStatuses.google_analytics !== "connected" && (
-                                            <div className="px-4 pb-4 border-t border-gray-100">
-                                                <p className="text-xs text-muted my-3">Uses the same Google account as Google Ads. We request read-only access to your GA4 traffic, conversion, and audience data for full-funnel tracking.</p>
-                                                <button onClick={() => handlePlatformConnect("google_analytics")} disabled={platformStatuses.google_analytics === "connecting"}
-                                                    className="w-full bg-orange-500 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-orange-600 transition disabled:opacity-50 flex items-center justify-center gap-2">
-                                                    {platformStatuses.google_analytics === "connecting" ? <><Loader2 className="w-4 h-4 animate-spin" /> Connecting...</> : <>Connect Google Analytics</>}
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* ─── TikTok Ads Card ─── */}
-                                    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                                        <button onClick={() => setExpandedPlatform(expandedPlatform === "tiktok_ads" ? null : "tiktok_ads")} className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition">
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-2xl">🎵</span>
-                                                <div className="text-left">
-                                                    <p className="text-sm font-semibold">TikTok Ads</p>
-                                                    <p className="text-xs text-muted">~5 min setup</p>
-                                                </div>
-                                            </div>
-                                            {platformStatuses.tiktok_ads === "connected" ? (
-                                                <CheckCircle className="w-5 h-5 text-emerald-500" />
-                                            ) : (
-                                                <ChevronRight className={`w-4 h-4 text-muted transition-transform ${expandedPlatform === "tiktok_ads" ? "rotate-90" : ""}`} />
-                                            )}
-                                        </button>
-                                        {expandedPlatform === "tiktok_ads" && platformStatuses.tiktok_ads !== "connected" && (
-                                            <div className="px-4 pb-4 border-t border-gray-100">
-                                                <div className="my-3 text-xs text-muted space-y-1">
-                                                    <p>Connect your TikTok for Business account for video ad performance analytics.</p>
-                                                    <div className="bg-pink-50 rounded-lg p-2.5 text-pink-800">
-                                                        Don&apos;t have one? Register at <a href="https://ads.tiktok.com" target="_blank" rel="noopener" className="underline font-medium">ads.tiktok.com</a>
-                                                    </div>
-                                                </div>
-                                                <button onClick={() => handlePlatformConnect("tiktok_ads")} disabled={platformStatuses.tiktok_ads === "connecting"}
-                                                    className="w-full bg-pink-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-pink-700 transition disabled:opacity-50 flex items-center justify-center gap-2">
-                                                    {platformStatuses.tiktok_ads === "connecting" ? <><Loader2 className="w-4 h-4 animate-spin" /> Connecting...</> : <>Connect TikTok Ads</>}
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Connection Summary */}
-                                    {Object.values(platformStatuses).some(s => s === "connected") && (
-                                        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
-                                            <p className="text-sm text-emerald-700 font-medium">
-                                                ✅ {Object.values(platformStatuses).filter(s => s === "connected").length} platform{Object.values(platformStatuses).filter(s => s === "connected").length !== 1 ? "s" : ""} connected!
-                                            </p>
+                                    {/* ─── Facebook/Meta Question ─── */}
+                                    <div className="bg-white border border-gray-200 rounded-xl p-4">
+                                        <p className="text-sm font-semibold mb-3">Do you run Facebook or Instagram ads?</p>
+                                        <div className="flex gap-2">
+                                            <button onClick={() => handlePlatformConnect("meta_ads")}
+                                                className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition border ${platformStatuses.meta_ads === "connected" ? "border-blue-500 bg-blue-50 text-blue-700" : "border-gray-200 hover:border-gray-300"}`}>
+                                                {platformStatuses.meta_ads === "connecting" ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : platformStatuses.meta_ads === "connected" ? <span className="flex items-center justify-center gap-1"><CheckCircle className="w-4 h-4" /> Connected</span> : "Yes — connect"}
+                                            </button>
+                                            <button onClick={() => setPlatformStatuses(prev => ({ ...prev, meta_ads: "skipped" }))}
+                                                className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition border ${platformStatuses.meta_ads === "skipped" ? "border-gray-400 bg-gray-50 text-gray-600" : "border-gray-200 hover:border-gray-300"}`}>
+                                                No
+                                            </button>
                                         </div>
-                                    )}
+                                    </div>
+
+                                    {/* ─── Google Analytics (auto-detect) ─── */}
+                                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-lg">📊</span>
+                                                <div>
+                                                    <p className="text-sm font-semibold">Google Analytics 4</p>
+                                                    <p className="text-xs text-muted">Uses the same Google account — one click</p>
+                                                </div>
+                                            </div>
+                                            <button onClick={() => handlePlatformConnect("google_analytics")}
+                                                className={`px-4 py-2 rounded-lg text-xs font-medium transition ${platformStatuses.google_analytics === "connected" ? "bg-emerald-100 text-emerald-700" : "bg-white border border-gray-200 hover:border-primary text-gray-700"}`}>
+                                                {platformStatuses.google_analytics === "connecting" ? <Loader2 className="w-3 h-3 animate-spin" /> : platformStatuses.google_analytics === "connected" ? "✓ Connected" : "Connect"}
+                                            </button>
+                                        </div>
+                                    </div>
 
                                     {/* Continue button */}
                                     <button onClick={handleContinueFromIntegrations}
-                                        className="w-full bg-primary hover:bg-primary-dark text-white px-6 py-3.5 rounded-xl font-medium transition flex items-center justify-center gap-2">
+                                        className="w-full bg-primary hover:bg-primary-dark text-white px-6 py-3.5 rounded-xl font-medium transition flex items-center justify-center gap-2 mt-2">
                                         Continue <ArrowRight className="w-4 h-4" />
                                     </button>
                                     <p className="text-center text-xs text-muted">You can connect more platforms later in Settings</p>

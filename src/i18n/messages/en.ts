@@ -100,6 +100,16 @@ const en = {
     "nav.aiExamples": "AI Examples",
     "nav.billing": "Billing",
     "nav.settings": "Settings",
+    "nav.abTests": "A/B Tests",
+    "nav.negativeKeywords": "Negative Keywords",
+    "nav.competitorAds": "Competitor Ads",
+    "nav.budgetPacing": "Budget Pacing",
+    "nav.wastedSpend": "Wasted Spend",
+    "nav.profitTracker": "Profit Tracker",
+    "nav.adScheduling": "Ad Scheduling",
+    "nav.siteScorer": "Site Scorer",
+    "nav.smartAlerts": "Smart Alerts",
+    "nav.weeklyDigest": "Weekly Digest",
 
     // ─── Footer ─────────────────────────────────────────────────────────
     "footer.product": "Product",

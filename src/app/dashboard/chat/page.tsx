@@ -137,6 +137,16 @@ type Intent =
     | "shopify_products"
     | "keyword_research"
     | "budget_advice"
+    | "wasted_spend"
+    | "negative_keywords"
+    | "budget_pacing"
+    | "ad_scheduling"
+    | "site_scorer"
+    | "profit_tracker"
+    | "smart_alerts"
+    | "competitor_ads"
+    | "ab_tests"
+    | "weekly_digest"
     | "unknown";
 
 interface IntentMatch {
@@ -301,6 +311,94 @@ const matchIntent = (text: string): IntentMatch => {
         /\b(increase|decrease|change|adjust|optimize)\b.*\bbudget\b/i.test(t) ||
         /\b(budget|spending)\s+(recommendation|suggestion|advice|optimal)\b/i.test(t)) {
         return { intent: "budget_advice", params: {} };
+    }
+
+    // ─── NEW FEATURE INTENTS ────────────────────────────────────────
+
+    // Wasted spend
+    if (/\b(wasted|wasting)\s+(spend|money|budget)\b/i.test(t) ||
+        /\bwasted\s+spend\b/i.test(t) ||
+        /\bwhere.+(money|budget).+wast/i.test(t) ||
+        /\bstop\s+wasting\b/i.test(t)) {
+        return { intent: "wasted_spend", params: {} };
+    }
+
+    // Negative keywords
+    if (/\bnegative\s+keyword/i.test(t) ||
+        /\bblock\s+(search|keyword|term)/i.test(t) ||
+        /\bexclude\s+(keyword|term|search)/i.test(t)) {
+        return { intent: "negative_keywords", params: {} };
+    }
+
+    // Budget pacing
+    if (/\b(budget|spend)\s+(pac|track|on track|ahead|behind)\b/i.test(t) ||
+        /\bpacing\b/i.test(t) ||
+        /\bon\s+track\s+.*budget\b/i.test(t) ||
+        /\boverspend|underspend/i.test(t) ||
+        /\bmonth\s+end\s+(project|forecast|budget)/i.test(t)) {
+        return { intent: "budget_pacing", params: {} };
+    }
+
+    // Ad scheduling
+    if (/\b(ad|ads?)\s+(schedul|timing|when|hours?)\b/i.test(t) ||
+        /\bbest\s+(time|hour|day)\s+.*\b(run|show|advertise)\b/i.test(t) ||
+        /\bwhen\s+.*\bconvert\b/i.test(t) ||
+        /\bschedul.*\bads?\b/i.test(t) ||
+        /\bheatmap\b/i.test(t) ||
+        /\bpeak\s+hours?\b/i.test(t)) {
+        return { intent: "ad_scheduling", params: {} };
+    }
+
+    // Site scorer
+    if (/\b(site|page|website|landing)\s+(scor|speed|audit|check|grade|rate)\b/i.test(t) ||
+        /\b(scor|grade|rate|check)\s+.*(site|page|website|landing)\b/i.test(t) ||
+        /\b(page|load)\s+speed\b/i.test(t) ||
+        /\bmobile\s+friendl/i.test(t) ||
+        /\bproduct\s+page\s+(scor|check|audit)\b/i.test(t)) {
+        return { intent: "site_scorer", params: {} };
+    }
+
+    // Profit tracker
+    if (/\b(profit|margin|profitab|roas|return on)\b/i.test(t) && !/\bcreate|write|make\b/i.test(t) ||
+        /\btrue\s+(profit|cost)\b/i.test(t) ||
+        /\bCOGS\b/i.test(t) ||
+        /\bam\s+i\s+(making|losing)\s+money\b/i.test(t)) {
+        return { intent: "profit_tracker", params: {} };
+    }
+
+    // Smart alerts
+    if (/\b(alert|notification|notify|alert me)\b/i.test(t) ||
+        /\b(set up|create|configure)\s+.*\balert/i.test(t) ||
+        /\bwhatsapp\s+(alert|notif)/i.test(t) ||
+        /\bemail\s+alert/i.test(t) ||
+        /\bwarn\s+me\b/i.test(t) ||
+        /\blet\s+me\s+know\s+when\b/i.test(t)) {
+        return { intent: "smart_alerts", params: {} };
+    }
+
+    // Competitor ads
+    if (/\b(competitor|rival)\s+(ads?|advert|creative|copy)\b/i.test(t) ||
+        /\bwhat\s+are.*\b(competitor|rival)\b.*\brunning\b/i.test(t) ||
+        /\bspy\b.*\bads?\b/i.test(t) ||
+        /\bcompetitor\s+screenshot/i.test(t)) {
+        return { intent: "competitor_ads", params: {} };
+    }
+
+    // A/B tests
+    if (/\ba\/b\s+test/i.test(t) ||
+        /\bsplit\s+test/i.test(t) ||
+        /\b(test|compare)\s+.*\b(headline|ad|copy|variant)\b/i.test(t) ||
+        /\bstatistical\s+significance\b/i.test(t) ||
+        /\bwhich\s+(ad|headline|variant)\s+(is|wins?|better)\b/i.test(t)) {
+        return { intent: "ab_tests", params: {} };
+    }
+
+    // Weekly digest
+    if (/\bweekly\s+(digest|email|report|summary)\b/i.test(t) ||
+        /\bemail\s+(digest|summary|report)\b/i.test(t) ||
+        /\bweekly\s+update\b/i.test(t) ||
+        /\bsend\s+me\s+.*\bweekly\b/i.test(t)) {
+        return { intent: "weekly_digest", params: {} };
     }
 
     // Help
@@ -1321,6 +1419,76 @@ function ChatPageInner() {
             return actions.slice(0, 4);
         }
 
+        // ── New feature smart actions ──
+
+        if (intent === "wasted_spend" || content.includes("wasted spend")) {
+            return [
+                { label: "Open Wasted Spend Detector", type: "primary" },
+                { label: "Show me negative keywords too", type: "secondary" },
+                { label: "Check my budget pacing", type: "secondary" },
+            ];
+        }
+        if (intent === "negative_keywords") {
+            return [
+                { label: "Open Negative Keyword Miner", type: "primary" },
+                { label: "Check wasted spend", type: "secondary" },
+                { label: "Research better keywords", type: "secondary" },
+            ];
+        }
+        if (intent === "budget_pacing") {
+            return [
+                { label: "Open Budget Pacing", type: "primary" },
+                { label: "Check wasted spend", type: "secondary" },
+                { label: "Optimize my budget", type: "secondary" },
+            ];
+        }
+        if (intent === "ad_scheduling") {
+            return [
+                { label: "Open Ad Scheduling", type: "primary" },
+                { label: "Check budget pacing", type: "secondary" },
+                { label: "See my analytics", type: "secondary" },
+            ];
+        }
+        if (intent === "site_scorer") {
+            return [
+                { label: "Open Site Scorer", type: "primary" },
+                { label: "Score my product pages", type: "secondary" },
+                { label: "Create better landing pages", type: "secondary" },
+            ];
+        }
+        if (intent === "profit_tracker") {
+            return [
+                { label: "Open Profit Tracker", type: "primary" },
+                { label: "Where am I wasting money?", type: "secondary" },
+                { label: "Check budget pacing", type: "secondary" },
+            ];
+        }
+        if (intent === "smart_alerts") {
+            return [
+                { label: "Open Smart Alerts", type: "primary" },
+                { label: "Set up a weekly digest", type: "secondary" },
+            ];
+        }
+        if (intent === "competitor_ads") {
+            return [
+                { label: "Open Competitor Ads", type: "primary" },
+                { label: "Research my competitors", type: "secondary" },
+                { label: "Create ads that beat them", type: "secondary" },
+            ];
+        }
+        if (intent === "ab_tests") {
+            return [
+                { label: "Open A/B Tests", type: "primary" },
+                { label: "Create ad variations to test", type: "secondary" },
+            ];
+        }
+        if (intent === "weekly_digest") {
+            return [
+                { label: "Open Weekly Digest", type: "primary" },
+                { label: "Set up smart alerts too", type: "secondary" },
+            ];
+        }
+
         // ── Default fallback — smart defaults based on setup state
         const isSetupDone = activeBusiness.setupComplete;
         if (!isSetupDone) {
@@ -1707,6 +1875,16 @@ function ChatPageInner() {
                 shopify_products: "manage Shopify products",
                 keyword_research: "research keywords",
                 budget_advice: "optimize budget",
+                wasted_spend: "check wasted spend",
+                negative_keywords: "mine negative keywords",
+                budget_pacing: "check budget pacing",
+                ad_scheduling: "optimize ad schedule",
+                site_scorer: "score your site",
+                profit_tracker: "check profit margins",
+                smart_alerts: "set up alerts",
+                competitor_ads: "view competitor ads",
+                ab_tests: "manage A/B tests",
+                weekly_digest: "set up weekly digest",
             };
             const actionLabel = actionMap[intent.intent] || "work on that";
 
@@ -1750,6 +1928,38 @@ function ChatPageInner() {
             }
             if (intent.intent === "budget_advice") {
                 enrichedText = `${text}\n\n[SYSTEM NOTE: The user is asking about budget optimization. Give specific budget recommendations based on their industry, competition level, and goals. Include estimated CPCs, recommended daily budgets for different campaign types, and how to allocate between search vs. display vs. shopping. Be concrete with numbers.]`;
+            }
+
+            // ── New feature intent enrichments ──
+            if (intent.intent === "wasted_spend") {
+                enrichedText = `${text}\n\n[SYSTEM NOTE: The user wants to find wasted spend. Explain what the Wasted Spend Detector does — it scans search terms to find clicks that never convert and cost money. Mention they can find it in the sidebar under "Wasted Spend". Give a quick summary of common wasted spend patterns (irrelevant searches, competitor name clicks, informational queries). Be helpful and direct.]`;
+            }
+            if (intent.intent === "negative_keywords") {
+                enrichedText = `${text}\n\n[SYSTEM NOTE: The user wants help with negative keywords. Explain how the Negative Keyword Miner works — it auto-scans search terms daily, groups them by theme (job seekers, DIY, free seekers, etc.), and lets you block them in one click. Direct them to "Negative Keywords" in the sidebar. Suggest common negative keyword themes for their industry.]`;
+            }
+            if (intent.intent === "budget_pacing") {
+                enrichedText = `${text}\n\n[SYSTEM NOTE: The user wants to check budget pacing. Explain what Budget Pacing shows — how their daily spend tracks against their monthly budget, whether they're on track, overspending, or underspending, and projected month-end spend. Direct them to "Budget Pacing" in the sidebar. Give practical advice about pacing strategy.]`;
+            }
+            if (intent.intent === "ad_scheduling") {
+                enrichedText = `${text}\n\n[SYSTEM NOTE: The user wants to optimize ad scheduling. Explain what the Ad Scheduling Optimizer shows — a conversion heatmap by hour/day, best and worst converting time windows, and recommended schedules. It's timezone-aware for digital nomads. Direct them to "Ad Scheduling" in the sidebar. Give practical scheduling advice.]`;
+            }
+            if (intent.intent === "site_scorer") {
+                enrichedText = `${text}\n\n[SYSTEM NOTE: The user wants to score their website. Explain what Site Scorer does — it scans ALL pages (not just landing pages), including product pages, category pages, blog posts, checkout. Scores for mobile/desktop speed, CTA clarity, ad relevance, and gives specific improvement suggestions. They can paste any URL to scan. Direct them to "Site Scorer" in the sidebar.]`;
+            }
+            if (intent.intent === "profit_tracker") {
+                enrichedText = `${text}\n\n[SYSTEM NOTE: The user wants to check profitability. Explain what Profit Tracker shows — true profit after ad spend AND costs (COGS), not just revenue. Shows per-product/service breakdown, margins, and ROAS. Connects Shopify cost data if available. Direct them to "Profit Tracker" in the sidebar.]`;
+            }
+            if (intent.intent === "smart_alerts") {
+                enrichedText = `${text}\n\n[SYSTEM NOTE: The user wants to set up alerts. Explain Smart Alerts — get notified by email or WhatsApp when important things happen (spend exceeds budget, no conversions for 24h, CPA spike, new conversion records, etc.). They can create custom alert rules. Direct them to "Smart Alerts" in the sidebar.]`;
+            }
+            if (intent.intent === "competitor_ads") {
+                enrichedText = `${text}\n\n[SYSTEM NOTE: The user wants to see competitor ads. Explain the Competitor Ads tool — it tracks what competitors are running on Google Search, Facebook, and Shopping. Shows their headlines, descriptions, display URLs, keywords, ad positions, and how long they've been running. Direct them to "Competitor Ads" in the sidebar.]`;
+            }
+            if (intent.intent === "ab_tests") {
+                enrichedText = `${text}\n\n[SYSTEM NOTE: The user wants to A/B test ads. Explain the A/B Test Tracker — create tests with variant A (control) and B (challenger), track clicks, conversions, CTR, conversion rate, and statistical confidence. Auto-declares winners at 95% confidence. Direct them to "A/B Tests" in the sidebar.]`;
+            }
+            if (intent.intent === "weekly_digest") {
+                enrichedText = `${text}\n\n[SYSTEM NOTE: The user wants a weekly email digest. Explain the Weekly Digest — a beautiful email summary sent weekly with top wins, things to watch, key metrics, and looking-ahead tips. They can choose day/time and preview what they'll receive. Direct them to "Weekly Digest" in the sidebar.]`;
             }
 
             callAI(enrichedText, messages).then((aiResult) => {

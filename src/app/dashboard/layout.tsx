@@ -34,6 +34,14 @@ import {
     Bot,
     Crosshair,
     Eye,
+    Shield,
+    Gauge,
+    Clock,
+    Globe,
+    PoundSterling,
+    FlaskConical,
+    Mail,
+    ChevronRight,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { BusinessProvider, useBusiness } from "@/lib/business-context";
@@ -80,21 +88,42 @@ const notificationIcons: Record<NotificationType, { bg: string; text: string; ic
 // ─── Nav items ─────────────────────────────────────────────────────────────
 
 const mainNavItems = [
+    // ── Core ──
     { href: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard, tip: "Overview of your account, plan usage, and quick actions", requiresSetup: true },
     { href: "/dashboard/intelligence", labelKey: "nav.intelligence", icon: Brain, tip: "AI-powered cross-platform intelligence — holiday, seasonal, device, geo & climate aware", requiresSetup: false },
     { href: "/dashboard/chat", labelKey: "nav.aiAssistant", icon: MessageCircle, tip: "Chat with AI to create ads, analyze performance, and find budget leaks", requiresSetup: false },
-    { href: "/dashboard/campaigns", labelKey: "nav.campaigns", icon: FileText, tip: "View and manage your live Google Ads campaigns", requiresSetup: true },
-    { href: "/dashboard/keywords", labelKey: "nav.keywords", icon: Search, tip: "Discover keyword opportunities and manage negative keywords", requiresSetup: true },
-    { href: "/dashboard/keyword-research", labelKey: "nav.keywordResearch", icon: Sparkles, tip: "AI-powered keyword discovery and analysis", requiresSetup: false },
-    { href: "/dashboard/analytics", labelKey: "nav.analytics", icon: BarChart3, tip: "Charts and trends for your Google Ads performance", requiresSetup: true },
-    { href: "/dashboard/calls", labelKey: "nav.callTracking", icon: Phone, tip: "Track phone calls driven by your ads", requiresSetup: true },
-    { href: "/dashboard/drafts", labelKey: "nav.adDrafts", icon: FileText, tip: "Review and edit AI-generated ad drafts before publishing", requiresSetup: true },
+
+    // ── Campaigns & Ads ──
+    { href: "/dashboard/campaigns", labelKey: "nav.campaigns", icon: FileText, tip: "View and manage your live Google Ads campaigns", requiresSetup: true, group: "Campaigns" },
     { href: "/dashboard/ad-copy", labelKey: "nav.adCopyGenerator", icon: Sparkles, tip: "Generate Google Ads headlines, descriptions, and keywords", requiresSetup: true },
-    { href: "/dashboard/budget", labelKey: "nav.budgetOptimizer", icon: DollarSign, tip: "AI recommendations to optimize your ad spend and bids", requiresSetup: true },
-    { href: "/dashboard/shopping", labelKey: "nav.shoppingAds", icon: ShoppingBag, shoppingOnly: true, tip: "Manage product listing and shopping ads", requiresSetup: true },
-    { href: "/dashboard/shopify", labelKey: "nav.shopify", icon: Store, tip: "Connect and manage your Shopify store products", requiresSetup: false },
+    { href: "/dashboard/drafts", labelKey: "nav.adDrafts", icon: FileText, tip: "Review and edit AI-generated ad drafts before publishing", requiresSetup: true },
     { href: "/dashboard/ad-analysis", labelKey: "nav.adAnalysis", icon: Eye, tip: "Deep analysis of your existing ads with AI grading", requiresSetup: true },
+    { href: "/dashboard/ab-tests", labelKey: "nav.abTests", icon: FlaskConical, tip: "A/B test ad headlines and track statistical winners", requiresSetup: true },
+
+    // ── Keywords & Research ──
+    { href: "/dashboard/keywords", labelKey: "nav.keywords", icon: Search, tip: "Discover keyword opportunities and manage negative keywords", requiresSetup: true, group: "Research" },
+    { href: "/dashboard/keyword-research", labelKey: "nav.keywordResearch", icon: Sparkles, tip: "AI-powered keyword discovery and analysis", requiresSetup: false },
+    { href: "/dashboard/negative-keywords", labelKey: "nav.negativeKeywords", icon: Shield, tip: "Auto-mined negative keywords to stop wasted spend", requiresSetup: true },
     { href: "/dashboard/competitors", labelKey: "nav.competitors", icon: Crosshair, tip: "Research competitors and find gaps in their strategy", requiresSetup: true },
+    { href: "/dashboard/competitor-ads", labelKey: "nav.competitorAds", icon: Eye, tip: "See what your competitors are running on Google & Facebook", requiresSetup: true },
+
+    // ── Budget & Performance ──
+    { href: "/dashboard/analytics", labelKey: "nav.analytics", icon: BarChart3, tip: "Charts and trends for your Google Ads performance", requiresSetup: true, group: "Performance" },
+    { href: "/dashboard/budget", labelKey: "nav.budgetOptimizer", icon: DollarSign, tip: "AI recommendations to optimize your ad spend and bids", requiresSetup: true },
+    { href: "/dashboard/budget-pacing", labelKey: "nav.budgetPacing", icon: Gauge, tip: "Track daily spend against monthly budget", requiresSetup: true },
+    { href: "/dashboard/wasted-spend", labelKey: "nav.wastedSpend", icon: DollarSign, tip: "Find and block search terms wasting your budget", requiresSetup: true },
+    { href: "/dashboard/profit-tracker", labelKey: "nav.profitTracker", icon: PoundSterling, tip: "True profitability per product after ad spend and costs", requiresSetup: true },
+    { href: "/dashboard/ad-scheduling", labelKey: "nav.adScheduling", icon: Clock, tip: "Optimise when your ads run based on conversion data", requiresSetup: true },
+    { href: "/dashboard/site-scorer", labelKey: "nav.siteScorer", icon: Globe, tip: "Score every page on your site — speed, mobile, CTAs, ad relevance", requiresSetup: false },
+    { href: "/dashboard/calls", labelKey: "nav.callTracking", icon: Phone, tip: "Track phone calls driven by your ads", requiresSetup: true },
+
+    // ── Alerts & Reporting ──
+    { href: "/dashboard/alerts", labelKey: "nav.smartAlerts", icon: Bell, tip: "Email and WhatsApp alerts when something important happens", requiresSetup: false, group: "Alerts" },
+    { href: "/dashboard/weekly-digest", labelKey: "nav.weeklyDigest", icon: Mail, tip: "Weekly email summary of wins, concerns, and metrics", requiresSetup: false },
+
+    // ── Channels ──
+    { href: "/dashboard/shopping", labelKey: "nav.shoppingAds", icon: ShoppingBag, shoppingOnly: true, tip: "Manage product listing and shopping ads", requiresSetup: true, group: "Channels" },
+    { href: "/dashboard/shopify", labelKey: "nav.shopify", icon: Store, tip: "Connect and manage your Shopify store products", requiresSetup: false },
     { href: "/dashboard/shopify-analytics", labelKey: "nav.shopifyAnalytics", icon: ShoppingBag, tip: "Revenue, ROAS, and e-commerce analytics from Shopify", requiresSetup: true },
     { href: "/dashboard/meta-ads", labelKey: "nav.metaAds", icon: Facebook, tip: "Facebook & Instagram ad management", requiresSetup: false },
     { href: "/dashboard/amazon-ads", labelKey: "nav.amazonAds", icon: ShoppingCart, tip: "Amazon Sponsored Products, Brands & Display", requiresSetup: false },
@@ -102,7 +131,9 @@ const mainNavItems = [
     { href: "/dashboard/google-trends", labelKey: "nav.googleTrends", icon: TrendingUp, tip: "Market trends, seasonal predictions, rising keywords", requiresSetup: false },
     { href: "/dashboard/etsy-intelligence", labelKey: "nav.etsyIntelligence", icon: Store, tip: "Etsy marketplace research & listing optimization", requiresSetup: false },
     { href: "/dashboard/auto-pilot", labelKey: "nav.autoPilot", icon: Bot, tip: "AI-powered autonomous ad management", requiresSetup: true },
-    { href: "/dashboard/knowledge-base", labelKey: "nav.knowledgeBase", icon: BookOpen, tip: "Upload brand assets and info to train the AI on your business", requiresSetup: false },
+
+    // ── Account ──
+    { href: "/dashboard/knowledge-base", labelKey: "nav.knowledgeBase", icon: BookOpen, tip: "Upload brand assets and info to train the AI on your business", requiresSetup: false, group: "Account" },
     { href: "/dashboard/demo/examples", labelKey: "nav.aiExamples", icon: Lightbulb, tip: "See example prompts and what the AI can do for you", requiresSetup: true },
     { href: "/dashboard/faq", labelKey: "nav.faq", icon: HelpCircle, tip: "Frequently asked questions about features and billing", requiresSetup: false },
     { href: "/dashboard/billing", labelKey: "nav.billing", icon: CreditCard, tip: "Manage your subscription, upgrade plans, and purchase top-ups", requiresSetup: false },
