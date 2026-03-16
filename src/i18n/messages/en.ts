@@ -242,6 +242,9 @@ const en = {
     "login.error.authFailed": "Something went wrong during authentication. Please try again.",
     "login.error.signInFailed": "Sign-in failed. Please try again.",
     "login.error.network": "Network error. Please try again.",
+    "login.error.invalidLink": "This sign-in link has expired or is invalid. Please request a new one.",
+    "login.error.missingToken": "Invalid sign-in link. Please request a new one.",
+    "login.error.serverError": "Something went wrong. Please try again.",
     "login.trust.ssl": "SSL Encrypted",
     "login.trust.protected": "Data Protected",
 

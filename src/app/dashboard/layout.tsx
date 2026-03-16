@@ -401,10 +401,10 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                     <div className="p-3 border-t border-border">
                         <div className="bg-primary-light rounded-lg p-3 mb-3">
                             <div className="text-xs font-medium text-primary mb-1">
-                                Free Plan
+                                {userPlan === "pro" ? "Pro Plan" : userPlan === "starter" ? "Starter Plan" : userPlan === "trial" ? "Trial" : "Free Plan"}
                             </div>
                             <div className="text-xs text-primary/70">
-                                All features are currently free to use
+                                {userPlan === "pro" ? "Unlimited AI messages" : userPlan === "starter" ? "1,000 AI messages/mo" : userPlan === "trial" ? "500 messages for 14 days" : "10 AI messages/mo"}
                             </div>
                         </div>
                         <Link
@@ -417,8 +417,8 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                         </Link>
                         <button
                             onClick={async () => {
-                                clearAuth(); // Clear localStorage token
-                                await fetch("/api/auth/signout", { method: "POST" });
+                                await authFetch("/api/auth/signout", { method: "POST" });
+                                clearAuth();
                                 window.location.href = "/login";
                             }}
                             className="flex items-center gap-2 px-3 py-2 text-sm text-muted hover:text-danger transition w-full"
@@ -612,8 +612,8 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                                         <button
                                             onClick={async () => {
                                                 setProfileOpen(false);
+                                                await authFetch("/api/auth/signout", { method: "POST" });
                                                 clearAuth();
-                                                await fetch("/api/auth/signout", { method: "POST" });
                                                 window.location.href = "/login";
                                             }}
                                             className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-danger hover:bg-danger/5 transition w-full"

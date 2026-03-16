@@ -132,9 +132,9 @@ function LoginForm() {
                             {error === "auth_failed" && t("login.error.googleFailed")}
                             {error === "auth_error" && t("login.error.authFailed")}
                             {error === "no_ads_account" && t("login.error.authFailed")}
-                            {error === "invalid_link" && "This sign-in link has expired or is invalid. Please request a new one."}
-                            {error === "missing_token" && "Invalid sign-in link. Please request a new one."}
-                            {error === "server_error" && "Something went wrong. Please try again."}
+                            {error === "invalid_link" && t("login.error.invalidLink")}
+                            {error === "missing_token" && t("login.error.missingToken")}
+                            {error === "server_error" && t("login.error.serverError")}
                         </div>
                     )}
 

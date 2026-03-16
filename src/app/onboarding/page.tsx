@@ -671,14 +671,11 @@ Respond in JSON format:
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    messages: [
+                    message: `Generate an ad analysis report and new ad suggestions for ${businessName}. ${
+                        crawledContent ? `Website content: ${crawledContent.slice(0, 4000)}` : ""
+                    }`,
+                    history: [
                         { role: "system", content: systemPrompt },
-                        {
-                            role: "user",
-                            content: `Generate an ad analysis report and new ad suggestions for ${businessName}. ${
-                                crawledContent ? `Website content: ${crawledContent.slice(0, 4000)}` : ""
-                            }`,
-                        },
                     ],
                     businessId: businessId || undefined,
                 }),

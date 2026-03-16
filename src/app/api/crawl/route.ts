@@ -22,11 +22,39 @@ const BLOCKED_HOST_PATTERNS = [
     /172\.(1[6-9]|2\d|3[01])\./, /169\.254\./, /metadata\.google/,
 ];
 
+const BLOCKED_IP_RANGES = [
+    /^127\./, /^10\./, /^192\.168\./, /^172\.(1[6-9]|2\d|3[01])\./,
+    /^169\.254\./, /^0\./, /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./,
+    /^::1$/, /^fe80:/i, /^fc00:/i, /^fd/i,
+];
+
+async function resolveToIp(hostname: string): Promise<string | null> {
+    try {
+        const dns = await import("dns");
+        return await new Promise((resolve) => {
+            dns.lookup(hostname, (err: NodeJS.ErrnoException | null, address: string) => {
+                if (err) resolve(null);
+                else resolve(address);
+            });
+        });
+    } catch { return null; }
+}
+
 function isBlockedUrl(urlStr: string): boolean {
     try {
         const u = new URL(urlStr);
         if (u.protocol !== "http:" && u.protocol !== "https:") return true;
         return BLOCKED_HOST_PATTERNS.some(p => p.test(u.hostname));
+    } catch { return true; }
+}
+
+async function isBlockedAfterResolve(urlStr: string): Promise<boolean> {
+    if (isBlockedUrl(urlStr)) return true;
+    try {
+        const u = new URL(urlStr);
+        const ip = await resolveToIp(u.hostname);
+        if (!ip) return true;
+        return BLOCKED_IP_RANGES.some(p => p.test(ip));
     } catch { return true; }
 }
 
@@ -75,7 +103,7 @@ async function scrapePage(url: string): Promise<{
     links: string[];
     success: boolean;
 }> {
-    if (isBlockedUrl(url)) return { title: "", description: "", content: "", links: [], success: false };
+    if (await isBlockedAfterResolve(url)) return { title: "", description: "", content: "", links: [], success: false };
 
     try {
         const res = await fetchWithRetry(url);

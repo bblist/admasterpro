@@ -13,6 +13,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 import { prisma } from "@/lib/db";
 import { sendWeeklyReport, WeeklyReportData } from "@/lib/email";
 
@@ -24,9 +25,10 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: "Cron secret not configured" }, { status: 503 });
     }
 
-    // Verify secret
+    // Verify secret (constant-time comparison)
     const secret = req.nextUrl.searchParams.get("secret");
-    if (!secret || secret !== CRON_SECRET) {
+    if (!secret || secret.length !== CRON_SECRET.length ||
+        !crypto.timingSafeEqual(Buffer.from(secret), Buffer.from(CRON_SECRET))) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
